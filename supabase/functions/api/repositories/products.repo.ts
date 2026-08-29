@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabaseClient.ts'
-import type { PackSizeLabel, Product, StockLevel } from '../types/domain.ts'
+import type { CatalogProduct, PackSizeLabel, Product, StockLevel } from '../types/domain.ts'
 
 const PACK_SIZE_ORDER: PackSizeLabel[] = ['250g', '500g', '1kg', '2kg']
 
@@ -75,4 +75,33 @@ export async function upsert(product: Product): Promise<void> {
 export async function softDelete(id: string): Promise<void> {
   const { error } = await supabase.from('products').update({ is_active: false }).eq('id', id)
   if (error) throw error
+}
+
+/**
+ * Public storefront read — active products only, and only the fields a
+ * customer needs to shop (no batch/production internals like batchCapacity
+ * or stockState).
+ */
+export async function listPublicCatalog(): Promise<CatalogProduct[]> {
+  const { data, error } = await supabase
+    .from('products')
+    .select('id, name, category, description, discount_percent, spice_level, product_pack_sizes(*)')
+    .eq('is_active', true)
+    .order('name')
+  if (error) throw error
+
+  // deno-lint-ignore no-explicit-any
+  return data.map((row: any) => ({
+    id: row.id,
+    name: row.name,
+    category: row.category,
+    description: row.description,
+    packSizes: [...row.product_pack_sizes]
+      // deno-lint-ignore no-explicit-any
+      .sort((a: any, b: any) => PACK_SIZE_ORDER.indexOf(a.size) - PACK_SIZE_ORDER.indexOf(b.size))
+      // deno-lint-ignore no-explicit-any
+      .map((p: any) => ({ size: p.size, price: Number(p.price) })),
+    discountPercent: row.discount_percent,
+    spiceLevel: row.spice_level,
+  }))
 }
