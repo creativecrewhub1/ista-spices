@@ -11,7 +11,8 @@ interface AuthContextValue {
   role: UserRole | null
   loading: boolean
   signOut: () => Promise<void>
-  signInWithGoogle: () => Promise<void>
+  /** redirectPath defaults to wherever the button was clicked, so the user lands back there post-auth. */
+  signInWithGoogle: (redirectPath?: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
@@ -69,12 +70,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut: async () => {
       await supabaseAuth.auth.signOut()
     },
-    signInWithGoogle: async () => {
-      // Google only ever produces role='customer' (see the DB trigger) —
-      // always land back on the storefront, never the admin panel.
+    signInWithGoogle: async (redirectPath = '/shop') => {
+      // Google only ever produces role='customer' (see the DB trigger). The
+      // redirect target is just "where to land the browser after the OAuth
+      // round trip" — /login itself handles bouncing a newly-authenticated
+      // customer on to /shop, so landing back on /login from there works too.
       await supabaseAuth.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: `${window.location.origin}/shop` },
+        options: { redirectTo: `${window.location.origin}${redirectPath}` },
       })
     },
   }

@@ -2,21 +2,19 @@ import { useState, type FormEvent } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import { ShopHeader } from '@/components/shop/ShopHeader'
-import { GoogleSignInCard } from '@/components/shop/GoogleSignInCard'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { useAuth } from '@/auth/AuthProvider'
 import { useCart } from '@/shop/CartContext'
 import { useCheckout } from '@/data/mutations'
 import { formatCurrency } from '@/lib/format'
 import { pageEnter } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 
+// Reaching this page at all requires a session — see RequireSession in App.tsx.
 export function CheckoutPage() {
-  const { session, loading: authLoading } = useAuth()
   const { items, total, clear } = useCart()
   const checkout = useCheckout()
   const navigate = useNavigate()
@@ -60,45 +58,38 @@ export function CheckoutPage() {
           </CardContent>
         </Card>
 
-        {authLoading ? null : !session ? (
-          <GoogleSignInCard
-            title="Sign in to continue"
-            description="Sign in with Google to place your order — we'll use it to track your order and delivery."
-          />
-        ) : (
-          <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="checkout-name">Full name</Label>
-              <Input id="checkout-name" required value={name} onChange={(e) => setName(e.target.value)} />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="checkout-phone">Phone</Label>
-              <Input
-                id="checkout-phone"
-                type="tel"
-                required
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="checkout-address">Delivery address</Label>
-              <Textarea
-                id="checkout-address"
-                required
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-              />
-            </div>
-            {checkout.isError ? (
-              <p className="text-sm text-destructive">{(checkout.error as Error).message}</p>
-            ) : null}
-            <Button type="submit" size="lg" disabled={checkout.isPending} className="gap-1.5">
-              {checkout.isPending ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}
-              Place order · {formatCurrency(total)}
-            </Button>
-          </form>
-        )}
+        <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="checkout-name">Full name</Label>
+            <Input id="checkout-name" required value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="checkout-phone">Phone</Label>
+            <Input
+              id="checkout-phone"
+              type="tel"
+              required
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="checkout-address">Delivery address</Label>
+            <Textarea
+              id="checkout-address"
+              required
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+            />
+          </div>
+          {checkout.isError ? (
+            <p className="text-sm text-destructive">{(checkout.error as Error).message}</p>
+          ) : null}
+          <Button type="submit" size="lg" disabled={checkout.isPending} className="gap-1.5">
+            {checkout.isPending ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}
+            Place order · {formatCurrency(total)}
+          </Button>
+        </form>
       </div>
     </div>
   )

@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { AppShell } from '@/components/layout/AppShell'
 import { AuthProvider } from '@/auth/AuthProvider'
 import { ProtectedRoute } from '@/auth/ProtectedRoute'
+import { RequireSession } from '@/auth/RequireSession'
 import { CartProvider } from '@/shop/CartContext'
 import { LoginPage } from '@/pages/LoginPage'
 import { DashboardPage } from '@/pages/DashboardPage'
@@ -44,8 +45,10 @@ export default function App() {
 
               <Route path="/shop" element={<CatalogPage />} />
               <Route path="/shop/cart" element={<CartPage />} />
-              <Route path="/shop/checkout" element={<CheckoutPage />} />
-              <Route path="/shop/orders" element={<MyOrdersPage />} />
+              <Route element={<RequireSession />}>
+                <Route path="/shop/checkout" element={<CheckoutPage />} />
+                <Route path="/shop/orders" element={<MyOrdersPage />} />
+              </Route>
             </Routes>
           </CartProvider>
         </AuthProvider>

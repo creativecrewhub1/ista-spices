@@ -4,16 +4,14 @@ import { CardListSkeleton, ErrorState } from '@/components/common/QueryState'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { GoogleSignInCard } from '@/components/shop/GoogleSignInCard'
-import { useAuth } from '@/auth/AuthProvider'
 import { useMyOrders } from '@/data/queries'
 import { orderStatusConfig } from '@/lib/status'
 import { formatCurrency, formatDateLong } from '@/lib/format'
 import { pageEnter } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 
+// Reaching this page at all requires a session — see RequireSession in App.tsx.
 export function MyOrdersPage() {
-  const { session, loading: authLoading } = useAuth()
   const { data: orders, isLoading, error } = useMyOrders()
 
   return (
@@ -22,9 +20,7 @@ export function MyOrdersPage() {
       <div className="mx-auto max-w-2xl px-4 py-6 md:px-8">
         <h1 className="mb-6 font-heading text-xl font-semibold">My orders</h1>
 
-        {authLoading ? null : !session ? (
-          <GoogleSignInCard title="Sign in to see your orders" />
-        ) : isLoading ? (
+        {isLoading ? (
           <CardListSkeleton count={3} />
         ) : error ? (
           <ErrorState message={error.message} />
