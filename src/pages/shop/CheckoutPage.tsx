@@ -2,8 +2,8 @@ import { useState, type FormEvent } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import { ShopHeader } from '@/components/shop/ShopHeader'
-import { GoogleIcon } from '@/components/shop/GoogleIcon'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { GoogleSignInCard } from '@/components/shop/GoogleSignInCard'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -16,7 +16,7 @@ import { pageEnter } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 
 export function CheckoutPage() {
-  const { session, loading: authLoading, signInWithGoogle } = useAuth()
+  const { session, loading: authLoading } = useAuth()
   const { items, total, clear } = useCart()
   const checkout = useCheckout()
   const navigate = useNavigate()
@@ -61,20 +61,10 @@ export function CheckoutPage() {
         </Card>
 
         {authLoading ? null : !session ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>Sign in to continue</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="mb-4 text-sm text-muted-foreground">
-                Sign in with Google to place your order — we'll use it to track your order and delivery.
-              </p>
-              <Button variant="outline" className="w-full gap-2" onClick={() => signInWithGoogle()}>
-                <GoogleIcon />
-                Continue with Google
-              </Button>
-            </CardContent>
-          </Card>
+          <GoogleSignInCard
+            title="Sign in to continue"
+            description="Sign in with Google to place your order — we'll use it to track your order and delivery."
+          />
         ) : (
           <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
             <div className="flex flex-col gap-1.5">

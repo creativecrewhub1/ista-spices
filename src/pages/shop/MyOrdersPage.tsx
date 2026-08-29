@@ -4,7 +4,7 @@ import { CardListSkeleton, ErrorState } from '@/components/common/QueryState'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { GoogleIcon } from '@/components/shop/GoogleIcon'
+import { GoogleSignInCard } from '@/components/shop/GoogleSignInCard'
 import { useAuth } from '@/auth/AuthProvider'
 import { useMyOrders } from '@/data/queries'
 import { orderStatusConfig } from '@/lib/status'
@@ -13,7 +13,7 @@ import { pageEnter } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 
 export function MyOrdersPage() {
-  const { session, loading: authLoading, signInWithGoogle } = useAuth()
+  const { session, loading: authLoading } = useAuth()
   const { data: orders, isLoading, error } = useMyOrders()
 
   return (
@@ -23,17 +23,7 @@ export function MyOrdersPage() {
         <h1 className="mb-6 font-heading text-xl font-semibold">My orders</h1>
 
         {authLoading ? null : !session ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>Sign in to see your orders</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Button variant="outline" className="w-full gap-2" onClick={() => signInWithGoogle()}>
-                <GoogleIcon />
-                Continue with Google
-              </Button>
-            </CardContent>
-          </Card>
+          <GoogleSignInCard title="Sign in to see your orders" />
         ) : isLoading ? (
           <CardListSkeleton count={3} />
         ) : error ? (

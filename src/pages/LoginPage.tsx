@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Navigate } from 'react-router-dom'
 import { Flame, Loader2 } from 'lucide-react'
+import { AuthBackdrop } from '@/components/common/AuthBackdrop'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -46,10 +47,10 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-svh items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-sm">
+    <AuthBackdrop>
+      <Card className="w-full max-w-sm border-white/40 bg-card/70 shadow-2xl backdrop-blur-xl dark:border-white/10">
         <CardHeader className="items-center text-center">
-          <span className="mb-2 flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <span className="mb-2 flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-lg shadow-primary/30">
             <Flame className="size-5" aria-hidden="true" />
           </span>
           <CardTitle className="text-lg">Ista Spices</CardTitle>
@@ -166,6 +167,6 @@ export function LoginPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </AuthBackdrop>
   )
 }
