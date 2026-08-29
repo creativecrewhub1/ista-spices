@@ -39,3 +39,14 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+# Ruflo local secrets and runtime data
+.env.local
+.env.*.local
+
+# claude-flow / agent-orchestration tooling — local scaffolding, not part of this app
+.claude-flow/
+.swarm/
+.agents/
+/CLAUDE.md
+skills-lock.json
