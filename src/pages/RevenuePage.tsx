@@ -5,10 +5,12 @@ import { KpiCard } from '@/components/dashboard/KpiCard'
 import { SectionCard } from '@/components/dashboard/SectionCard'
 import { RevenueChart } from '@/components/revenue/RevenueChart'
 import { ProductRevenueTable } from '@/components/revenue/ProductRevenueTable'
-import { LoadingState, ErrorState } from '@/components/common/QueryState'
+import { LoadingState, ErrorState, KpiSkeleton } from '@/components/common/QueryState'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useRevenueByDay, useRevenueByProduct, useRevenueByWeek, useRevenueSummary } from '@/data/queries'
 import { formatCurrency, formatWeekday } from '@/lib/format'
+import { cn } from '@/lib/utils'
+import { pageEnter } from '@/lib/motion'
 
 type RangeValue = 'weekly' | 'monthly'
 
@@ -30,12 +32,12 @@ export function RevenuePage() {
   const activeQuery = range === 'weekly' ? dailyQuery : weeklyQuery
 
   return (
-    <div className="pb-8">
+    <div className={cn('pb-8', pageEnter)}>
       <TopBar title="Revenue" subtitle="Track earnings across time and products" />
 
       <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 md:px-8 md:py-6">
         {summaryQuery.isLoading ? (
-          <LoadingState label="Loading revenue…" />
+          <KpiSkeleton count={2} />
         ) : summaryQuery.error ? (
           <ErrorState message={summaryQuery.error.message} />
         ) : (

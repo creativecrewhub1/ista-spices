@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { ShopHeader } from '@/components/shop/ShopHeader'
-import { LoadingState, ErrorState } from '@/components/common/QueryState'
+import { CardListSkeleton, ErrorState } from '@/components/common/QueryState'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -9,13 +9,15 @@ import { useAuth } from '@/auth/AuthProvider'
 import { useMyOrders } from '@/data/queries'
 import { orderStatusConfig } from '@/lib/status'
 import { formatCurrency, formatDateLong } from '@/lib/format'
+import { pageEnter } from '@/lib/motion'
+import { cn } from '@/lib/utils'
 
 export function MyOrdersPage() {
   const { session, loading: authLoading, signInWithGoogle } = useAuth()
   const { data: orders, isLoading, error } = useMyOrders()
 
   return (
-    <div className="pb-8">
+    <div className={cn('pb-8', pageEnter)}>
       <ShopHeader />
       <div className="mx-auto max-w-2xl px-4 py-6 md:px-8">
         <h1 className="mb-6 font-heading text-xl font-semibold">My orders</h1>
@@ -33,7 +35,7 @@ export function MyOrdersPage() {
             </CardContent>
           </Card>
         ) : isLoading ? (
-          <LoadingState label="Loading your orders…" />
+          <CardListSkeleton count={3} />
         ) : error ? (
           <ErrorState message={error.message} />
         ) : !orders?.length ? (

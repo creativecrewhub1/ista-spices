@@ -1,6 +1,7 @@
 import { useState } from 'react'
+import { Check, Plus } from 'lucide-react'
 import { ShopHeader } from '@/components/shop/ShopHeader'
-import { LoadingState, ErrorState } from '@/components/common/QueryState'
+import { CardListSkeleton, ErrorState } from '@/components/common/QueryState'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -15,6 +16,8 @@ import { useCatalog } from '@/data/queries'
 import { useCart } from '@/shop/CartContext'
 import { categoryConfig, spiceLevelConfig } from '@/lib/status'
 import { formatCurrency } from '@/lib/format'
+import { pageEnter } from '@/lib/motion'
+import { cn } from '@/lib/utils'
 import type { CatalogProduct, PackSizeLabel } from '@/data/types'
 
 function ProductTile({ product }: { product: CatalogProduct }) {
@@ -31,7 +34,7 @@ function ProductTile({ product }: { product: CatalogProduct }) {
   }
 
   return (
-    <Card>
+    <Card className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
       <CardHeader>
         <div className="flex items-start justify-between gap-2">
           <CardTitle>{product.name}</CardTitle>
@@ -63,8 +66,22 @@ function ProductTile({ product }: { product: CatalogProduct }) {
             </SelectContent>
           </Select>
           <span className="font-mono text-sm font-semibold tabular-nums">{formatCurrency(price)}</span>
-          <Button size="sm" className="ml-auto" onClick={handleAdd}>
-            {added ? 'Added' : 'Add to cart'}
+          <Button
+            size="sm"
+            className={cn('ml-auto gap-1.5 transition-colors', added && 'bg-success hover:bg-success')}
+            onClick={handleAdd}
+          >
+            {added ? (
+              <>
+                <Check className="size-3.5 motion-safe:animate-in motion-safe:zoom-in-50" aria-hidden="true" />
+                Added
+              </>
+            ) : (
+              <>
+                <Plus className="size-3.5" aria-hidden="true" />
+                Add to cart
+              </>
+            )}
           </Button>
         </div>
       </CardContent>
@@ -76,14 +93,14 @@ export function CatalogPage() {
   const { data: products, isLoading, error } = useCatalog()
 
   return (
-    <div className="pb-8">
+    <div className={cn('pb-8', pageEnter)}>
       <ShopHeader />
       <div className="mx-auto max-w-6xl px-4 py-6 md:px-8">
         <h1 className="mb-1 font-heading text-xl font-semibold">Shop spices &amp; oils</h1>
         <p className="mb-6 text-sm text-muted-foreground">Freshly ground spices and cold-pressed oils, packed to order.</p>
 
         {isLoading ? (
-          <LoadingState label="Loading products…" />
+          <CardListSkeleton />
         ) : error ? (
           <ErrorState message={error.message} />
         ) : (

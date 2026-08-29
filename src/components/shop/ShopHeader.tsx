@@ -31,7 +31,10 @@ export function ShopHeader() {
           <Link to="/shop/cart" aria-label="Cart">
             <ShoppingCart className="size-4" aria-hidden="true" />
             {count > 0 ? (
-              <span className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
+              <span
+                key={count}
+                className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground motion-safe:animate-in motion-safe:zoom-in-75 duration-200"
+              >
                 {count}
               </span>
             ) : null}

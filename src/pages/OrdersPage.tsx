@@ -5,10 +5,12 @@ import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { OrderCard } from '@/components/orders/OrderCard'
 import { OrderDetailSheet } from '@/components/orders/OrderDetailSheet'
-import { LoadingState, ErrorState } from '@/components/common/QueryState'
+import { CardListSkeleton, ErrorState } from '@/components/common/QueryState'
 import { useOrders } from '@/data/queries'
 import { useUpdateOrderStatus } from '@/data/mutations'
 import type { Order, OrderStatus } from '@/data/types'
+import { cn } from '@/lib/utils'
+import { pageEnter } from '@/lib/motion'
 
 type FilterValue = 'all' | OrderStatus
 
@@ -48,7 +50,7 @@ export function OrdersPage() {
   const now = Date.now()
 
   return (
-    <div className="pb-8">
+    <div className={cn('pb-8', pageEnter)}>
       <TopBar title="Orders" subtitle={`${counts.total} orders total`} />
 
       <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 md:px-8 md:py-6">
@@ -92,7 +94,7 @@ export function OrdersPage() {
         </Tabs>
 
         {isLoading ? (
-          <LoadingState label="Loading orders…" />
+          <CardListSkeleton />
         ) : error ? (
           <ErrorState message={error.message} />
         ) : filteredOrders.length === 0 ? (

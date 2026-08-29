@@ -25,19 +25,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Role isn't in the Supabase session itself — it lives in our own
     // `profiles` table, so every session change needs one round trip to
     // /auth/whoami to learn it (this is also what tells the frontend apart
-    // an admin from a Google-signed-in customer).
+    // an admin from a Google-signed-in customer). Session and role are set
+    // together, only once role resolves — setting `session` first would let
+    // ProtectedRoute see a truthy session with a stale/null `role` for one
+    // render and permanently redirect a fresh admin login to /shop before
+    // the real role ever arrives.
     async function sync(newSession: Session | null) {
-      setSession(newSession)
       if (!newSession) {
+        setSession(null)
         setRole(null)
         return
       }
+      let resolvedRole: UserRole | null = null
       try {
         const whoami = await api.get<{ email: string; role: UserRole }>('/auth/whoami')
-        setRole(whoami.role)
+        resolvedRole = whoami.role
       } catch {
-        setRole(null)
+        resolvedRole = null
       }
+      setRole(resolvedRole)
+      setSession(newSession)
     }
 
     supabaseAuth.auth.getSession().then(async ({ data }) => {

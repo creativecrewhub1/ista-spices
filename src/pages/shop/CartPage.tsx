@@ -5,12 +5,14 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { useCart } from '@/shop/CartContext'
 import { formatCurrency } from '@/lib/format'
+import { pageEnter } from '@/lib/motion'
+import { cn } from '@/lib/utils'
 
 export function CartPage() {
   const { items, updateQty, total } = useCart()
 
   return (
-    <div className="pb-8">
+    <div className={cn('pb-8', pageEnter)}>
       <ShopHeader />
       <div className="mx-auto max-w-2xl px-4 py-6 md:px-8">
         <h1 className="mb-6 font-heading text-xl font-semibold">Your cart</h1>

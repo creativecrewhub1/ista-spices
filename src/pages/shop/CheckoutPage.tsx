@@ -12,6 +12,8 @@ import { useAuth } from '@/auth/AuthProvider'
 import { useCart } from '@/shop/CartContext'
 import { useCheckout } from '@/data/mutations'
 import { formatCurrency } from '@/lib/format'
+import { pageEnter } from '@/lib/motion'
+import { cn } from '@/lib/utils'
 
 export function CheckoutPage() {
   const { session, loading: authLoading, signInWithGoogle } = useAuth()
@@ -46,7 +48,7 @@ export function CheckoutPage() {
   }
 
   return (
-    <div className="pb-8">
+    <div className={cn('pb-8', pageEnter)}>
       <ShopHeader />
       <div className="mx-auto max-w-md px-4 py-6 md:px-8">
         <h1 className="mb-6 font-heading text-xl font-semibold">Checkout</h1>
