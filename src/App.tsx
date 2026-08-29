@@ -3,12 +3,17 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { AppShell } from '@/components/layout/AppShell'
 import { AuthProvider } from '@/auth/AuthProvider'
 import { ProtectedRoute } from '@/auth/ProtectedRoute'
+import { CartProvider } from '@/shop/CartContext'
 import { LoginPage } from '@/pages/LoginPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { InventoryPage } from '@/pages/InventoryPage'
 import { OrdersPage } from '@/pages/OrdersPage'
 import { RevenuePage } from '@/pages/RevenuePage'
 import { CustomersPage } from '@/pages/CustomersPage'
+import { CatalogPage } from '@/pages/shop/CatalogPage'
+import { CartPage } from '@/pages/shop/CartPage'
+import { CheckoutPage } from '@/pages/shop/CheckoutPage'
+import { MyOrdersPage } from '@/pages/shop/MyOrdersPage'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,18 +29,25 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route element={<ProtectedRoute />}>
-              <Route element={<AppShell />}>
-                <Route index element={<DashboardPage />} />
-                <Route path="inventory" element={<InventoryPage />} />
-                <Route path="orders" element={<OrdersPage />} />
-                <Route path="revenue" element={<RevenuePage />} />
-                <Route path="customers" element={<CustomersPage />} />
+          <CartProvider>
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route element={<ProtectedRoute />}>
+                <Route element={<AppShell />}>
+                  <Route index element={<DashboardPage />} />
+                  <Route path="inventory" element={<InventoryPage />} />
+                  <Route path="orders" element={<OrdersPage />} />
+                  <Route path="revenue" element={<RevenuePage />} />
+                  <Route path="customers" element={<CustomersPage />} />
+                </Route>
               </Route>
-            </Route>
-          </Routes>
+
+              <Route path="/shop" element={<CatalogPage />} />
+              <Route path="/shop/cart" element={<CartPage />} />
+              <Route path="/shop/checkout" element={<CheckoutPage />} />
+              <Route path="/shop/orders" element={<MyOrdersPage />} />
+            </Routes>
+          </CartProvider>
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
