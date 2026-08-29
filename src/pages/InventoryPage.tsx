@@ -14,13 +14,18 @@ import {
 } from '@/components/ui/dialog'
 import { ProductCard } from '@/components/inventory/ProductCard'
 import { ProductFormSheet } from '@/components/inventory/ProductFormSheet'
-import { products as initialProducts } from '@/data/mock-data'
+import { LoadingState, ErrorState } from '@/components/common/QueryState'
+import { useProducts } from '@/data/queries'
+import { useDeleteProduct, useSaveProduct } from '@/data/mutations'
 import type { Product, StockState } from '@/data/types'
 
 type FilterValue = 'all' | StockState
 
 export function InventoryPage() {
-  const [items, setItems] = useState<Product[]>(initialProducts)
+  const { data: items, isLoading, error } = useProducts()
+  const saveProduct = useSaveProduct()
+  const deleteProduct = useDeleteProduct()
+
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<FilterValue>('all')
   const [formOpen, setFormOpen] = useState(false)
@@ -28,7 +33,7 @@ export function InventoryPage() {
   const [deletingItem, setDeletingItem] = useState<Product | null>(null)
 
   const filteredItems = useMemo(() => {
-    return items.filter((item) => {
+    return (items ?? []).filter((item) => {
       const matchesQuery = item.name.toLowerCase().includes(query.toLowerCase())
       const matchesFilter = filter === 'all' || item.stockState === filter
       return matchesQuery && matchesFilter
@@ -36,23 +41,23 @@ export function InventoryPage() {
   }, [items, query, filter])
 
   function handleSave(item: Product) {
-    setItems((prev) => {
-      const exists = prev.some((i) => i.id === item.id)
-      return exists ? prev.map((i) => (i.id === item.id ? item : i)) : [item, ...prev]
-    })
+    saveProduct.mutate(item)
     setFormOpen(false)
     setEditingItem(null)
   }
 
   function handleDeleteConfirm() {
     if (!deletingItem) return
-    setItems((prev) => prev.filter((i) => i.id !== deletingItem.id))
+    deleteProduct.mutate(deletingItem.id)
     setDeletingItem(null)
   }
 
   return (
     <div className="pb-8">
-      <TopBar title="Products & Inventory" subtitle={`${items.length} products in the catalogue`} />
+      <TopBar
+        title="Products & Inventory"
+        subtitle={`${items?.length ?? 0} products in the catalogue`}
+      />
 
       <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 md:px-8 md:py-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -87,7 +92,11 @@ export function InventoryPage() {
           </TabsList>
         </Tabs>
 
-        {filteredItems.length === 0 ? (
+        {isLoading ? (
+          <LoadingState label="Loading products…" />
+        ) : error ? (
+          <ErrorState message={error.message} />
+        ) : filteredItems.length === 0 ? (
           <p className="py-10 text-center text-sm text-muted-foreground">No products match your search.</p>
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">

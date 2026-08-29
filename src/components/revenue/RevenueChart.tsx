@@ -4,9 +4,10 @@ import { formatCurrency } from '@/lib/format'
 
 interface RevenueChartProps {
   data: RevenuePoint[]
+  formatLabel?: (label: string) => string
 }
 
-export function RevenueChart({ data }: RevenueChartProps) {
+export function RevenueChart({ data, formatLabel }: RevenueChartProps) {
   return (
     <div className="h-64 w-full">
       <ResponsiveContainer width="100%" height="100%">
@@ -14,6 +15,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
           <CartesianGrid vertical={false} stroke="var(--color-border)" />
           <XAxis
             dataKey="label"
+            tickFormatter={formatLabel}
             tickLine={false}
             axisLine={false}
             tick={{ fontSize: 12, fill: 'var(--color-muted-foreground)' }}
@@ -27,6 +29,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
           />
           <Tooltip
             cursor={{ fill: 'var(--color-muted)' }}
+            labelFormatter={(value) => (formatLabel ? formatLabel(String(value)) : String(value))}
             formatter={(value) => [formatCurrency(Number(value)), 'Revenue']}
             contentStyle={{
               background: 'var(--color-card)',

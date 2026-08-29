@@ -5,30 +5,33 @@ import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { OrderCard } from '@/components/orders/OrderCard'
 import { OrderDetailSheet } from '@/components/orders/OrderDetailSheet'
-import { orders as initialOrders } from '@/data/mock-data'
+import { LoadingState, ErrorState } from '@/components/common/QueryState'
+import { useOrders } from '@/data/queries'
+import { useUpdateOrderStatus } from '@/data/mutations'
 import type { Order, OrderStatus } from '@/data/types'
 
 type FilterValue = 'all' | OrderStatus
 
-const now = new Date('2026-08-18T14:00:00').getTime()
-
 export function OrdersPage() {
-  const [orders, setOrders] = useState<Order[]>(initialOrders)
+  const { data: orders, isLoading, error } = useOrders()
+  const updateStatus = useUpdateOrderStatus()
+
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<FilterValue>('all')
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
 
   const counts = useMemo(() => {
+    const list = orders ?? []
     return {
-      total: orders.length,
-      pending: orders.filter((o) => o.status === 'pending').length,
-      inProgress: orders.filter((o) => o.status === 'processing' || o.status === 'packed' || o.status === 'shipped').length,
-      delivered: orders.filter((o) => o.status === 'delivered').length,
+      total: list.length,
+      pending: list.filter((o) => o.status === 'pending').length,
+      inProgress: list.filter((o) => o.status === 'processing' || o.status === 'packed' || o.status === 'shipped').length,
+      delivered: list.filter((o) => o.status === 'delivered').length,
     }
   }, [orders])
 
   const filteredOrders = useMemo(() => {
-    return orders.filter((order) => {
+    return (orders ?? []).filter((order) => {
       const matchesQuery =
         order.customerName.toLowerCase().includes(query.toLowerCase()) ||
         order.id.toLowerCase().includes(query.toLowerCase())
@@ -38,13 +41,15 @@ export function OrdersPage() {
   }, [orders, query, filter])
 
   function handleStatusChange(orderId: string, status: OrderStatus) {
-    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status } : o)))
+    updateStatus.mutate({ orderId, status })
     setSelectedOrder((prev) => (prev && prev.id === orderId ? { ...prev, status } : prev))
   }
 
+  const now = Date.now()
+
   return (
     <div className="pb-8">
-      <TopBar title="Orders" subtitle={`${counts.total} orders today`} />
+      <TopBar title="Orders" subtitle={`${counts.total} orders total`} />
 
       <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 md:px-8 md:py-6">
         <div className="grid grid-cols-4 gap-2 text-center sm:max-w-md">
@@ -86,7 +91,11 @@ export function OrdersPage() {
           </div>
         </Tabs>
 
-        {filteredOrders.length === 0 ? (
+        {isLoading ? (
+          <LoadingState label="Loading orders…" />
+        ) : error ? (
+          <ErrorState message={error.message} />
+        ) : filteredOrders.length === 0 ? (
           <p className="py-10 text-center text-sm text-muted-foreground">No orders match your search.</p>
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">

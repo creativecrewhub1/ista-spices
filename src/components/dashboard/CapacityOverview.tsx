@@ -1,14 +1,32 @@
 import { Link } from 'react-router-dom'
 import { SectionCard } from './SectionCard'
-import { products } from '@/data/mock-data'
+import { LoadingState, ErrorState } from '@/components/common/QueryState'
+import { useProducts } from '@/data/queries'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { capacityLevel } from '@/lib/status'
+import { stockLevelConfig } from '@/lib/status'
 import { cn } from '@/lib/utils'
 
 export function CapacityOverview() {
-  const items = [...products].sort(
+  const { data: products, isLoading, error } = useProducts()
+
+  if (isLoading) {
+    return (
+      <SectionCard title="Stock levels by product">
+        <LoadingState />
+      </SectionCard>
+    )
+  }
+  if (error) {
+    return (
+      <SectionCard title="Stock levels by product">
+        <ErrorState message={error.message} />
+      </SectionCard>
+    )
+  }
+
+  const items = [...(products ?? [])].sort(
     (a, b) => a.unitsPackedThisBatch / a.batchCapacity - b.unitsPackedThisBatch / b.batchCapacity,
   )
 
@@ -24,7 +42,7 @@ export function CapacityOverview() {
       <ScrollArea className="h-80 pr-3">
         <ul className="flex flex-col gap-4 pb-1">
           {items.map((item) => {
-            const level = capacityLevel(item.unitsPackedThisBatch, item.batchCapacity)
+            const levelBadge = stockLevelConfig[item.stockLevel]
             const percent = Math.min(100, Math.round((item.unitsPackedThisBatch / item.batchCapacity) * 100))
             return (
               <li key={item.id}>
@@ -34,10 +52,10 @@ export function CapacityOverview() {
                     <span className="font-mono text-xs tabular-nums text-muted-foreground">
                       {item.unitsPackedThisBatch}/{item.batchCapacity}
                     </span>
-                    {level === 'low' ? (
-                      <Badge className="border-warning/30 bg-warning/15 text-warning">Low stock</Badge>
-                    ) : level === 'high' ? (
-                      <Badge className="border-success/30 bg-success/15 text-success">Well stocked</Badge>
+                    {levelBadge ? (
+                      <Badge variant="outline" className={levelBadge.badgeClass}>
+                        {levelBadge.label}
+                      </Badge>
                     ) : null}
                   </div>
                 </div>
@@ -45,8 +63,8 @@ export function CapacityOverview() {
                   value={percent}
                   className={cn(
                     '[&>div]:transition-all',
-                    level === 'low' && '[&>div]:bg-warning',
-                    level === 'high' && '[&>div]:bg-success',
+                    item.stockLevel === 'low' && '[&>div]:bg-warning',
+                    item.stockLevel === 'high' && '[&>div]:bg-success',
                   )}
                 />
               </li>

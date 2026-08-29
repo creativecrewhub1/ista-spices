@@ -31,3 +31,8 @@ export function formatDateLong(iso: string): string {
     year: 'numeric',
   })
 }
+
+/** Short weekday label for a YYYY-MM-DD date string, e.g. "Mon". */
+export function formatWeekday(isoDate: string): string {
+  return new Date(`${isoDate}T00:00:00`).toLocaleDateString('en-IN', { weekday: 'short' })
+}

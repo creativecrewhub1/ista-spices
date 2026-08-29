@@ -1,10 +1,28 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { SectionCard } from './SectionCard'
-import { productRevenue } from '@/data/mock-data'
+import { LoadingState, ErrorState } from '@/components/common/QueryState'
+import { useRevenueByProduct } from '@/data/queries'
 import { formatCompactNumber } from '@/lib/format'
 
 export function TopSellingChart() {
-  const topFive = [...productRevenue].sort((a, b) => b.unitsSold - a.unitsSold).slice(0, 5)
+  const { data: productRevenue, isLoading, error } = useRevenueByProduct()
+
+  if (isLoading) {
+    return (
+      <SectionCard title="Top 5 selling items">
+        <LoadingState />
+      </SectionCard>
+    )
+  }
+  if (error) {
+    return (
+      <SectionCard title="Top 5 selling items">
+        <ErrorState message={error.message} />
+      </SectionCard>
+    )
+  }
+
+  const topFive = [...(productRevenue ?? [])].sort((a, b) => b.unitsSold - a.unitsSold).slice(0, 5)
   const chartData = [...topFive].reverse()
 
   return (

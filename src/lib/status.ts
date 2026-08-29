@@ -1,4 +1,4 @@
-import type { CustomerSegment, OrderStatus, ProductCategory, SpiceLevel, StockState } from '@/data/types'
+import type { CustomerSegment, OrderStatus, ProductCategory, SpiceLevel, StockLevel, StockState } from '@/data/types'
 
 export type { OrderStatus }
 
@@ -61,9 +61,9 @@ export const segmentConfig: Record<CustomerSegment, { label: string; badgeClass:
   vip: { label: 'VIP', badgeClass: 'bg-primary/15 text-primary border-primary/30' },
 }
 
-export function capacityLevel(unitsPacked: number, batchCapacity: number): 'low' | 'ok' | 'high' {
-  const ratio = unitsPacked / batchCapacity
-  if (ratio >= 0.9) return 'high'
-  if (ratio <= 0.3) return 'low'
-  return 'ok'
+// Pure display mapping only — the low/ok/high classification itself is computed
+// server-side (see Product.stockLevel) so the threshold rule lives in one place.
+export const stockLevelConfig: Partial<Record<StockLevel, { label: string; badgeClass: string }>> = {
+  low: { label: 'Low stock', badgeClass: 'bg-warning/15 text-warning border-warning/30' },
+  high: { label: 'Well stocked', badgeClass: 'bg-success/15 text-success border-success/30' },
 }

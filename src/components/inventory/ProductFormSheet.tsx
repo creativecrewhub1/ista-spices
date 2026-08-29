@@ -45,6 +45,7 @@ const emptyProduct: Product = {
   batchCapacity: 30,
   unitsPackedThisBatch: 0,
   stockState: 'processing',
+  stockLevel: 'ok',
   isActive: true,
 }
 
@@ -52,7 +53,7 @@ export function ProductFormSheet({ open, onOpenChange, product, onSave }: Produc
   const [draft, setDraft] = useState<Product>(product ?? emptyProduct)
 
   useEffect(() => {
-    setDraft(product ?? { ...emptyProduct, id: `p-${Date.now()}` })
+    setDraft(product ?? emptyProduct)
   }, [product, open])
 
   const isEditing = Boolean(product)

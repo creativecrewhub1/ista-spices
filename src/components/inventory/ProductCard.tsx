@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import type { Product } from '@/data/types'
-import { capacityLevel, categoryConfig, spiceLevelConfig, stockStateConfig } from '@/lib/status'
+import { categoryConfig, spiceLevelConfig, stockLevelConfig, stockStateConfig } from '@/lib/status'
 import { formatCurrency } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
@@ -23,7 +23,8 @@ interface ProductCardProps {
 export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
   const category = categoryConfig[product.category]
   const stock = stockStateConfig[product.stockState]
-  const level = capacityLevel(product.unitsPackedThisBatch, product.batchCapacity)
+  const level = product.stockLevel
+  const levelBadge = stockLevelConfig[level]
   const percent = Math.min(100, Math.round((product.unitsPackedThisBatch / product.batchCapacity) * 100))
   const basePack = product.packSizes[0]
   const discountedPrice =
@@ -99,17 +100,24 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
         </div>
 
         <div>
-          <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
+          <div className="mb-1 flex items-center justify-between gap-2 text-xs text-muted-foreground">
             <span>This batch</span>
-            <span className="font-mono tabular-nums">
-              {product.unitsPackedThisBatch}/{product.batchCapacity} units
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="font-mono tabular-nums">
+                {product.unitsPackedThisBatch}/{product.batchCapacity} units
+              </span>
+              {levelBadge ? (
+                <Badge variant="outline" className={levelBadge.badgeClass}>
+                  {levelBadge.label}
+                </Badge>
+              ) : null}
+            </div>
           </div>
           <Progress
             value={percent}
             className={cn(
-              level === 'high' && '[&>div]:bg-warning',
-              level === 'low' && '[&>div]:bg-accent',
+              level === 'low' && '[&>div]:bg-warning',
+              level === 'high' && '[&>div]:bg-success',
             )}
           />
         </div>

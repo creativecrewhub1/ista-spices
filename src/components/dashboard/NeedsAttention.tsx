@@ -1,47 +1,29 @@
-import { AlertTriangle, Clock, PackageX } from 'lucide-react'
+import { Clock, PackageX } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { SectionCard } from './SectionCard'
-import { products, orders } from '@/data/mock-data'
-import { capacityLevel } from '@/lib/status'
+import { LoadingState, ErrorState } from '@/components/common/QueryState'
+import { useNeedsAttention } from '@/data/queries'
 import { formatTime } from '@/lib/format'
-import { DEMO_NOW } from '@/lib/demo-clock'
-
-interface AttentionItem {
-  id: string
-  icon: typeof AlertTriangle
-  text: string
-  meta: string
-  tone: 'destructive' | 'warning'
-  to: string
-}
 
 export function NeedsAttention() {
-  const lowStockItems: AttentionItem[] = products
-    .filter((item) => item.isActive && capacityLevel(item.unitsPackedThisBatch, item.batchCapacity) === 'low')
-    .map((item) => ({
-      id: `stock-${item.id}`,
-      icon: PackageX,
-      text: `${item.name} is running low on stock`,
-      meta: `${item.unitsPackedThisBatch}/${item.batchCapacity} units in hand`,
-      tone: 'warning',
-      to: '/inventory',
-    }))
+  const { data, isLoading, error } = useNeedsAttention()
 
-  const delayedOrders: AttentionItem[] = orders
-    .filter((order) => {
-      if (order.status === 'delivered' || order.status === 'cancelled') return false
-      return new Date(order.eta).getTime() < DEMO_NOW.getTime()
-    })
-    .map((order) => ({
-      id: `order-${order.id}`,
-      icon: Clock,
-      text: `${order.id} for ${order.customerName} is past ETA`,
-      meta: `Expected by ${formatTime(order.eta)}`,
-      tone: 'destructive',
-      to: '/orders',
-    }))
+  if (isLoading) {
+    return (
+      <SectionCard title="Needs attention">
+        <LoadingState />
+      </SectionCard>
+    )
+  }
+  if (error) {
+    return (
+      <SectionCard title="Needs attention">
+        <ErrorState message={error.message} />
+      </SectionCard>
+    )
+  }
 
-  const items = [...delayedOrders, ...lowStockItems]
+  const items = data?.items ?? []
 
   return (
     <SectionCard title="Needs attention">
@@ -49,28 +31,39 @@ export function NeedsAttention() {
         <p className="py-2 text-sm text-muted-foreground">All clear — nothing needs action right now.</p>
       ) : (
         <ul className="flex flex-col gap-1">
-          {items.map(({ id, icon: Icon, text, meta, tone, to }) => (
-            <li key={id}>
-              <Link
-                to={to}
-                className="flex items-start gap-3 rounded-lg px-1 py-2 transition-colors hover:bg-muted"
-              >
-                <span
-                  className={
-                    tone === 'destructive'
-                      ? 'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-destructive/15 text-destructive'
-                      : 'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-warning/15 text-warning'
-                  }
+          {items.map((item) => {
+            const isLate = item.kind === 'late-order'
+            const Icon = isLate ? Clock : PackageX
+            const text = isLate
+              ? `${item.orderId} for ${item.customerName} is past ETA`
+              : `${item.productName} is running low on stock`
+            const meta = isLate
+              ? `Expected by ${formatTime(item.eta)}`
+              : `${item.unitsInHand}/${item.batchCapacity} units in hand`
+
+            return (
+              <li key={item.id}>
+                <Link
+                  to={item.linkTo}
+                  className="flex items-start gap-3 rounded-lg px-1 py-2 transition-colors hover:bg-muted"
                 >
-                  <Icon className="size-4" aria-hidden="true" />
-                </span>
-                <span className="min-w-0">
-                  <span className="block truncate text-sm font-medium text-foreground">{text}</span>
-                  <span className="block text-xs text-muted-foreground">{meta}</span>
-                </span>
-              </Link>
-            </li>
-          ))}
+                  <span
+                    className={
+                      isLate
+                        ? 'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-destructive/15 text-destructive'
+                        : 'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-warning/15 text-warning'
+                    }
+                  >
+                    <Icon className="size-4" aria-hidden="true" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-medium text-foreground">{text}</span>
+                    <span className="block text-xs text-muted-foreground">{meta}</span>
+                  </span>
+                </Link>
+              </li>
+            )
+          })}
         </ul>
       )}
     </SectionCard>

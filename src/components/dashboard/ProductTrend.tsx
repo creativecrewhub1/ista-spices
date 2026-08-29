@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts'
 import { SectionCard } from './SectionCard'
+import { LoadingState, ErrorState } from '@/components/common/QueryState'
 import {
   Select,
   SelectContent,
@@ -8,18 +9,40 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { products, productWeeklyTrends } from '@/data/mock-data'
-import { formatCurrency } from '@/lib/format'
+import { useProducts, useProductRevenueTrend } from '@/data/queries'
+import { formatCurrency, formatWeekday } from '@/lib/format'
 
 export function ProductTrend() {
-  const [productId, setProductId] = useState(products[0].id)
+  const productsQuery = useProducts()
+  const [productId, setProductId] = useState('')
 
-  const { product, trend, weekTotal } = useMemo(() => {
-    const selected = products.find((p) => p.id === productId) ?? products[0]
-    const series = productWeeklyTrends[selected.id] ?? []
-    const total = series.reduce((sum, point) => sum + point.revenue, 0)
-    return { product: selected, trend: series, weekTotal: total }
-  }, [productId])
+  useEffect(() => {
+    if (!productId && productsQuery.data?.length) {
+      setProductId(productsQuery.data[0].id)
+    }
+  }, [productId, productsQuery.data])
+
+  const trendQuery = useProductRevenueTrend(productId, 7)
+
+  if (productsQuery.isLoading) {
+    return (
+      <SectionCard title="Product revenue trend">
+        <LoadingState />
+      </SectionCard>
+    )
+  }
+  if (productsQuery.error) {
+    return (
+      <SectionCard title="Product revenue trend">
+        <ErrorState message={productsQuery.error.message} />
+      </SectionCard>
+    )
+  }
+
+  const products = productsQuery.data ?? []
+  const selected = products.find((p) => p.id === productId)
+  const trend = trendQuery.data ?? []
+  const weekTotal = trend.reduce((sum, point) => sum + point.revenue, 0)
 
   return (
     <SectionCard
@@ -43,42 +66,50 @@ export function ProductTrend() {
         <span className="font-mono text-xl font-semibold tabular-nums text-foreground">
           {formatCurrency(weekTotal)}
         </span>
-        <span className="text-xs text-muted-foreground">this week &middot; {product.name}</span>
+        <span className="text-xs text-muted-foreground">this week &middot; {selected?.name}</span>
       </div>
-      <div className="h-40 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={trend} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
-            <defs>
-              <linearGradient id="productRevenueFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.35} />
-                <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <XAxis
-              dataKey="label"
-              tickLine={false}
-              axisLine={false}
-              tick={{ fontSize: 11, fill: 'var(--color-muted-foreground)' }}
-            />
-            <Tooltip
-              formatter={(value) => [formatCurrency(Number(value)), 'Revenue']}
-              contentStyle={{
-                background: 'var(--color-card)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 8,
-                fontSize: 12,
-              }}
-            />
-            <Area
-              type="monotone"
-              dataKey="revenue"
-              stroke="var(--color-primary)"
-              strokeWidth={2}
-              fill="url(#productRevenueFill)"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
+      {trendQuery.isLoading ? (
+        <LoadingState />
+      ) : trendQuery.error ? (
+        <ErrorState message={trendQuery.error.message} />
+      ) : (
+        <div className="h-40 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={trend} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
+              <defs>
+                <linearGradient id="productRevenueFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <XAxis
+                dataKey="label"
+                tickFormatter={formatWeekday}
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 11, fill: 'var(--color-muted-foreground)' }}
+              />
+              <Tooltip
+                labelFormatter={(value) => formatWeekday(String(value))}
+                formatter={(value) => [formatCurrency(Number(value)), 'Revenue']}
+                contentStyle={{
+                  background: 'var(--color-card)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 8,
+                  fontSize: 12,
+                }}
+              />
+              <Area
+                type="monotone"
+                dataKey="revenue"
+                stroke="var(--color-primary)"
+                strokeWidth={2}
+                fill="url(#productRevenueFill)"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      )}
     </SectionCard>
   )
 }

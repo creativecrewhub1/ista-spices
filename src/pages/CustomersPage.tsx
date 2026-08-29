@@ -5,29 +5,33 @@ import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CustomerCard } from '@/components/customers/CustomerCard'
 import { CustomerDetailSheet } from '@/components/customers/CustomerDetailSheet'
-import { customers, orders } from '@/data/mock-data'
+import { LoadingState, ErrorState } from '@/components/common/QueryState'
+import { useCustomers, useOrders } from '@/data/queries'
 import type { Customer, CustomerSegment } from '@/data/types'
 
 type FilterValue = 'all' | CustomerSegment
 
 export function CustomersPage() {
+  const { data: customers, isLoading, error } = useCustomers()
+  const { data: orders } = useOrders()
+
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<FilterValue>('all')
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
 
   const filteredCustomers = useMemo(() => {
-    return customers.filter((customer) => {
+    return (customers ?? []).filter((customer) => {
       const matchesQuery =
         customer.name.toLowerCase().includes(query.toLowerCase()) ||
         customer.phone.includes(query)
       const matchesFilter = filter === 'all' || customer.segment === filter
       return matchesQuery && matchesFilter
     })
-  }, [query, filter])
+  }, [customers, query, filter])
 
   return (
     <div className="pb-8">
-      <TopBar title="Customers" subtitle={`${customers.length} total customers`} />
+      <TopBar title="Customers" subtitle={`${customers?.length ?? 0} total customers`} />
 
       <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 md:px-8 md:py-6">
         <div className="relative sm:max-w-xs">
@@ -50,7 +54,11 @@ export function CustomersPage() {
           </TabsList>
         </Tabs>
 
-        {filteredCustomers.length === 0 ? (
+        {isLoading ? (
+          <LoadingState label="Loading customers…" />
+        ) : error ? (
+          <ErrorState message={error.message} />
+        ) : filteredCustomers.length === 0 ? (
           <p className="py-10 text-center text-sm text-muted-foreground">No customers match your search.</p>
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -63,7 +71,7 @@ export function CustomersPage() {
 
       <CustomerDetailSheet
         customer={selectedCustomer}
-        orders={orders}
+        orders={orders ?? []}
         onOpenChange={(open) => !open && setSelectedCustomer(null)}
       />
     </div>

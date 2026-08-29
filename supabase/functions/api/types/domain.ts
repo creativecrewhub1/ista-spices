@@ -1,5 +1,8 @@
-export type ProductCategory = 'spice-powder' | 'cooking-oil'
+// Domain types returned to the frontend. Kept in lockstep with
+// src/data/types.ts on the client — the API's job is to hand back
+// data shaped exactly like this, so the frontend never has to reshape it.
 
+export type ProductCategory = 'spice-powder' | 'cooking-oil'
 export type PackSizeLabel = '250g' | '500g' | '1kg' | '2kg'
 
 export interface PackSize {
@@ -8,9 +11,7 @@ export interface PackSize {
 }
 
 export type StockState = 'processing' | 'packing' | 'ready'
-
 export type SpiceLevel = 'mild' | 'medium' | 'hot'
-
 export type StockLevel = 'low' | 'ok' | 'high'
 
 export interface Product {
@@ -24,7 +25,7 @@ export interface Product {
   batchCapacity: number
   unitsPackedThisBatch: number
   stockState: StockState
-  /** low/ok/high classification, computed server-side from unitsPackedThisBatch vs batchCapacity. */
+  /** low/ok/high classification of unitsPackedThisBatch vs batchCapacity — a backend decision, not a frontend threshold. */
   stockLevel: StockLevel
   isActive: boolean
 }
@@ -128,3 +129,7 @@ export type AttentionItem =
       customerName: string
       eta: string
     }
+
+export interface NeedsAttentionResponse {
+  items: AttentionItem[]
+}
