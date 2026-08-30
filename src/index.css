@@ -58,94 +58,100 @@
   --radius-2xl: calc(var(--radius) * 1.8);
 }
 
+/*
+ * Admin palette — color-matched to the storefront's warm neutral base and
+ * muted amber-gold brand color (see .storefront below), so the two halves
+ * of the product read as one brand. Radius/density stay dashboard-appropriate;
+ * only the color values change.
+ */
 :root {
   --radius: 0.75rem;
 
-  --background: #fff7ed;
-  --foreground: #0f172a;
+  --background: #faf8f5;
+  --foreground: #1c1917;
   --card: #ffffff;
-  --card-foreground: #0f172a;
+  --card-foreground: #1c1917;
   --popover: #ffffff;
-  --popover-foreground: #0f172a;
+  --popover-foreground: #1c1917;
 
-  --primary: #ea580c;
+  --primary: #a8631a;
   --primary-foreground: #ffffff;
-  --secondary: #fef0e6;
-  --secondary-foreground: #9a3412;
-  --accent: #2563eb;
+  --secondary: #f1ece4;
+  --secondary-foreground: #6b4a24;
+  --accent: #5b7c8f;
   --accent-foreground: #ffffff;
 
-  --muted: #fdf4f0;
+  --muted: #f1ece4;
   --muted-foreground: #78716c;
-  --border: #fce3cc;
-  --input: #fce3cc;
-  --ring: #ea580c;
+  --border: #e4ddd1;
+  --input: #e4ddd1;
+  --ring: #a8631a;
 
-  --destructive: #dc2626;
+  --destructive: #b3261e;
   --destructive-foreground: #ffffff;
-  --success: #16a34a;
+  --success: #3f6b4a;
   --success-foreground: #ffffff;
-  --warning: #d97706;
+  --warning: #c17817;
   --warning-foreground: #ffffff;
 
-  --chart-1: #ea580c;
-  --chart-2: #2563eb;
-  --chart-3: #16a34a;
-  --chart-4: #d97706;
-  --chart-5: #7c3aed;
+  --chart-1: #a8631a;
+  --chart-2: #5b7c8f;
+  --chart-3: #3f6b4a;
+  --chart-4: #c17817;
+  --chart-5: #7c5a8b;
 
-  --sidebar: #fff7ed;
-  --sidebar-foreground: #0f172a;
-  --sidebar-primary: #ea580c;
+  --sidebar: #faf8f5;
+  --sidebar-foreground: #1c1917;
+  --sidebar-primary: #a8631a;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #fef0e6;
-  --sidebar-accent-foreground: #9a3412;
-  --sidebar-border: #fce3cc;
-  --sidebar-ring: #ea580c;
+  --sidebar-accent: #f1ece4;
+  --sidebar-accent-foreground: #6b4a24;
+  --sidebar-border: #e4ddd1;
+  --sidebar-ring: #a8631a;
 }
 
 .dark {
-  --background: #120d08;
-  --foreground: #f4ede4;
-  --card: #1c140d;
-  --card-foreground: #f4ede4;
-  --popover: #1c140d;
-  --popover-foreground: #f4ede4;
+  --background: #17140f;
+  --foreground: #f3ede3;
+  --card: #201b15;
+  --card-foreground: #f3ede3;
+  --popover: #201b15;
+  --popover-foreground: #f3ede3;
 
-  --primary: #fb7a2c;
-  --primary-foreground: #1c140d;
-  --secondary: #2b1d12;
-  --secondary-foreground: #fdba8c;
-  --accent: #5b8bf0;
-  --accent-foreground: #0b1220;
+  --primary: #c98b46;
+  --primary-foreground: #17140f;
+  --secondary: #2a241c;
+  --secondary-foreground: #e8ddd0;
+  --accent: #7a9cb0;
+  --accent-foreground: #0f1a12;
 
-  --muted: #241a11;
-  --muted-foreground: #b6a695;
-  --border: #33241680;
-  --input: #33241699;
-  --ring: #fb7a2c;
+  --muted: #2a241c;
+  --muted-foreground: #a89e8f;
+  --border: #372f24;
+  --input: #372f24;
+  --ring: #c98b46;
 
-  --destructive: #f87171;
-  --destructive-foreground: #1c140d;
-  --success: #4ade80;
-  --success-foreground: #0b1a0f;
-  --warning: #fbbf24;
-  --warning-foreground: #1c140d;
+  --destructive: #e35d54;
+  --destructive-foreground: #17140f;
+  --success: #6b9b78;
+  --success-foreground: #0f1a12;
+  --warning: #d99a4e;
+  --warning-foreground: #17140f;
 
-  --chart-1: #fb7a2c;
-  --chart-2: #5b8bf0;
-  --chart-3: #4ade80;
-  --chart-4: #fbbf24;
-  --chart-5: #a78bfa;
+  --chart-1: #c98b46;
+  --chart-2: #7a9cb0;
+  --chart-3: #6b9b78;
+  --chart-4: #d99a4e;
+  --chart-5: #a67ea0;
 
-  --sidebar: #1c140d;
-  --sidebar-foreground: #f4ede4;
-  --sidebar-primary: #fb7a2c;
-  --sidebar-primary-foreground: #1c140d;
-  --sidebar-accent: #2b1d12;
-  --sidebar-accent-foreground: #fdba8c;
-  --sidebar-border: #33241680;
-  --sidebar-ring: #fb7a2c;
+  --sidebar: #201b15;
+  --sidebar-foreground: #f3ede3;
+  --sidebar-primary: #c98b46;
+  --sidebar-primary-foreground: #17140f;
+  --sidebar-accent: #2a241c;
+  --sidebar-accent-foreground: #e8ddd0;
+  --sidebar-border: #372f24;
+  --sidebar-ring: #c98b46;
 }
 
 /*
