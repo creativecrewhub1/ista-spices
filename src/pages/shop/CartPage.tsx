@@ -20,8 +20,8 @@ export function CartPage() {
 
         {items.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-16 text-center">
-            <span className="flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
-              <ShoppingBag className="size-5" aria-hidden="true" />
+            <span className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <ShoppingBag className="size-6" aria-hidden="true" />
             </span>
             <p className="font-display text-xl text-foreground">Your cart is empty</p>
             <p className="max-w-sm text-sm text-muted-foreground">
@@ -34,9 +34,12 @@ export function CartPage() {
         ) : (
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_320px]">
             <div>
-              <ul className="flex flex-col divide-y divide-border border-y border-border">
+              <ul className="flex flex-col gap-3">
                 {items.map((item) => (
-                  <li key={`${item.productId}-${item.packSize}`} className="flex items-center gap-4 py-5">
+                  <li
+                    key={`${item.productId}-${item.packSize}`}
+                    className="flex items-center gap-4 rounded-2xl bg-card p-4 shadow-sm ring-1 ring-black/5"
+                  >
                     <ProductMonogram id={item.productId} name={item.productName} className="size-16" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-foreground">{item.productName}</p>
@@ -90,7 +93,7 @@ export function CartPage() {
               </Button>
             </div>
 
-            <aside className="flex h-fit flex-col gap-4 rounded-md border border-border p-6 lg:sticky lg:top-24">
+            <aside className="flex h-fit flex-col gap-4 rounded-2xl bg-card p-6 shadow-sm ring-1 ring-black/5 lg:sticky lg:top-24">
               <h2 className="text-sm font-medium text-foreground">Order summary</h2>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Subtotal</span>

@@ -159,69 +159,79 @@
 
 /*
  * Storefront design system — scoped under .storefront so it never touches
- * the admin panel's tokens. Warm neutral base, single restrained accent
- * (muted amber-gold), Playfair Display for editorial headings + Inter for
- * everything functional. Smaller radius, borders over shadows.
+ * the admin panel's tokens. Vivid warm-orange brand color on a bright cream
+ * base — the actual spice-shop energy (think Spicest/Rumi Spice/Kitchen
+ * Hutt), not muted editorial minimalism. Friendlier, rounder shapes; pill
+ * buttons for primary CTAs (see .storefront .btn-pill / Button usage).
  */
 .storefront {
-  --radius: 0.375rem;
+  --radius: 1rem;
   font-family: var(--font-store-sans);
 
-  --background: #faf8f5;
-  --foreground: #1c1917;
+  --background: #fffaf3;
+  --foreground: #2b1b12;
   --card: #ffffff;
-  --card-foreground: #1c1917;
+  --card-foreground: #2b1b12;
   --popover: #ffffff;
-  --popover-foreground: #1c1917;
+  --popover-foreground: #2b1b12;
 
-  --primary: #1c1917;
-  --primary-foreground: #faf8f5;
-  --secondary: #f1ece4;
-  --secondary-foreground: #1c1917;
-  --accent: #a8631a;
-  --accent-foreground: #ffffff;
+  --primary: #ea580c;
+  --primary-foreground: #ffffff;
+  --secondary: #fff1e0;
+  --secondary-foreground: #9a3412;
+  --accent: #e8a33d;
+  --accent-foreground: #2b1b12;
 
-  --muted: #f1ece4;
-  --muted-foreground: #6b6560;
-  --border: #e4ddd1;
-  --input: #e4ddd1;
-  --ring: #a8631a;
+  --muted: #fff1e0;
+  --muted-foreground: #8a6a52;
+  --border: #f6dfc0;
+  --input: #f6dfc0;
+  --ring: #ea580c;
 
-  --destructive: #b3261e;
+  --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  --success: #3f6b4a;
+  --success: #16a34a;
   --success-foreground: #ffffff;
-  --warning: #a8631a;
+  --warning: #d97706;
   --warning-foreground: #ffffff;
 }
 
 .storefront.dark {
-  --background: #17140f;
-  --foreground: #f3ede3;
-  --card: #201b15;
-  --card-foreground: #f3ede3;
-  --popover: #201b15;
-  --popover-foreground: #f3ede3;
+  --background: #1c130a;
+  --foreground: #fdf1e3;
+  --card: #271b0f;
+  --card-foreground: #fdf1e3;
+  --popover: #271b0f;
+  --popover-foreground: #fdf1e3;
 
-  --primary: #f3ede3;
-  --primary-foreground: #17140f;
-  --secondary: #2a241c;
-  --secondary-foreground: #f3ede3;
-  --accent: #c98b46;
-  --accent-foreground: #17140f;
+  --primary: #fb923c;
+  --primary-foreground: #1c130a;
+  --secondary: #3a2714;
+  --secondary-foreground: #fdba8c;
+  --accent: #f0b656;
+  --accent-foreground: #1c130a;
 
-  --muted: #2a241c;
-  --muted-foreground: #a89e8f;
-  --border: #372f24;
-  --input: #372f24;
-  --ring: #c98b46;
+  --muted: #3a2714;
+  --muted-foreground: #c9ab8c;
+  --border: #4a3319;
+  --input: #4a3319;
+  --ring: #fb923c;
 
-  --destructive: #e35d54;
-  --destructive-foreground: #17140f;
-  --success: #6b9b78;
-  --success-foreground: #0f1a12;
-  --warning: #c98b46;
-  --warning-foreground: #17140f;
+  --destructive: #f87171;
+  --destructive-foreground: #1c130a;
+  --success: #4ade80;
+  --success-foreground: #0b1a0f;
+  --warning: #fbbf24;
+  --warning-foreground: #1c130a;
+}
+
+/* Primary CTAs across the storefront read as pills, not soft-rounded
+   rectangles — the one consistent signature across real spice-shop sites.
+   Icon-only buttons are excluded: quantity steppers rely on rounded-l-md/
+   rounded-r-md to read as one segmented control, not three separate pills. */
+.storefront button[data-slot='button']:not([data-size='icon']):not([data-size='icon-sm']):not([data-size='icon-lg']),
+.storefront a[data-slot='button']:not([data-size='icon']):not([data-size='icon-sm']):not([data-size='icon-lg']) {
+  border-radius: 9999px;
 }
 
 .storefront h1,

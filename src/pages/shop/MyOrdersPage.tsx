@@ -19,7 +19,7 @@ export function MyOrdersPage() {
     <div className={cn('storefront min-h-svh bg-background pb-8 font-sans text-foreground', pageEnter)}>
       <ShopHeader />
       <div className="mx-auto max-w-3xl px-4 py-8 md:px-8">
-        <h1 className="mb-6 font-display text-3xl font-medium text-foreground sm:text-4xl">My orders</h1>
+        <h1 className="mb-6 font-display text-3xl font-bold text-foreground sm:text-4xl">My orders</h1>
 
         {isLoading ? (
           <CardListSkeleton count={3} />
@@ -27,8 +27,8 @@ export function MyOrdersPage() {
           <ErrorState message={error.message} />
         ) : !orders?.length ? (
           <div className="flex flex-col items-center gap-3 py-16 text-center">
-            <span className="flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
-              <Package className="size-5" aria-hidden="true" />
+            <span className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <Package className="size-6" aria-hidden="true" />
             </span>
             <p className="font-display text-xl text-foreground">No orders yet</p>
             <p className="max-w-sm text-sm text-muted-foreground">You haven&apos;t placed any orders yet.</p>
@@ -37,9 +37,12 @@ export function MyOrdersPage() {
             </Button>
           </div>
         ) : (
-          <ul className="flex flex-col divide-y divide-border rounded-md border border-border">
+          <ul className="flex flex-col gap-3">
             {orders.map((order) => (
-              <li key={order.id} className="flex flex-col gap-3 p-5">
+              <li
+                key={order.id}
+                className="flex flex-col gap-3 rounded-2xl bg-card p-5 shadow-sm ring-1 ring-black/5"
+              >
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-medium text-foreground">{order.id}</p>
