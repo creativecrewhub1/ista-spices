@@ -8,7 +8,10 @@
 @theme inline {
   --font-sans: 'Fira Sans', system-ui, sans-serif;
   --font-mono: 'Fira Code', ui-monospace, monospace;
-  --font-heading: var(--font-sans);
+  /* Same editorial serif as the storefront — every page title and card
+     heading (TopBar, CardTitle, SideNav wordmark all use font-heading)
+     picks this up, so the two halves of the app share one identity. */
+  --font-heading: 'Playfair Display', Georgia, serif;
 
   /* Storefront-only typefaces (see .storefront scope below) */
   --font-store-sans: 'Inter', system-ui, sans-serif;
@@ -65,7 +68,7 @@
  * only the color values change.
  */
 :root {
-  --radius: 0.75rem;
+  --radius: 0.5rem;
 
   --background: #faf8f5;
   --foreground: #1c1917;
