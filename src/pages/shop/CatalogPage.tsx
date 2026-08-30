@@ -1,17 +1,10 @@
 import { useState } from 'react'
 import { Check, Plus } from 'lucide-react'
 import { ShopHeader } from '@/components/shop/ShopHeader'
+import { ProductVisual } from '@/components/shop/ProductVisual'
 import { CardListSkeleton, ErrorState } from '@/components/common/QueryState'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { useCatalog } from '@/data/queries'
 import { useCart } from '@/shop/CartContext'
 import { categoryConfig, spiceLevelConfig } from '@/lib/status'
@@ -26,6 +19,7 @@ function ProductTile({ product }: { product: CatalogProduct }) {
   const [added, setAdded] = useState(false)
 
   const price = product.packSizes.find((p) => p.size === size)?.price ?? 0
+  const category = categoryConfig[product.category]
 
   function handleAdd() {
     addItem(product, size, 1)
@@ -34,58 +28,69 @@ function ProductTile({ product }: { product: CatalogProduct }) {
   }
 
   return (
-    <Card className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
-      <CardHeader>
-        <div className="flex items-start justify-between gap-2">
-          <CardTitle>{product.name}</CardTitle>
-          <Badge variant="outline" className={categoryConfig[product.category].badgeClass}>
-            {categoryConfig[product.category].label}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        <p className="text-sm text-muted-foreground">{product.description}</p>
-        {product.spiceLevel ? (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span className={`size-2 rounded-full ${spiceLevelConfig[product.spiceLevel].dotClass}`} />
-            {spiceLevelConfig[product.spiceLevel].label}
-          </div>
-        ) : null}
+    <div className="group flex flex-col">
+      <ProductVisual
+        id={product.id}
+        category={product.category}
+        className="aspect-[4/3] w-full rounded-md transition-transform duration-300 group-hover:scale-[1.01]"
+      />
 
-        <div className="flex items-center gap-2">
-          <Select value={size} onValueChange={(v) => setSize(v as PackSizeLabel)}>
-            <SelectTrigger className="w-24">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {product.packSizes.map((pack) => (
-                <SelectItem key={pack.size} value={pack.size}>
-                  {pack.size}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <span className="font-mono text-sm font-semibold tabular-nums">{formatCurrency(price)}</span>
-          <Button
-            size="sm"
-            className={cn('ml-auto gap-1.5 transition-colors', added && 'bg-success hover:bg-success')}
-            onClick={handleAdd}
-          >
-            {added ? (
-              <>
-                <Check className="size-3.5 motion-safe:animate-in motion-safe:zoom-in-50" aria-hidden="true" />
-                Added
-              </>
-            ) : (
-              <>
-                <Plus className="size-3.5" aria-hidden="true" />
-                Add to cart
-              </>
-            )}
-          </Button>
+      <div className="mt-3 flex items-start justify-between gap-2">
+        <h3 className="text-sm font-medium text-foreground">{product.name}</h3>
+        <Badge variant="outline" className={cn('shrink-0 text-[11px]', category.badgeClass)}>
+          {category.label}
+        </Badge>
+      </div>
+      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{product.description}</p>
+      {product.spiceLevel ? (
+        <div className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span className={cn('size-1.5 rounded-full', spiceLevelConfig[product.spiceLevel].dotClass)} />
+          {spiceLevelConfig[product.spiceLevel].label}
         </div>
-      </CardContent>
-    </Card>
+      ) : null}
+
+      <div className="mt-3 flex flex-wrap gap-1.5" role="radiogroup" aria-label={`Pack size for ${product.name}`}>
+        {product.packSizes.map((pack) => (
+          <button
+            key={pack.size}
+            type="button"
+            role="radio"
+            aria-checked={size === pack.size}
+            onClick={() => setSize(pack.size)}
+            className={cn(
+              'rounded-full border px-2.5 py-1 text-xs transition-colors',
+              size === pack.size
+                ? 'border-foreground bg-foreground text-primary-foreground'
+                : 'border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground',
+            )}
+          >
+            {pack.size}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-3 flex items-center justify-between gap-2">
+        <span className="font-medium tabular-nums text-foreground">{formatCurrency(price)}</span>
+        <Button
+          size="sm"
+          variant="outline"
+          className={cn('gap-1.5 transition-colors', added && 'border-success bg-success/10 text-success hover:bg-success/10')}
+          onClick={handleAdd}
+        >
+          {added ? (
+            <>
+              <Check className="size-3.5 motion-safe:animate-in motion-safe:zoom-in-50" aria-hidden="true" />
+              Added
+            </>
+          ) : (
+            <>
+              <Plus className="size-3.5" aria-hidden="true" />
+              Add
+            </>
+          )}
+        </Button>
+      </div>
+    </div>
   )
 }
 
@@ -93,18 +98,20 @@ export function CatalogPage() {
   const { data: products, isLoading, error } = useCatalog()
 
   return (
-    <div className={cn('pb-8', pageEnter)}>
+    <div className={cn('storefront min-h-svh bg-background pb-8 font-sans text-foreground', pageEnter)}>
       <ShopHeader />
-      <div className="mx-auto max-w-6xl px-4 py-6 md:px-8">
-        <h1 className="mb-1 font-heading text-xl font-semibold">Shop spices &amp; oils</h1>
-        <p className="mb-6 text-sm text-muted-foreground">Freshly ground spices and cold-pressed oils, packed to order.</p>
+      <div className="mx-auto max-w-6xl px-4 py-8 md:px-8">
+        <h1 className="mb-1.5 font-display text-3xl font-medium text-foreground sm:text-4xl">
+          Shop spices &amp; oils
+        </h1>
+        <p className="mb-8 text-muted-foreground">Freshly ground spices and cold-pressed oils, packed to order.</p>
 
         {isLoading ? (
           <CardListSkeleton />
         ) : error ? (
           <ErrorState message={error.message} />
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-x-5 gap-y-9 sm:grid-cols-3 xl:grid-cols-4">
             {products?.map((product) => (
               <ProductTile key={product.id} product={product} />
             ))}
