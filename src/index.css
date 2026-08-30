@@ -62,99 +62,98 @@
 }
 
 /*
- * Admin palette — color-matched to the storefront's warm neutral base and
- * muted amber-gold brand color (see .storefront below), so the two halves
- * of the product read as one brand. Radius/density stay dashboard-appropriate;
- * only the color values change.
+ * Admin palette — same vivid warm-orange brand as the storefront (see
+ * .storefront below) so the whole product, not just the customer shop,
+ * reads as the vibrant spice-shop brand rather than a muted generic ERP.
  */
 :root {
-  --radius: 0.5rem;
+  --radius: 1rem;
 
-  --background: #faf8f5;
-  --foreground: #1c1917;
+  --background: #fffaf3;
+  --foreground: #2b1b12;
   --card: #ffffff;
-  --card-foreground: #1c1917;
+  --card-foreground: #2b1b12;
   --popover: #ffffff;
-  --popover-foreground: #1c1917;
+  --popover-foreground: #2b1b12;
 
-  --primary: #a8631a;
+  --primary: #ea580c;
   --primary-foreground: #ffffff;
-  --secondary: #f1ece4;
-  --secondary-foreground: #6b4a24;
-  --accent: #5b7c8f;
-  --accent-foreground: #ffffff;
+  --secondary: #fff1e0;
+  --secondary-foreground: #9a3412;
+  --accent: #e8a33d;
+  --accent-foreground: #2b1b12;
 
-  --muted: #f1ece4;
-  --muted-foreground: #78716c;
-  --border: #e4ddd1;
-  --input: #e4ddd1;
-  --ring: #a8631a;
+  --muted: #fff1e0;
+  --muted-foreground: #8a6a52;
+  --border: #f6dfc0;
+  --input: #f6dfc0;
+  --ring: #ea580c;
 
-  --destructive: #b3261e;
+  --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  --success: #3f6b4a;
+  --success: #16a34a;
   --success-foreground: #ffffff;
-  --warning: #c17817;
+  --warning: #d97706;
   --warning-foreground: #ffffff;
 
-  --chart-1: #a8631a;
-  --chart-2: #5b7c8f;
-  --chart-3: #3f6b4a;
-  --chart-4: #c17817;
+  --chart-1: #ea580c;
+  --chart-2: #e8a33d;
+  --chart-3: #16a34a;
+  --chart-4: #9a3412;
   --chart-5: #7c5a8b;
 
-  --sidebar: #faf8f5;
-  --sidebar-foreground: #1c1917;
-  --sidebar-primary: #a8631a;
+  --sidebar: #fffaf3;
+  --sidebar-foreground: #2b1b12;
+  --sidebar-primary: #ea580c;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f1ece4;
-  --sidebar-accent-foreground: #6b4a24;
-  --sidebar-border: #e4ddd1;
-  --sidebar-ring: #a8631a;
+  --sidebar-accent: #fff1e0;
+  --sidebar-accent-foreground: #9a3412;
+  --sidebar-border: #f6dfc0;
+  --sidebar-ring: #ea580c;
 }
 
 .dark {
-  --background: #17140f;
-  --foreground: #f3ede3;
-  --card: #201b15;
-  --card-foreground: #f3ede3;
-  --popover: #201b15;
-  --popover-foreground: #f3ede3;
+  --background: #1c130a;
+  --foreground: #fdf1e3;
+  --card: #271b0f;
+  --card-foreground: #fdf1e3;
+  --popover: #271b0f;
+  --popover-foreground: #fdf1e3;
 
-  --primary: #c98b46;
-  --primary-foreground: #17140f;
-  --secondary: #2a241c;
-  --secondary-foreground: #e8ddd0;
-  --accent: #7a9cb0;
-  --accent-foreground: #0f1a12;
+  --primary: #fb923c;
+  --primary-foreground: #1c130a;
+  --secondary: #3a2714;
+  --secondary-foreground: #fdba8c;
+  --accent: #f0b656;
+  --accent-foreground: #1c130a;
 
-  --muted: #2a241c;
-  --muted-foreground: #a89e8f;
-  --border: #372f24;
-  --input: #372f24;
-  --ring: #c98b46;
+  --muted: #3a2714;
+  --muted-foreground: #c9ab8c;
+  --border: #4a3319;
+  --input: #4a3319;
+  --ring: #fb923c;
 
-  --destructive: #e35d54;
-  --destructive-foreground: #17140f;
-  --success: #6b9b78;
-  --success-foreground: #0f1a12;
-  --warning: #d99a4e;
-  --warning-foreground: #17140f;
+  --destructive: #f87171;
+  --destructive-foreground: #1c130a;
+  --success: #4ade80;
+  --success-foreground: #0b1a0f;
+  --warning: #fbbf24;
+  --warning-foreground: #1c130a;
 
-  --chart-1: #c98b46;
-  --chart-2: #7a9cb0;
-  --chart-3: #6b9b78;
-  --chart-4: #d99a4e;
+  --chart-1: #fb923c;
+  --chart-2: #f0b656;
+  --chart-3: #4ade80;
+  --chart-4: #fdba8c;
   --chart-5: #a67ea0;
 
-  --sidebar: #201b15;
-  --sidebar-foreground: #f3ede3;
-  --sidebar-primary: #c98b46;
-  --sidebar-primary-foreground: #17140f;
-  --sidebar-accent: #2a241c;
-  --sidebar-accent-foreground: #e8ddd0;
-  --sidebar-border: #372f24;
-  --sidebar-ring: #c98b46;
+  --sidebar: #271b0f;
+  --sidebar-foreground: #fdf1e3;
+  --sidebar-primary: #fb923c;
+  --sidebar-primary-foreground: #1c130a;
+  --sidebar-accent: #3a2714;
+  --sidebar-accent-foreground: #fdba8c;
+  --sidebar-border: #4a3319;
+  --sidebar-ring: #fb923c;
 }
 
 /*
@@ -225,12 +224,13 @@
   --warning-foreground: #1c130a;
 }
 
-/* Primary CTAs across the storefront read as pills, not soft-rounded
-   rectangles — the one consistent signature across real spice-shop sites.
-   Icon-only buttons are excluded: quantity steppers rely on rounded-l-md/
-   rounded-r-md to read as one segmented control, not three separate pills. */
-.storefront button[data-slot='button']:not([data-size='icon']):not([data-size='icon-sm']):not([data-size='icon-lg']),
-.storefront a[data-slot='button']:not([data-size='icon']):not([data-size='icon-sm']):not([data-size='icon-lg']) {
+/* Buttons across the whole app (admin + storefront) read as pills, not
+   soft-rounded rectangles — the one consistent signature across real
+   spice-shop sites. Icon-only buttons are excluded: quantity steppers and
+   icon-button groups rely on rounded-l-md/rounded-r-md to read as one
+   segmented control, not separate pills. */
+button[data-slot='button']:not([data-size='icon']):not([data-size='icon-sm']):not([data-size='icon-lg']),
+a[data-slot='button']:not([data-size='icon']):not([data-size='icon-sm']):not([data-size='icon-lg']) {
   border-radius: 9999px;
 }
 
