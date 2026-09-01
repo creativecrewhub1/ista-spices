@@ -6,6 +6,7 @@ import type {
   Customer,
   InventoryItem,
   Order,
+  OrderStatus,
   Product,
   ProductRevenueRow,
   RevenuePoint,
@@ -42,10 +43,30 @@ export function useCustomers() {
   })
 }
 
-export function useOrders() {
+/**
+ * Admin order list. Status and search are applied server-side (indexed) —
+ * `keepPreviousData` keeps the current rows on screen while a new filter
+ * loads, so switching filters doesn't flash an empty list.
+ */
+export function useOrders(filters: { status?: string; search?: string } = {}) {
+  const params = new URLSearchParams()
+  if (filters.status) params.set('status', filters.status)
+  if (filters.search) params.set('q', filters.search)
+  const queryString = params.toString()
+
   return useQuery({
-    queryKey: ['orders'],
-    queryFn: () => api.get<Order[]>('/orders'),
+    queryKey: ['orders', filters.status ?? null, filters.search ?? null],
+    queryFn: () => api.get<Order[]>(`/orders${queryString ? `?${queryString}` : ''}`),
+    placeholderData: (previous) => previous,
+  })
+}
+
+/** Whole-business status tallies for the KPI tiles — independent of whatever
+ * filter the order list is currently under, so the numbers never shift. */
+export function useOrderStatusCounts() {
+  return useQuery({
+    queryKey: ['order-status-counts'],
+    queryFn: () => api.get<Record<OrderStatus, number>>('/orders/counts'),
   })
 }
 

@@ -1,5 +1,8 @@
 import { supabase } from '../lib/supabaseClient.ts'
-import type { Order, OrderStatus, PackSizeLabel } from '../types/domain.ts'
+import type { Order, OrderListFilters, OrderStatus, PackSizeLabel } from '../types/domain.ts'
+
+/** Every read of an order returns the same shape — one place to change it. */
+const ORDER_SELECT = '*, customers(name, phone, email), order_items(*, products(name, image_url))'
 
 // deno-lint-ignore no-explicit-any
 function mapRow(row: any): Order {
@@ -8,6 +11,7 @@ function mapRow(row: any): Order {
     (item: any) => ({
       productId: item.product_id,
       name: item.products?.name ?? item.product_id,
+      imageUrl: item.products?.image_url ?? null,
       packSize: item.pack_size,
       qty: item.qty,
       price: Number(item.price),
@@ -23,6 +27,8 @@ function mapRow(row: any): Order {
     id: row.id,
     customerId: row.customer_id,
     customerName: row.customers?.name ?? '',
+    customerPhone: row.customers?.phone ?? null,
+    customerEmail: row.customers?.email ?? null,
     items,
     total,
     status: row.status,
@@ -35,30 +41,94 @@ function mapRow(row: any): Order {
   }
 }
 
-export async function list(): Promise<Order[]> {
-  const { data, error } = await supabase
-    .from('orders')
-    .select('*, customers(name), order_items(*, products(name))')
-    .order('placed_at', { ascending: false })
+export async function list(filters: OrderListFilters = {}): Promise<Order[]> {
+  let query = supabase.from('orders').select(ORDER_SELECT)
+
+  // Hits orders_status_placed_at_idx.
+  if (filters.status) query = query.eq('status', filters.status)
+
+  // Trigram-indexed ILIKE on the order id; customer-name matches are applied
+  // after the fetch since PostgREST can't OR across an embedded table.
+  const search = filters.search?.trim()
+  if (search) query = query.ilike('id', `%${search}%`)
+
+  const { data, error } = await query.order('placed_at', { ascending: false })
   if (error) throw error
   return data.map(mapRow)
 }
 
-export async function updateStatus(orderId: string, status: OrderStatus): Promise<void> {
-  const { error } = await supabase
+/**
+ * Status tallies for the KPI tiles, read from the order_status_counts view.
+ * Kept separate from the list query so the tiles keep showing whole-business
+ * totals while the list itself is filtered down.
+ */
+export async function getStatusCounts(): Promise<Record<OrderStatus, number>> {
+  const { data, error } = await supabase.from('order_status_counts').select('status, count')
+  if (error) throw error
+
+  const counts = {
+    pending: 0,
+    processing: 0,
+    packed: 0,
+    shipped: 0,
+    delivered: 0,
+    cancelled: 0,
+  } as Record<OrderStatus, number>
+  for (const row of data) counts[row.status as OrderStatus] = row.count
+  return counts
+}
+
+/** Customer-name half of the search — separate query so an id match and a
+ * name match can be unioned without losing the index on either. */
+export async function listByCustomerName(name: string, status?: OrderStatus): Promise<Order[]> {
+  const { data: customers, error: customersError } = await supabase
+    .from('customers')
+    .select('id')
+    .ilike('name', `%${name}%`)
+  if (customersError) throw customersError
+  if (!customers.length) return []
+
+  let query = supabase
     .from('orders')
-    .update({
-      status,
-      delivered_at: status === 'delivered' ? new Date().toISOString() : null,
-    })
-    .eq('id', orderId)
+    .select(ORDER_SELECT)
+    .in(
+      'customer_id',
+      customers.map((c) => c.id),
+    )
+  if (status) query = query.eq('status', status)
+
+  const { data, error } = await query.order('placed_at', { ascending: false })
+  if (error) throw error
+  return data.map(mapRow)
+}
+
+/**
+ * Status changes carry their own timestamps: packing stamps packed_date,
+ * delivery stamps delivered_at. Moving an order back off delivered clears
+ * delivered_at so it never claims a delivery that was undone.
+ */
+export async function updateStatus(orderId: string, status: OrderStatus): Promise<void> {
+  const now = new Date()
+  // deno-lint-ignore no-explicit-any
+  const patch: Record<string, any> = { status }
+
+  if (status === 'delivered') {
+    patch.delivered_at = now.toISOString()
+  } else {
+    patch.delivered_at = null
+  }
+  if (status === 'packed') {
+    patch.packed_date = now.toISOString().slice(0, 10)
+  }
+
+  const { error } = await supabase.from('orders').update(patch).eq('id', orderId)
   if (error) throw error
 }
 
 export async function listForCustomer(customerId: string): Promise<Order[]> {
   const { data, error } = await supabase
     .from('orders')
-    .select('*, customers(name), order_items(*, products(name))')
+    .select(ORDER_SELECT)
     .eq('customer_id', customerId)
     .order('placed_at', { ascending: false })
   if (error) throw error

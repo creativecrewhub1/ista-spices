@@ -34,7 +34,7 @@ export async function findByUserId(userId: string): Promise<{ id: string } | nul
 /** Creates the CRM customer record for a storefront account's first order. */
 export async function createForUser(
   userId: string,
-  input: { name: string; phone: string; address: string },
+  input: { name: string; phone: string; address: string; email?: string },
 ): Promise<string> {
   const id = `c-${crypto.randomUUID().slice(0, 10)}`
   const initials = input.name
@@ -51,6 +51,7 @@ export async function createForUser(
     name: input.name,
     phone: input.phone,
     address: input.address,
+    email: input.email ?? null,
     initials,
   })
   if (error) throw error

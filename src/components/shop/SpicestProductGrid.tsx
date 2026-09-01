@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Check, ShoppingBag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useCart } from '@/shop/CartContext'
+import { formatCurrency } from '@/lib/format'
+import { productImage } from '@/lib/productImage'
 import type { CatalogProduct, ProductCategory, SpiceLevel } from '@/data/types'
 
 interface SpicestProductGridProps {
@@ -21,75 +23,30 @@ interface DisplayProduct {
   spiceLevel: SpiceLevel | null
 }
 
-const defaultFeaturedProducts: DisplayProduct[] = [
-  {
-    id: 'spicest-red-powder',
-    name: 'Red Powder',
-    category: 'spice-powder',
-    description: 'Pure sun-dried Kashmiri chili powder milled to vibrant red perfection.',
-    price: 15.88,
-    image: '/images/spicest/prod_red_powder.png',
-    unitText: 'price er pack of 100g',
-    packSizes: [{ size: '250g', price: 15.88 }],
-    discountPercent: 0,
-    spiceLevel: 'hot'
-  },
-  {
-    id: 'spicest-turmeric-powder',
-    name: 'Turmeric Powder',
-    category: 'spice-powder',
-    description: 'High-curcumin golden turmeric root powder with aromatic earthly fragrance.',
-    price: 10.80,
-    image: '/images/spicest/prod_turmeric_powder.png',
-    unitText: 'price er pack of 100g',
-    packSizes: [{ size: '250g', price: 10.80 }],
-    discountPercent: 0,
-    spiceLevel: 'mild'
-  },
-  {
-    id: 'spicest-paprika-powder',
-    name: 'Paprika powder',
-    category: 'spice-powder',
-    description: 'Fresh herbal paprika & savory garden spice blend for everyday dishes.',
-    price: 21.00,
-    image: '/images/spicest/prod_paprika_powder.png',
-    unitText: 'price er pack of 100g',
-    packSizes: [{ size: '250g', price: 21.00 }],
-    discountPercent: 0,
-    spiceLevel: 'medium'
-  },
-  {
-    id: 'spicest-golden-turmeric',
-    name: 'Turmeric powder',
-    category: 'spice-powder',
-    description: 'Rich golden spice blend for curries, lattes, and roasted vegetables.',
-    price: 16.08,
-    image: '/images/spicest/prod_golden_turmeric.png',
-    unitText: 'price er pack of 100g',
-    packSizes: [{ size: '250g', price: 16.08 }],
-    discountPercent: 0,
-    spiceLevel: 'mild'
-  }
-]
-
 export function SpicestProductGrid({ products }: SpicestProductGridProps) {
   const { addItem } = useCart()
   const [addedIds, setAddedIds] = useState<Record<string, boolean>>({})
 
-  const itemsToDisplay: DisplayProduct[] = (products && products.length > 0)
-    ? products.slice(0, 4).map((p, idx) => ({
+  // Every field comes off the real product. A product with no pack size has
+  // no sellable price, so it is left out rather than shown at a made-up one.
+  const itemsToDisplay: DisplayProduct[] = (products ?? [])
+    .filter((p) => p.packSizes.length > 0)
+    .slice(0, 4)
+    .map((p) => {
+      const basePack = p.packSizes[0]
+      return {
         id: p.id,
         name: p.name,
         category: p.category,
         description: p.description,
-        price: p.packSizes[0]?.price ?? defaultFeaturedProducts[idx % 4].price,
-        image: p.imageUrl || defaultFeaturedProducts[idx % 4].image,
-        unitText: 'price er pack of 100g',
-        packSizes: p.packSizes.length > 0 ? p.packSizes : defaultFeaturedProducts[idx % 4].packSizes,
+        price: basePack.price,
+        image: productImage(p.imageUrl),
+        unitText: `price per pack of ${basePack.size}`,
+        packSizes: p.packSizes,
         discountPercent: p.discountPercent,
-        spiceLevel: p.spiceLevel
-      }))
-    : defaultFeaturedProducts
+        spiceLevel: p.spiceLevel,
+      }
+    })
 
   const handleAddToCart = (product: DisplayProduct) => {
     const catalogItem: CatalogProduct = {
@@ -103,7 +60,9 @@ export function SpicestProductGrid({ products }: SpicestProductGridProps) {
       imageUrl: product.image
     }
 
-    addItem(catalogItem, '250g', 1)
+    // The product's own base size — hardcoding '250g' added a size some
+    // products don't sell, which checkout now rejects outright.
+    addItem(catalogItem, product.packSizes[0].size, 1)
 
     setAddedIds((prev) => ({ ...prev, [product.id]: true }))
     setTimeout(() => {
@@ -131,7 +90,10 @@ export function SpicestProductGrid({ products }: SpicestProductGridProps) {
           </p>
         </div>
 
-        {/* 4 Cards Product Grid */}
+        {itemsToDisplay.length === 0 ? (
+          <p className="text-center text-sm text-gray-400">No products are available right now.</p>
+        ) : (
+        /* 4 Cards Product Grid */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
           {itemsToDisplay.map((item) => {
             const isAdded = addedIds[item.id]
@@ -158,7 +120,7 @@ export function SpicestProductGrid({ products }: SpicestProductGridProps) {
                     {item.unitText}
                   </p>
                   <p className="text-base sm:text-lg font-extrabold text-gray-900 py-1">
-                    ${item.price.toFixed(2)}
+                    {formatCurrency(item.price)}
                   </p>
                 </div>
 
@@ -187,6 +149,7 @@ export function SpicestProductGrid({ products }: SpicestProductGridProps) {
             )
           })}
         </div>
+        )}
 
       </div>
     </section>

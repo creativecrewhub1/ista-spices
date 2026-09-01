@@ -5,8 +5,16 @@ import { HttpError } from '../lib/httpError.ts'
 export const ordersRoute = new Hono()
 
 ordersRoute.get('/', async (c) => {
-  const orders = await OrdersService.list()
+  const orders = await OrdersService.list({
+    status: c.req.query('status'),
+    search: c.req.query('q'),
+  })
   return c.json(orders)
+})
+
+ordersRoute.get('/counts', async (c) => {
+  const counts = await OrdersService.statusCounts()
+  return c.json(counts)
 })
 
 ordersRoute.patch('/:id/status', async (c) => {

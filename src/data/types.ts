@@ -58,6 +58,8 @@ export type OrderKind = 'subscription' | 'one_time'
 export interface OrderLineItem {
   productId: string
   name: string
+  /** The product's real photo — never guessed from its name. */
+  imageUrl: string | null
   packSize: PackSizeLabel
   qty: number
   price: number
@@ -67,6 +69,10 @@ export interface Order {
   id: string
   customerId: string
   customerName: string
+  /** From the customer record — null when no contact is on file. */
+  customerPhone: string | null
+  /** Captured at storefront checkout; null for admin-created walk-in customers. */
+  customerEmail: string | null
   items: OrderLineItem[]
   total: number
   status: OrderStatus

@@ -23,7 +23,7 @@ function initialsFromEmail(email: string | undefined): string {
 }
 
 export function TopBar({ title, subtitle }: TopBarProps) {
-  const { user, signOut } = useAuth()
+  const { user, role, signOut } = useAuth()
 
   return (
     <header className="sticky top-0 z-40 flex h-20 items-center justify-between gap-4 border-b border-[#EDE6DC] bg-white/90 px-4 backdrop-blur-md md:px-8 shadow-xs">
@@ -70,8 +70,12 @@ export function TopBar({ title, subtitle }: TopBarProps) {
                 </AvatarFallback>
               </Avatar>
               <div className="hidden md:flex flex-col text-left">
-                <span className="text-xs font-bold text-slate-900 leading-tight">Admin User</span>
-                <span className="text-[10px] font-semibold text-slate-500">Manager</span>
+                <span className="max-w-40 truncate text-xs font-bold text-slate-900 leading-tight">
+                  {user?.email ?? 'Signed out'}
+                </span>
+                <span className="text-[10px] font-semibold capitalize text-slate-500">
+                  {role ?? '—'}
+                </span>
               </div>
             </button>
           </DropdownMenuTrigger>
