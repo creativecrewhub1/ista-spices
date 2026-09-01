@@ -37,19 +37,6 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
       <div className="relative w-full mb-3">
         <ItemThumbnail src={product.imageUrl} alt={product.name} size="full" />
 
-        {/* Category & Spice Level Overlaid Top Left */}
-        <div className="absolute top-3 left-3 z-10 flex flex-wrap gap-1.5">
-          <Badge variant="outline" className={cn('backdrop-blur-md bg-white/90 text-slate-800 font-bold border-white/60 shadow-xs px-2.5 py-1 text-xs', category.badgeClass)}>
-            {category.label}
-          </Badge>
-          {product.spiceLevel ? (
-            <Badge variant="outline" className="backdrop-blur-md bg-white/90 text-slate-700 font-semibold border-white/60 shadow-xs px-2 py-0.5 text-xs flex items-center gap-1">
-              <span className={cn('size-2 rounded-full', spiceLevelConfig[product.spiceLevel].dotClass)} />
-              {spiceLevelConfig[product.spiceLevel].label}
-            </Badge>
-          ) : null}
-        </div>
-
         {/* Action Menu Overlaid Top Right */}
         <div className="absolute top-3 right-3 z-10">
           <DropdownMenu>
@@ -82,6 +69,17 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
       {/* Details & Pricing */}
       <div className="space-y-3 p-1 flex-1 flex flex-col justify-between">
         <div>
+          <div className="mb-1.5 flex flex-wrap gap-1.5">
+            <Badge variant="outline" className={cn('font-bold px-2.5 py-0.5 text-xs', category.badgeClass)}>
+              {category.label}
+            </Badge>
+            {product.spiceLevel ? (
+              <Badge variant="outline" className="font-semibold px-2 py-0.5 text-xs flex items-center gap-1">
+                <span className={cn('size-2 rounded-full', spiceLevelConfig[product.spiceLevel].dotClass)} />
+                {spiceLevelConfig[product.spiceLevel].label}
+              </Badge>
+            ) : null}
+          </div>
           <h3 className="font-display text-base font-bold text-slate-900 group-hover:text-orange-600 transition-colors line-clamp-1">
             {product.name}
           </h3>

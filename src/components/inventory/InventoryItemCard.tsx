@@ -29,13 +29,6 @@ export function InventoryItemCard({ item, onEdit, onDelete }: InventoryItemCardP
       {/* Top Large Photo Preview Container */}
       <div className="relative w-full mb-3">
         <ItemThumbnail src={item.imageUrl} alt={item.name} size="full" />
-        
-        {/* Type Badge Overlaid Top Left */}
-        <div className="absolute top-3 left-3 z-10">
-          <Badge variant="outline" className={cn('backdrop-blur-md bg-white/90 text-slate-800 font-bold border-white/60 shadow-xs px-2.5 py-1 text-xs', type.badgeClass)}>
-            {type.label}
-          </Badge>
-        </div>
 
         {/* Action Menu Overlaid Top Right */}
         <div className="absolute top-3 right-3 z-10">
@@ -60,6 +53,9 @@ export function InventoryItemCard({ item, onEdit, onDelete }: InventoryItemCardP
       {/* Content & Details */}
       <div className="space-y-3 p-1 flex-1 flex flex-col justify-between">
         <div>
+          <Badge variant="outline" className={cn('mb-1.5 font-bold px-2.5 py-0.5 text-xs', type.badgeClass)}>
+            {type.label}
+          </Badge>
           <h3 className="font-display text-base font-bold text-slate-900 group-hover:text-orange-600 transition-colors line-clamp-1">
             {item.name}
           </h3>
