@@ -38,12 +38,12 @@ export function TopBar({ title, subtitle }: TopBarProps) {
       </div>
 
       {/* Right Controls */}
-      <div className="flex shrink-0 items-center gap-3">
+      <div className="flex h-9 shrink-0 items-center gap-3">
         {/* Customer Shop CTA */}
-        <Link to="/shop" className="hidden sm:inline-flex">
+        <Link to="/shop" className="hidden h-9 sm:inline-flex">
           <Button
             size="sm"
-            className="rounded-full bg-gradient-to-r from-orange-500 to-rose-500 text-white shadow-md shadow-orange-500/20 hover:shadow-lg gap-1.5 text-xs font-bold transition-all hover:scale-105"
+            className="h-9 rounded-full bg-gradient-to-r from-orange-500 to-rose-500 text-white shadow-md shadow-orange-500/20 hover:shadow-lg gap-1.5 text-xs font-bold transition-all hover:scale-105"
           >
             <Store className="size-3.5" />
             <span>Storefront</span>
@@ -51,7 +51,7 @@ export function TopBar({ title, subtitle }: TopBarProps) {
         </Link>
 
         {/* Notifications Button */}
-        <Button variant="ghost" size="icon" aria-label="Notifications" className="relative rounded-full bg-[#F7F3ED] hover:bg-orange-100 text-slate-700">
+        <Button variant="ghost" size="icon" aria-label="Notifications" className="relative size-9 rounded-full bg-[#F7F3ED] hover:bg-orange-100 text-slate-700">
           <Bell className="size-4.5 text-slate-600" aria-hidden="true" />
           <span className="absolute right-2 top-2 size-2 rounded-full bg-orange-500 ring-2 ring-white" />
         </Button>
@@ -61,10 +61,10 @@ export function TopBar({ title, subtitle }: TopBarProps) {
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="flex items-center gap-2.5 rounded-full bg-[#F7F3ED] p-1 pr-3 border border-slate-200/80 hover:border-orange-300 transition-all cursor-pointer"
+              className="flex h-9 items-center gap-2.5 rounded-full bg-[#F7F3ED] pr-3 pl-1 border border-slate-200/80 hover:border-orange-300 transition-all cursor-pointer"
               aria-label="Account menu"
             >
-              <Avatar className="size-8.5 ring-2 ring-orange-400/40">
+              <Avatar className="size-7 ring-2 ring-orange-400/40">
                 <AvatarFallback className="bg-gradient-to-tr from-orange-500 to-rose-500 text-xs font-black text-white">
                   {initialsFromEmail(user?.email)}
                 </AvatarFallback>
