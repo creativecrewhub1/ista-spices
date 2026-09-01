@@ -133,3 +133,27 @@ export type AttentionItem =
 export interface NeedsAttentionResponse {
   items: AttentionItem[]
 }
+
+/** Public storefront catalog row — no batch/production internals, customers don't need them. */
+export interface CatalogProduct {
+  id: string
+  name: string
+  category: ProductCategory
+  description: string
+  packSizes: PackSize[]
+  discountPercent: number
+  spiceLevel: SpiceLevel | null
+}
+
+export interface CheckoutItemInput {
+  productId: string
+  packSize: PackSizeLabel
+  qty: number
+}
+
+export interface CheckoutInput {
+  items: CheckoutItemInput[]
+  address: string
+  name?: string
+  phone?: string
+}

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700&family=Fira+Code:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700&family=Fira+Code:wght@500;600;700&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
@@ -8,7 +8,14 @@
 @theme inline {
   --font-sans: 'Fira Sans', system-ui, sans-serif;
   --font-mono: 'Fira Code', ui-monospace, monospace;
-  --font-heading: var(--font-sans);
+  /* Same editorial serif as the storefront — every page title and card
+     heading (TopBar, CardTitle, SideNav wordmark all use font-heading)
+     picks this up, so the two halves of the app share one identity. */
+  --font-heading: 'Playfair Display', Georgia, serif;
+
+  /* Storefront-only typefaces (see .storefront scope below) */
+  --font-store-sans: 'Inter', system-ui, sans-serif;
+  --font-store-display: 'Playfair Display', Georgia, serif;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -54,27 +61,32 @@
   --radius-2xl: calc(var(--radius) * 1.8);
 }
 
+/*
+ * Admin palette — same vivid warm-orange brand as the storefront (see
+ * .storefront below) so the whole product, not just the customer shop,
+ * reads as the vibrant spice-shop brand rather than a muted generic ERP.
+ */
 :root {
-  --radius: 0.75rem;
+  --radius: 1rem;
 
-  --background: #fff7ed;
-  --foreground: #0f172a;
+  --background: #fffaf3;
+  --foreground: #2b1b12;
   --card: #ffffff;
-  --card-foreground: #0f172a;
+  --card-foreground: #2b1b12;
   --popover: #ffffff;
-  --popover-foreground: #0f172a;
+  --popover-foreground: #2b1b12;
 
   --primary: #ea580c;
   --primary-foreground: #ffffff;
-  --secondary: #fef0e6;
+  --secondary: #fff1e0;
   --secondary-foreground: #9a3412;
-  --accent: #2563eb;
-  --accent-foreground: #ffffff;
+  --accent: #e8a33d;
+  --accent-foreground: #2b1b12;
 
-  --muted: #fdf4f0;
-  --muted-foreground: #78716c;
-  --border: #fce3cc;
-  --input: #fce3cc;
+  --muted: #fff1e0;
+  --muted-foreground: #8a6a52;
+  --border: #f6dfc0;
+  --input: #f6dfc0;
   --ring: #ea580c;
 
   --destructive: #dc2626;
@@ -85,63 +97,148 @@
   --warning-foreground: #ffffff;
 
   --chart-1: #ea580c;
-  --chart-2: #2563eb;
+  --chart-2: #e8a33d;
   --chart-3: #16a34a;
-  --chart-4: #d97706;
-  --chart-5: #7c3aed;
+  --chart-4: #9a3412;
+  --chart-5: #7c5a8b;
 
-  --sidebar: #fff7ed;
-  --sidebar-foreground: #0f172a;
+  --sidebar: #fffaf3;
+  --sidebar-foreground: #2b1b12;
   --sidebar-primary: #ea580c;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #fef0e6;
+  --sidebar-accent: #fff1e0;
   --sidebar-accent-foreground: #9a3412;
-  --sidebar-border: #fce3cc;
+  --sidebar-border: #f6dfc0;
   --sidebar-ring: #ea580c;
 }
 
 .dark {
-  --background: #120d08;
-  --foreground: #f4ede4;
-  --card: #1c140d;
-  --card-foreground: #f4ede4;
-  --popover: #1c140d;
-  --popover-foreground: #f4ede4;
+  --background: #1c130a;
+  --foreground: #fdf1e3;
+  --card: #271b0f;
+  --card-foreground: #fdf1e3;
+  --popover: #271b0f;
+  --popover-foreground: #fdf1e3;
 
-  --primary: #fb7a2c;
-  --primary-foreground: #1c140d;
-  --secondary: #2b1d12;
+  --primary: #fb923c;
+  --primary-foreground: #1c130a;
+  --secondary: #3a2714;
   --secondary-foreground: #fdba8c;
-  --accent: #5b8bf0;
-  --accent-foreground: #0b1220;
+  --accent: #f0b656;
+  --accent-foreground: #1c130a;
 
-  --muted: #241a11;
-  --muted-foreground: #b6a695;
-  --border: #33241680;
-  --input: #33241699;
-  --ring: #fb7a2c;
+  --muted: #3a2714;
+  --muted-foreground: #c9ab8c;
+  --border: #4a3319;
+  --input: #4a3319;
+  --ring: #fb923c;
 
   --destructive: #f87171;
-  --destructive-foreground: #1c140d;
+  --destructive-foreground: #1c130a;
   --success: #4ade80;
   --success-foreground: #0b1a0f;
   --warning: #fbbf24;
-  --warning-foreground: #1c140d;
+  --warning-foreground: #1c130a;
 
-  --chart-1: #fb7a2c;
-  --chart-2: #5b8bf0;
+  --chart-1: #fb923c;
+  --chart-2: #f0b656;
   --chart-3: #4ade80;
-  --chart-4: #fbbf24;
-  --chart-5: #a78bfa;
+  --chart-4: #fdba8c;
+  --chart-5: #a67ea0;
 
-  --sidebar: #1c140d;
-  --sidebar-foreground: #f4ede4;
-  --sidebar-primary: #fb7a2c;
-  --sidebar-primary-foreground: #1c140d;
-  --sidebar-accent: #2b1d12;
+  --sidebar: #271b0f;
+  --sidebar-foreground: #fdf1e3;
+  --sidebar-primary: #fb923c;
+  --sidebar-primary-foreground: #1c130a;
+  --sidebar-accent: #3a2714;
   --sidebar-accent-foreground: #fdba8c;
-  --sidebar-border: #33241680;
-  --sidebar-ring: #fb7a2c;
+  --sidebar-border: #4a3319;
+  --sidebar-ring: #fb923c;
+}
+
+/*
+ * Storefront design system — scoped under .storefront so it never touches
+ * the admin panel's tokens. Vivid warm-orange brand color on a bright cream
+ * base — the actual spice-shop energy (think Spicest/Rumi Spice/Kitchen
+ * Hutt), not muted editorial minimalism. Friendlier, rounder shapes; pill
+ * buttons for primary CTAs (see .storefront .btn-pill / Button usage).
+ */
+.storefront {
+  --radius: 1rem;
+  font-family: var(--font-store-sans);
+
+  --background: #fffaf3;
+  --foreground: #2b1b12;
+  --card: #ffffff;
+  --card-foreground: #2b1b12;
+  --popover: #ffffff;
+  --popover-foreground: #2b1b12;
+
+  --primary: #ea580c;
+  --primary-foreground: #ffffff;
+  --secondary: #fff1e0;
+  --secondary-foreground: #9a3412;
+  --accent: #e8a33d;
+  --accent-foreground: #2b1b12;
+
+  --muted: #fff1e0;
+  --muted-foreground: #8a6a52;
+  --border: #f6dfc0;
+  --input: #f6dfc0;
+  --ring: #ea580c;
+
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --success: #16a34a;
+  --success-foreground: #ffffff;
+  --warning: #d97706;
+  --warning-foreground: #ffffff;
+}
+
+.storefront.dark {
+  --background: #1c130a;
+  --foreground: #fdf1e3;
+  --card: #271b0f;
+  --card-foreground: #fdf1e3;
+  --popover: #271b0f;
+  --popover-foreground: #fdf1e3;
+
+  --primary: #fb923c;
+  --primary-foreground: #1c130a;
+  --secondary: #3a2714;
+  --secondary-foreground: #fdba8c;
+  --accent: #f0b656;
+  --accent-foreground: #1c130a;
+
+  --muted: #3a2714;
+  --muted-foreground: #c9ab8c;
+  --border: #4a3319;
+  --input: #4a3319;
+  --ring: #fb923c;
+
+  --destructive: #f87171;
+  --destructive-foreground: #1c130a;
+  --success: #4ade80;
+  --success-foreground: #0b1a0f;
+  --warning: #fbbf24;
+  --warning-foreground: #1c130a;
+}
+
+/* Buttons across the whole app (admin + storefront) read as pills, not
+   soft-rounded rectangles — the one consistent signature across real
+   spice-shop sites. Icon-only buttons are excluded: quantity steppers and
+   icon-button groups rely on rounded-l-md/rounded-r-md to read as one
+   segmented control, not separate pills. */
+button[data-slot='button']:not([data-size='icon']):not([data-size='icon-sm']):not([data-size='icon-lg']),
+a[data-slot='button']:not([data-size='icon']):not([data-size='icon-sm']):not([data-size='icon-lg']) {
+  border-radius: 9999px;
+}
+
+.storefront h1,
+.storefront h2,
+.storefront h3,
+.storefront .font-display {
+  font-family: var(--font-store-display);
 }
 
 html {

@@ -1,9 +1,11 @@
-import { Navigate, Outlet } from 'react-router-dom'
+import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from './AuthProvider'
 import { LoadingState } from '@/components/common/QueryState'
 
+/** Gates the admin panel — signed in AND role='admin'. A logged-in customer gets bounced to /shop, not /login. */
 export function ProtectedRoute() {
-  const { session, loading } = useAuth()
+  const { session, role, loading } = useAuth()
+  const location = useLocation()
 
   if (loading) {
     return (
@@ -14,7 +16,11 @@ export function ProtectedRoute() {
   }
 
   if (!session) {
-    return <Navigate to="/login" replace />
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />
+  }
+
+  if (role !== 'admin') {
+    return <Navigate to="/shop" replace />
   }
 
   return <Outlet />

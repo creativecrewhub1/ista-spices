@@ -21,7 +21,7 @@ export function CustomerCard({ customer, onOpen }: CustomerCardProps) {
       tabIndex={0}
       onClick={() => onOpen(customer)}
       onKeyDown={(e) => e.key === 'Enter' && onOpen(customer)}
-      className="gap-2 transition-colors hover:bg-muted/50"
+      className="gap-2 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:ring-1 hover:ring-primary/15 active:translate-y-0 active:shadow-sm"
     >
       <CardContent className="flex items-center gap-3">
         <Avatar className="size-11 shrink-0">

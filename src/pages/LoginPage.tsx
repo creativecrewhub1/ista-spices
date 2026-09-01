@@ -1,7 +1,10 @@
 import { useState, type FormEvent } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 import { Flame, Loader2 } from 'lucide-react'
+import { AuthBackdrop } from '@/components/common/AuthBackdrop'
+import { GoogleSignInButton } from '@/components/shop/GoogleSignInButton'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,7 +15,8 @@ import { useSignUpAdmin } from '@/data/mutations'
 import { supabaseAuth } from '@/lib/supabaseAuthClient'
 
 export function LoginPage() {
-  const { session, loading: sessionLoading } = useAuth()
+  const { session, role, loading: sessionLoading } = useAuth()
+  const location = useLocation()
   const statusQuery = useAuthStatus()
   const signUpAdmin = useSignUpAdmin()
 
@@ -24,7 +28,12 @@ export function LoginPage() {
   const [signInLoading, setSignInLoading] = useState(false)
 
   if (!sessionLoading && session) {
-    return <Navigate to="/" replace />
+    // One login page for everyone — where you land depends on who you are,
+    // not which form you happened to use. `from` is set when a protected
+    // route redirected here (e.g. an admin page bounced an unauthenticated
+    // visitor); otherwise fall back to each role's home.
+    const from = (location.state as { from?: string } | null)?.from
+    return <Navigate to={from ?? (role === 'admin' ? '/' : '/shop')} replace />
   }
 
   const adminExists = statusQuery.data?.adminExists ?? true
@@ -46,14 +55,14 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-svh items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-sm">
+    <AuthBackdrop>
+      <Card className="w-full max-w-sm border-white/40 bg-card/70 shadow-2xl backdrop-blur-xl dark:border-white/10">
         <CardHeader className="items-center text-center">
-          <span className="mb-2 flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <span className="mb-2 flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-lg shadow-primary/30">
             <Flame className="size-5" aria-hidden="true" />
           </span>
           <CardTitle className="text-lg">Ista Spices</CardTitle>
-          <CardDescription>Admin panel</CardDescription>
+          <CardDescription>Sign in to your account</CardDescription>
         </CardHeader>
         <CardContent>
           {!adminExists && (
@@ -107,6 +116,17 @@ export function LoginPage() {
                 {signInLoading && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
                 Sign in
               </Button>
+
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <Separator className="flex-1" />
+                or
+                <Separator className="flex-1" />
+              </div>
+
+              <GoogleSignInButton />
+              <p className="text-center text-xs text-muted-foreground">
+                Shopping? Continue with Google — admin sign-in is email and password only.
+              </p>
             </form>
           ) : (
             <form className="flex flex-col gap-4" onSubmit={handleSignUp}>
@@ -166,6 +186,6 @@ export function LoginPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </AuthBackdrop>
   )
 }

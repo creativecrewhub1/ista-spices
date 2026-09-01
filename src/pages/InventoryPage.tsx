@@ -14,10 +14,12 @@ import {
 } from '@/components/ui/dialog'
 import { ProductCard } from '@/components/inventory/ProductCard'
 import { ProductFormSheet } from '@/components/inventory/ProductFormSheet'
-import { LoadingState, ErrorState } from '@/components/common/QueryState'
+import { CardListSkeleton, ErrorState } from '@/components/common/QueryState'
 import { useProducts } from '@/data/queries'
 import { useDeleteProduct, useSaveProduct } from '@/data/mutations'
 import type { Product, StockState } from '@/data/types'
+import { cn } from '@/lib/utils'
+import { pageEnter } from '@/lib/motion'
 
 type FilterValue = 'all' | StockState
 
@@ -53,7 +55,7 @@ export function InventoryPage() {
   }
 
   return (
-    <div className="pb-8">
+    <div className={cn('pb-8', pageEnter)}>
       <TopBar
         title="Products & Inventory"
         subtitle={`${items?.length ?? 0} products in the catalogue`}
@@ -93,7 +95,7 @@ export function InventoryPage() {
         </Tabs>
 
         {isLoading ? (
-          <LoadingState label="Loading products…" />
+          <CardListSkeleton />
         ) : error ? (
           <ErrorState message={error.message} />
         ) : filteredItems.length === 0 ? (

@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/apiClient'
 import type {
   AttentionItem,
+  CatalogProduct,
   Customer,
   Order,
   Product,
@@ -90,5 +91,21 @@ export function useProductRevenueTrend(productId: string, days: number) {
     queryKey: ['revenue-by-product-by-day', productId, days],
     enabled: Boolean(productId),
     queryFn: () => api.get<RevenuePoint[]>(`/revenue/by-product/${productId}/trend?days=${days}`),
+  })
+}
+
+/** Public catalog — reachable without a session, same as browsing before login. */
+export function useCatalog() {
+  return useQuery({
+    queryKey: ['storefront-catalog'],
+    queryFn: () => api.get<CatalogProduct[]>('/storefront/products'),
+  })
+}
+
+/** The signed-in customer's own order history. */
+export function useMyOrders() {
+  return useQuery({
+    queryKey: ['storefront-orders'],
+    queryFn: () => api.get<Order[]>('/storefront/orders'),
   })
 }

@@ -5,9 +5,11 @@ import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CustomerCard } from '@/components/customers/CustomerCard'
 import { CustomerDetailSheet } from '@/components/customers/CustomerDetailSheet'
-import { LoadingState, ErrorState } from '@/components/common/QueryState'
+import { CardListSkeleton, ErrorState } from '@/components/common/QueryState'
 import { useCustomers, useOrders } from '@/data/queries'
 import type { Customer, CustomerSegment } from '@/data/types'
+import { cn } from '@/lib/utils'
+import { pageEnter } from '@/lib/motion'
 
 type FilterValue = 'all' | CustomerSegment
 
@@ -30,7 +32,7 @@ export function CustomersPage() {
   }, [customers, query, filter])
 
   return (
-    <div className="pb-8">
+    <div className={cn('pb-8', pageEnter)}>
       <TopBar title="Customers" subtitle={`${customers?.length ?? 0} total customers`} />
 
       <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 md:px-8 md:py-6">
@@ -55,7 +57,7 @@ export function CustomersPage() {
         </Tabs>
 
         {isLoading ? (
-          <LoadingState label="Loading customers…" />
+          <CardListSkeleton />
         ) : error ? (
           <ErrorState message={error.message} />
         ) : filteredCustomers.length === 0 ? (

@@ -1,4 +1,5 @@
 import { ClipboardList, IndianRupee, Receipt, Wallet } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { TopBar } from '@/components/layout/TopBar'
 import { KpiCard } from '@/components/dashboard/KpiCard'
 import { NeedsAttention } from '@/components/dashboard/NeedsAttention'
@@ -6,20 +7,21 @@ import { OrderStatusOverview } from '@/components/dashboard/OrderStatusOverview'
 import { CapacityOverview } from '@/components/dashboard/CapacityOverview'
 import { ProductTrend } from '@/components/dashboard/ProductTrend'
 import { TopSellingChart } from '@/components/dashboard/TopSellingChart'
-import { LoadingState, ErrorState } from '@/components/common/QueryState'
+import { ErrorState, KpiSkeleton } from '@/components/common/QueryState'
 import { useTodaySummary, useRevenueSummary } from '@/data/queries'
 import { formatCurrency, formatDateLong } from '@/lib/format'
+import { pageEnter } from '@/lib/motion'
 
 export function DashboardPage() {
   const todayQuery = useTodaySummary()
   const revenueQuery = useRevenueSummary()
 
   return (
-    <div className="pb-8">
+    <div className={cn('pb-8', pageEnter)}>
       <TopBar title="Dashboard" subtitle={`Today, ${formatDateLong(new Date().toISOString())}`} />
       <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 md:px-8 md:py-6">
         {revenueQuery.isLoading || todayQuery.isLoading ? (
-          <LoadingState label="Loading dashboard…" />
+          <KpiSkeleton count={4} />
         ) : revenueQuery.error || todayQuery.error ? (
           <ErrorState message={(revenueQuery.error ?? todayQuery.error)!.message} />
         ) : (
