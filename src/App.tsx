@@ -32,7 +32,10 @@ export default function App() {
         <AuthProvider>
           <CartProvider>
             <Routes>
+              {/* Authentication */}
               <Route path="/login" element={<LoginPage />} />
+
+              {/* Admin Panel (Primary Work Route) */}
               <Route element={<ProtectedRoute />}>
                 <Route element={<AppShell />}>
                   <Route index element={<DashboardPage />} />
@@ -43,6 +46,7 @@ export default function App() {
                 </Route>
               </Route>
 
+              {/* Customer Storefront */}
               <Route path="/shop" element={<CatalogPage />} />
               <Route path="/shop/cart" element={<CartPage />} />
               <Route element={<RequireSession />}>

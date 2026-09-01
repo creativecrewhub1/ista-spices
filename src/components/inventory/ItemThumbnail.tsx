@@ -6,33 +6,45 @@ interface ItemThumbnailProps {
   src: string | null
   alt: string
   className?: string
+  aspectRatio?: 'square' | 'wide' | 'tall'
+  size?: 'sm' | 'md' | 'lg' | 'full'
 }
 
-/**
- * Square photo for an inventory row. Falls back to a placeholder both when the
- * record has no image_url yet and when the file behind one fails to load, so a
- * broken path never leaves a torn image icon in the grid.
- */
-export function ItemThumbnail({ src, alt, className }: ItemThumbnailProps) {
+export function ItemThumbnail({ src, alt, className, size = 'full' }: ItemThumbnailProps) {
   const [failed, setFailed] = useState(false)
 
-  // A different record can reuse this slot as the list re-renders; without the
-  // reset a single bad URL would poison the placeholder for whatever follows.
   useEffect(() => setFailed(false), [src])
 
   const showPhoto = Boolean(src) && !failed
 
+  const sizeClasses = {
+    sm: 'size-12 rounded-xl',
+    md: 'size-20 rounded-2xl',
+    lg: 'size-28 sm:size-32 rounded-2xl',
+    full: 'w-full h-40 sm:h-44 rounded-2xl',
+  }
+
   return (
     <div
       className={cn(
-        'flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-muted',
+        'relative flex shrink-0 items-center justify-center overflow-hidden border border-slate-200/60 bg-slate-100/80 shadow-inner group-hover:border-orange-300 transition-colors',
+        sizeClasses[size],
         className,
       )}
     >
       {showPhoto ? (
-        <img src={src as string} alt={alt} loading="lazy" onError={() => setFailed(true)} className="size-full object-cover" />
+        <img
+          src={src as string}
+          alt={alt}
+          loading="lazy"
+          onError={() => setFailed(true)}
+          className="size-full object-cover transition-transform duration-500 group-hover:scale-110"
+        />
       ) : (
-        <ImageOff className="size-4 text-muted-foreground/60" aria-hidden="true" />
+        <div className="flex flex-col items-center justify-center gap-1 text-slate-400 p-2 text-center">
+          <ImageOff className="size-6 text-slate-400/80" aria-hidden="true" />
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">No Image</span>
+        </div>
       )}
     </div>
   )
