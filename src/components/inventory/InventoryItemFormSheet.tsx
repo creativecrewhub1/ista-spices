@@ -258,9 +258,6 @@ export function InventoryItemFormSheet({
                       <span className="block text-xs font-bold text-slate-900 truncate">
                         {draft.name || 'Stock Item Photo'}
                       </span>
-                      <span className="block text-[11px] font-mono text-slate-500 truncate">
-                        {draft.imageUrl?.startsWith('data:') ? 'Custom Uploaded File' : draft.imageUrl}
-                      </span>
                     </div>
                   </div>
 
