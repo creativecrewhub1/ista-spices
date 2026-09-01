@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/apiClient'
 import { supabaseAuth } from '@/lib/supabaseAuthClient'
-import type { Order, OrderStatus, Product } from './types'
+import type { CheckoutInput, Order, OrderStatus, Product } from './types'
 
 /**
  * Signs up the one admin account. The "only if none exists yet" rule is
@@ -42,6 +42,18 @@ export function useDeleteProduct() {
     mutationFn: (productId: string) => api.delete(`/products/${productId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
+    },
+  })
+}
+
+/** Places a storefront order — server resolves/creates the customer record and recomputes prices from the DB. */
+export function useCheckout() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: CheckoutInput) => api.post<{ orderId: string }>('/storefront/orders', input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['storefront-orders'] })
     },
   })
 }

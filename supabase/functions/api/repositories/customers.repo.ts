@@ -23,3 +23,36 @@ export async function listWithStats(): Promise<Customer[]> {
   if (error) throw error
   return data.map(mapRow)
 }
+
+/** The CRM customer record linked to a logged-in storefront account, if one exists yet. */
+export async function findByUserId(userId: string): Promise<{ id: string } | null> {
+  const { data, error } = await supabase.from('customers').select('id').eq('user_id', userId).maybeSingle()
+  if (error) throw error
+  return data
+}
+
+/** Creates the CRM customer record for a storefront account's first order. */
+export async function createForUser(
+  userId: string,
+  input: { name: string; phone: string; address: string },
+): Promise<string> {
+  const id = `c-${crypto.randomUUID().slice(0, 10)}`
+  const initials = input.name
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()
+
+  const { error } = await supabase.from('customers').insert({
+    id,
+    user_id: userId,
+    name: input.name,
+    phone: input.phone,
+    address: input.address,
+    initials,
+  })
+  if (error) throw error
+  return id
+}

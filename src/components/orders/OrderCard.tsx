@@ -22,7 +22,7 @@ export function OrderCard({ order, onOpen, isLate }: OrderCardProps) {
       tabIndex={0}
       onClick={() => onOpen(order)}
       onKeyDown={(e) => e.key === 'Enter' && onOpen(order)}
-      className="gap-2 transition-colors hover:bg-muted/50"
+      className="gap-2 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:ring-1 hover:ring-primary/15 active:translate-y-0 active:shadow-sm"
     >
       <CardContent className="flex flex-col gap-2">
         <div className="flex items-start justify-between gap-2">
