@@ -4,6 +4,7 @@ import type {
   AttentionItem,
   CatalogProduct,
   Customer,
+  InventoryItem,
   Order,
   Product,
   ProductRevenueRow,
@@ -24,6 +25,13 @@ export function useProducts() {
   return useQuery({
     queryKey: ['products'],
     queryFn: () => api.get<Product[]>('/products'),
+  })
+}
+
+export function useInventoryItems() {
+  return useQuery({
+    queryKey: ['inventory-items'],
+    queryFn: () => api.get<InventoryItem[]>('/inventory-items'),
   })
 }
 

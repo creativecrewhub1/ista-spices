@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import type { PackSizeLabel, Product, ProductCategory, SpiceLevel, StockState } from '@/data/types'
+import type { PackSizeLabel, Product, ProductCategory, SpiceLevel } from '@/data/types'
 
 interface ProductFormSheetProps {
   open: boolean
@@ -44,7 +44,6 @@ const emptyProduct: Product = {
   spiceLevel: null,
   batchCapacity: 30,
   unitsPackedThisBatch: 0,
-  stockState: 'processing',
   stockLevel: 'ok',
   isActive: true,
 }
@@ -193,20 +192,14 @@ export function ProductFormSheet({ open, onOpenChange, product, onSave }: Produc
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label>Stock state</Label>
-              <Select
-                value={draft.stockState}
-                onValueChange={(v: StockState) => setDraft({ ...draft, stockState: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="processing">Processing</SelectItem>
-                  <SelectItem value="packing">Packing</SelectItem>
-                  <SelectItem value="ready">Ready</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="unitsPacked">Units in hand</Label>
+              <Input
+                id="unitsPacked"
+                type="number"
+                min={0}
+                value={draft.unitsPackedThisBatch}
+                onChange={(e) => setDraft({ ...draft, unitsPackedThisBatch: Number(e.target.value) })}
+              />
             </div>
           </div>
 

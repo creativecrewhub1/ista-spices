@@ -29,7 +29,6 @@ function mapRow(row: any): Product {
     spiceLevel: row.spice_level,
     batchCapacity: row.batch_capacity,
     unitsPackedThisBatch: row.units_packed_this_batch,
-    stockState: row.stock_state,
     stockLevel: classifyStockLevel(row.units_packed_this_batch, row.batch_capacity),
     isActive: row.is_active,
   }
@@ -55,7 +54,6 @@ export async function upsert(product: Product): Promise<void> {
     spice_level: product.spiceLevel,
     batch_capacity: product.batchCapacity,
     units_packed_this_batch: product.unitsPackedThisBatch,
-    stock_state: product.stockState,
     is_active: product.isActive,
   })
   if (productError) throw productError
@@ -79,8 +77,7 @@ export async function softDelete(id: string): Promise<void> {
 
 /**
  * Public storefront read — active products only, and only the fields a
- * customer needs to shop (no batch/production internals like batchCapacity
- * or stockState).
+ * customer needs to shop (no batch/production internals like batchCapacity).
  */
 export async function listPublicCatalog(): Promise<CatalogProduct[]> {
   const { data, error } = await supabase

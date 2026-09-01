@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/apiClient'
 import { supabaseAuth } from '@/lib/supabaseAuthClient'
-import type { CheckoutInput, Order, OrderStatus, Product } from './types'
+import type { CheckoutInput, InventoryItem, Order, OrderStatus, Product } from './types'
 
 /**
  * Signs up the one admin account. The "only if none exists yet" rule is
@@ -42,6 +42,28 @@ export function useDeleteProduct() {
     mutationFn: (productId: string) => api.delete(`/products/${productId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
+    },
+  })
+}
+
+export function useSaveInventoryItem() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (item: InventoryItem) => api.post('/inventory-items', item),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['inventory-items'] })
+    },
+  })
+}
+
+export function useDeleteInventoryItem() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (itemId: string) => api.delete(`/inventory-items/${itemId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['inventory-items'] })
     },
   })
 }

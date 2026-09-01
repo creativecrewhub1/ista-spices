@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import type { Product } from '@/data/types'
-import { categoryConfig, spiceLevelConfig, stockLevelConfig, stockStateConfig } from '@/lib/status'
+import { categoryConfig, spiceLevelConfig, stockLevelConfig } from '@/lib/status'
 import { formatCurrency } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
@@ -22,7 +22,6 @@ interface ProductCardProps {
 
 export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
   const category = categoryConfig[product.category]
-  const stock = stockStateConfig[product.stockState]
   const level = product.stockLevel
   const levelBadge = stockLevelConfig[level]
   const percent = Math.min(100, Math.round((product.unitsPackedThisBatch / product.batchCapacity) * 100))
@@ -83,9 +82,6 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
               </>
             ) : null}
           </div>
-          <Badge variant="outline" className={stock.badgeClass}>
-            {stock.label}
-          </Badge>
         </div>
 
         <div className="flex flex-wrap gap-1.5">

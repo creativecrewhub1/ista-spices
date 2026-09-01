@@ -7,8 +7,6 @@ export interface PackSize {
   price: number
 }
 
-export type StockState = 'processing' | 'packing' | 'ready'
-
 export type SpiceLevel = 'mild' | 'medium' | 'hot'
 
 export type StockLevel = 'low' | 'ok' | 'high'
@@ -23,9 +21,23 @@ export interface Product {
   spiceLevel: SpiceLevel | null
   batchCapacity: number
   unitsPackedThisBatch: number
-  stockState: StockState
   /** low/ok/high classification, computed server-side from unitsPackedThisBatch vs batchCapacity. */
   stockLevel: StockLevel
+  isActive: boolean
+}
+
+/** Raw materials (chilli, coriander seeds, cumin…) and B2B goods (soaps,
+ * honey…) — simple quantity-on-hand tracking, no pack-size/pricing tiers. */
+export type InventoryItemType = 'raw_material' | 'b2b'
+
+export interface InventoryItem {
+  id: string
+  type: InventoryItemType
+  name: string
+  description: string
+  unit: string
+  quantityOnHand: number
+  lowStockThreshold: number
   isActive: boolean
 }
 
