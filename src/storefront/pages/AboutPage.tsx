@@ -1,10 +1,11 @@
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import { ProductVisual } from '../components/ProductVisual'
+import { siteImages } from '../data/images'
 import { SectionHeading } from '../components/SectionHeading'
 
 export function AboutPage() {
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="band-cream mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
       <Breadcrumbs items={[{ label: 'Home', to: '/' }, { label: 'Our Story' }]} />
 
       <div className="mt-6 flex flex-col gap-6">
@@ -15,7 +16,7 @@ export function AboutPage() {
         </p>
       </div>
 
-      <ProductVisual accent="garam-masala" className="my-10 aspect-[16/9] w-full rounded-md" iconClassName="size-12" />
+      <ProductVisual accent="garam-masala" src={siteImages.story} alt="Sun-drying turmeric on the family farm" className="my-10 aspect-[16/9] w-full rounded-3xl" iconClassName="size-12" />
 
       <div className="flex flex-col gap-6 text-muted-foreground">
         <p>

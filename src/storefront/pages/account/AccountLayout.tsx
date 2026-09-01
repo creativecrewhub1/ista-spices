@@ -13,7 +13,7 @@ const NAV = [
 
 export function AccountLayout() {
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="band-cream mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
       <Breadcrumbs items={[{ label: 'Home', to: '/' }, { label: 'Account' }]} />
       <div className="mt-4 flex flex-col gap-1">
         <h1 className="font-display text-3xl font-medium text-foreground">Hi, {mockCustomer.name.split(' ')[0]}</h1>

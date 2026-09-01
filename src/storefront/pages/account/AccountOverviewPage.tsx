@@ -15,17 +15,17 @@ export function AccountOverviewPage() {
   return (
     <div className="flex flex-col gap-8">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-md border border-border p-5">
+        <div className="rounded-2xl border border-border bg-card p-5">
           <Package className="mb-3 size-5 text-accent" aria-hidden="true" />
           <p className="text-2xl font-medium tabular-nums text-foreground">{mockOrders.length}</p>
           <p className="text-sm text-muted-foreground">Total orders</p>
         </div>
-        <div className="rounded-md border border-border p-5">
+        <div className="rounded-2xl border border-border bg-card p-5">
           <Heart className="mb-3 size-5 text-accent" aria-hidden="true" />
           <p className="text-2xl font-medium tabular-nums text-foreground">{ids.size}</p>
           <p className="text-sm text-muted-foreground">Saved items</p>
         </div>
-        <div className="rounded-md border border-border p-5">
+        <div className="rounded-2xl border border-border bg-card p-5">
           <MapPin className="mb-3 size-5 text-accent" aria-hidden="true" />
           <p className="truncate text-2xl font-medium text-foreground">{defaultAddress?.city ?? '—'}</p>
           <p className="text-sm text-muted-foreground">Default address</p>
@@ -41,7 +41,7 @@ export function AccountOverviewPage() {
             </Link>
           </Button>
         </div>
-        <ul className="flex flex-col divide-y divide-border rounded-md border border-border">
+        <ul className="flex flex-col divide-y divide-border rounded-2xl border border-border bg-card">
           {recentOrders.map((order) => (
             <li key={order.id} className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -62,7 +62,7 @@ export function AccountOverviewPage() {
 
       <Separator />
 
-      <div className="rounded-md border border-border p-5">
+      <div className="rounded-2xl border border-border bg-card p-5">
         <h2 className="text-base font-medium text-foreground">Account details</h2>
         <dl className="mt-3 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
           <div>

@@ -5,6 +5,7 @@ import { Separator } from '@/components/ui/separator'
 import { Input } from '@/components/ui/input'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import { ProductVisual } from '../components/ProductVisual'
+import { productImage } from '../data/images'
 import { QuantityStepper } from '../components/QuantityStepper'
 import { PriceTag, formatINR } from '../components/PriceTag'
 import { EmptyState } from '../components/EmptyState'
@@ -17,7 +18,7 @@ export function CartPage() {
 
   if (lines.length === 0) {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="band-cream mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <Breadcrumbs items={[{ label: 'Home', to: '/' }, { label: 'Cart' }]} />
         <EmptyState
           icon={ShoppingBag}
@@ -34,7 +35,7 @@ export function CartPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="band-cream mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <Breadcrumbs items={[{ label: 'Home', to: '/' }, { label: 'Cart' }]} />
       <h1 className="mt-4 font-display text-3xl font-medium text-foreground sm:text-4xl">Your cart</h1>
 
@@ -44,7 +45,15 @@ export function CartPage() {
             {lines.map((line) => (
               <li key={`${line.productId}-${line.variantId}`} className="flex gap-4 py-6">
                 <Link to={`/product/${line.slug}`} className="shrink-0">
-                  <ProductVisual accent={line.accent} className="size-24 rounded-md sm:size-28" iconClassName="size-8" />
+                  <ProductVisual
+                    accent={line.accent}
+                    src={productImage(line.slug)}
+                    alt={line.name}
+                    fit="contain"
+                    backdrop={productImage(line.slug) ? 'sand' : 'accent'}
+                    className="size-24 rounded-2xl sm:size-28"
+                    iconClassName="size-8"
+                  />
                 </Link>
                 <div className="flex min-w-0 flex-1 flex-col justify-between gap-2">
                   <div className="flex items-start justify-between gap-3">
@@ -79,7 +88,7 @@ export function CartPage() {
           </div>
         </div>
 
-        <aside className="flex flex-col gap-5 rounded-md border border-border p-6 lg:sticky lg:top-24 lg:h-fit">
+        <aside className="flex flex-col gap-5 rounded-2xl border border-border bg-card p-6 lg:sticky lg:top-24 lg:h-fit">
           <h2 className="text-base font-medium text-foreground">Order summary</h2>
 
           <div className="flex gap-2">

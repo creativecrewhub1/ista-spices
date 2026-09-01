@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { ProductVisual } from '../components/ProductVisual'
+import { productImage } from '../data/images'
 import { PriceTag } from '../components/PriceTag'
 import { products } from '../data/products'
 import { useSearch } from './SearchContext'
@@ -146,7 +147,7 @@ export function SearchOverlay() {
                       onClick={close}
                       className="flex items-center gap-3.5 py-3 transition-colors hover:bg-muted/60"
                     >
-                      <ProductVisual accent={product.accent} className="size-14 shrink-0 rounded-md" iconClassName="size-5" />
+                      <ProductVisual accent={product.accent} src={productImage(product.slug)} alt={product.name} fit="contain" backdrop={productImage(product.slug) ? 'sand' : 'accent'} className="size-14 shrink-0 rounded-xl" iconClassName="size-5" />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium text-foreground">{product.name}</p>
                         <p className="truncate text-xs text-muted-foreground">{product.tagline}</p>

@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { ProductVisual } from '../components/ProductVisual'
+import { productImage } from '../data/images'
 import { QuantityStepper } from '../components/QuantityStepper'
 import { PriceTag, formatINR } from '../components/PriceTag'
 import { EmptyState } from '../components/EmptyState'
@@ -45,7 +46,15 @@ export function CartDrawer() {
                 {lines.map((line) => (
                   <li key={`${line.productId}-${line.variantId}`} className="flex gap-3 py-4">
                     <Link to={`/product/${line.slug}`} onClick={close} className="shrink-0">
-                      <ProductVisual accent={line.accent} className="size-20 rounded-md" iconClassName="size-6" />
+                      <ProductVisual
+                        accent={line.accent}
+                        src={productImage(line.slug)}
+                        alt={line.name}
+                        fit="contain"
+                        backdrop={productImage(line.slug) ? 'sand' : 'accent'}
+                        className="size-20 rounded-xl"
+                        iconClassName="size-6"
+                      />
                     </Link>
                     <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                       <div className="flex items-start justify-between gap-2">
