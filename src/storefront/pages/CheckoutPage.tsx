@@ -312,7 +312,7 @@ export function CheckoutPage() {
               <ul className="flex flex-col divide-y divide-border rounded-2xl border border-border bg-card">
                 {lines.map((line) => (
                   <li key={`${line.productId}-${line.variantId}`} className="flex items-center gap-3 p-4">
-                    <ProductVisual accent={line.accent} src={productImage(line.slug)} alt={line.name} fit="contain" backdrop={productImage(line.slug) ? 'sand' : 'accent'} className="size-14 shrink-0 rounded-xl" iconClassName="size-5" />
+                    <ProductVisual accent={line.accent} src={productImage(line.slug)} alt={line.name} className="size-14 shrink-0 rounded-xl" iconClassName="size-5" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-foreground">{line.name}</p>
                       <p className="text-xs text-muted-foreground">
@@ -343,7 +343,7 @@ export function CheckoutPage() {
             {lines.map((line) => (
               <li key={`${line.productId}-${line.variantId}`} className="flex items-center gap-3">
                 <div className="relative shrink-0">
-                  <ProductVisual accent={line.accent} src={productImage(line.slug)} alt={line.name} fit="contain" backdrop={productImage(line.slug) ? 'sand' : 'accent'} className="size-12 rounded-xl" iconClassName="size-4" />
+                  <ProductVisual accent={line.accent} src={productImage(line.slug)} alt={line.name} className="size-12 rounded-xl" iconClassName="size-4" />
                   <span className="absolute -right-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full bg-foreground text-[10px] font-medium text-primary-foreground">
                     {line.qty}
                   </span>

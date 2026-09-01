@@ -8,6 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { ItemThumbnail } from './ItemThumbnail'
 import type { InventoryItem } from '@/data/types'
 import { inventoryItemTypeConfig } from '@/lib/status'
 import { cn } from '@/lib/utils'
@@ -26,7 +27,8 @@ export function InventoryItemCard({ item, onEdit, onDelete }: InventoryItemCardP
     <Card className="gap-3">
       <CardContent className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
+          <ItemThumbnail src={item.imageUrl} alt={item.name} />
+          <div className="min-w-0 flex-1">
             <Badge variant="outline" className={cn('mb-1 text-[11px]', type.badgeClass)}>
               {type.label}
             </Badge>

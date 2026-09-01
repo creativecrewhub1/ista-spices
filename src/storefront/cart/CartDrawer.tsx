@@ -50,8 +50,6 @@ export function CartDrawer() {
                         accent={line.accent}
                         src={productImage(line.slug)}
                         alt={line.name}
-                        fit="contain"
-                        backdrop={productImage(line.slug) ? 'sand' : 'accent'}
                         className="size-20 rounded-xl"
                         iconClassName="size-6"
                       />

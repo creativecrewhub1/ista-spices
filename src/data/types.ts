@@ -24,6 +24,8 @@ export interface Product {
   /** low/ok/high classification, computed server-side from unitsPackedThisBatch vs batchCapacity. */
   stockLevel: StockLevel
   isActive: boolean
+  /** Display image — app-relative path or absolute URL. Null until a photo exists. */
+  imageUrl: string | null
 }
 
 /** Raw materials (chilli, coriander seeds, cumin…) and B2B goods (soaps,
@@ -39,6 +41,8 @@ export interface InventoryItem {
   quantityOnHand: number
   lowStockThreshold: number
   isActive: boolean
+  /** Display image — app-relative path or absolute URL. Null until a photo exists. */
+  imageUrl: string | null
 }
 
 export type OrderStatus =
@@ -132,6 +136,7 @@ export interface CatalogProduct {
   packSizes: PackSize[]
   discountPercent: number
   spiceLevel: SpiceLevel | null
+  imageUrl: string | null
 }
 
 export interface CheckoutItemInput {

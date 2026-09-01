@@ -72,8 +72,6 @@ export function ProductDetailPage() {
             accent={product.accent}
             src={photo}
             alt={product.name}
-            fit="contain"
-            backdrop={photo ? 'sand' : 'accent'}
             className="aspect-square w-full rounded-3xl"
             iconClassName="size-16"
           />
@@ -93,8 +91,6 @@ export function ProductDetailPage() {
                 <ProductVisual
                   accent={product.accent}
                   src={photo}
-                  fit="contain"
-                  backdrop={photo ? 'sand' : 'accent'}
                   className="aspect-square w-full"
                   iconClassName="size-6"
                 />

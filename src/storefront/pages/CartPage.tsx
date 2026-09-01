@@ -49,8 +49,6 @@ export function CartPage() {
                     accent={line.accent}
                     src={productImage(line.slug)}
                     alt={line.name}
-                    fit="contain"
-                    backdrop={productImage(line.slug) ? 'sand' : 'accent'}
                     className="size-24 rounded-2xl sm:size-28"
                     iconClassName="size-8"
                   />

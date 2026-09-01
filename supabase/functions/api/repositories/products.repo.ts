@@ -31,6 +31,7 @@ function mapRow(row: any): Product {
     unitsPackedThisBatch: row.units_packed_this_batch,
     stockLevel: classifyStockLevel(row.units_packed_this_batch, row.batch_capacity),
     isActive: row.is_active,
+    imageUrl: row.image_url ?? null,
   }
 }
 
@@ -55,6 +56,7 @@ export async function upsert(product: Product): Promise<void> {
     batch_capacity: product.batchCapacity,
     units_packed_this_batch: product.unitsPackedThisBatch,
     is_active: product.isActive,
+    image_url: product.imageUrl,
   })
   if (productError) throw productError
 
@@ -82,7 +84,7 @@ export async function softDelete(id: string): Promise<void> {
 export async function listPublicCatalog(): Promise<CatalogProduct[]> {
   const { data, error } = await supabase
     .from('products')
-    .select('id, name, category, description, discount_percent, spice_level, product_pack_sizes(*)')
+    .select('id, name, category, description, discount_percent, spice_level, image_url, product_pack_sizes(*)')
     .eq('is_active', true)
     .order('name')
   if (error) throw error
@@ -100,5 +102,6 @@ export async function listPublicCatalog(): Promise<CatalogProduct[]> {
       .map((p: any) => ({ size: p.size, price: Number(p.price) })),
     discountPercent: row.discount_percent,
     spiceLevel: row.spice_level,
+    imageUrl: row.image_url ?? null,
   }))
 }

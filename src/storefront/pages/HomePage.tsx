@@ -133,7 +133,7 @@ export function HomePage() {
                   accent={p.accent}
                   src={productImage(p.slug)}
                   alt={p.name}
-                  fit="contain"
+                  fit="cover"
                   backdrop="accent"
                   className={
                     'w-[16%] max-w-32 rounded-t-xl shadow-xl sm:w-[15%] ' +
@@ -227,7 +227,7 @@ export function HomePage() {
                 accent={bundle.accent}
                 src={productImage(bundle.slug)}
                 alt={bundle.name}
-                fit="contain"
+                fit="cover"
                 backdrop="teal"
                 className="aspect-[4/3] w-full rounded-2xl"
                 iconClassName="size-12"

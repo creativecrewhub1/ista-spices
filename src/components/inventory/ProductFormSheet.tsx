@@ -42,6 +42,7 @@ const emptyProduct: Product = {
   ],
   discountPercent: 0,
   spiceLevel: null,
+  imageUrl: null,
   batchCapacity: 30,
   unitsPackedThisBatch: 0,
   stockLevel: 'ok',
@@ -201,6 +202,19 @@ export function ProductFormSheet({ open, onOpenChange, product, onSave }: Produc
                 onChange={(e) => setDraft({ ...draft, unitsPackedThisBatch: Number(e.target.value) })}
               />
             </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="product-image">Image URL</Label>
+            <Input
+              id="product-image"
+              value={draft.imageUrl ?? ''}
+              onChange={(e) => setDraft({ ...draft, imageUrl: e.target.value.trim() || null })}
+              placeholder="/images/products/turmeric.jpg"
+            />
+            <p className="text-xs text-muted-foreground">
+              A file under <code>public/images/products/</code>, or a full URL. Leave blank for no photo.
+            </p>
           </div>
 
           <SheetFooter className="px-0">

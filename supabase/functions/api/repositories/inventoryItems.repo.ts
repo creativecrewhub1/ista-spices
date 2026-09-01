@@ -12,6 +12,7 @@ function mapRow(row: any): InventoryItem {
     quantityOnHand: Number(row.quantity_on_hand),
     lowStockThreshold: Number(row.low_stock_threshold),
     isActive: row.is_active,
+    imageUrl: row.image_url ?? null,
   }
 }
 
@@ -35,6 +36,7 @@ export async function upsert(item: InventoryItem): Promise<void> {
     quantity_on_hand: item.quantityOnHand,
     low_stock_threshold: item.lowStockThreshold,
     is_active: item.isActive,
+    image_url: item.imageUrl,
   })
   if (error) throw error
 }

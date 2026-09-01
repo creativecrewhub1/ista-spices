@@ -42,10 +42,10 @@ export function ProductCard({ product, className }: ProductCardProps) {
             accent={product.accent}
             src={photo}
             alt={product.name}
-            /* Packshots read as a shoot, not a cutout, when they sit contained
-               on one studio colour — same treatment across the whole grid. */
-            fit="contain"
-            backdrop={photo ? 'sand' : 'accent'}
+            /* The catalogue photography is lifestyle/ingredient shots, so they
+               fill the frame. Switch to fit="contain" with a backdrop if this
+               is ever reshot as packshots on a studio sweep. */
+            fit="cover"
             className="aspect-[4/5] w-full transition-transform duration-300 group-hover:scale-[1.03]"
           />
         </Link>

@@ -1,60 +1,69 @@
 /*
  * Storefront image registry — the single place photography is wired in.
  *
- * HOW TO ADD YOUR PHOTOS
- * ----------------------
- * 1. Drop the file into `public/images/products/` or `public/images/site/`.
- * 2. Point the matching entry below at it, e.g.
- *      'sun-dried-turmeric-powder': '/images/products/turmeric.jpg'
- * 3. That's it — every card, gallery, and hero that uses the slug picks it up.
+ * HOW TO ADD OR SWAP A PHOTO
+ * --------------------------
+ * 1. Drop the file into `public/images/products/` (see the README there).
+ * 2. Point the matching entry below at it.
+ * 3. That's it — every card, gallery, cart line and search result that uses
+ *    the slug picks it up.
  *
  * Nothing here is required. Any entry left as `null` falls back to the painted
  * spice-colour backdrop in <ProductVisual>, and a URL that 404s falls back the
  * same way at runtime — so a half-finished photo set never breaks a page.
  *
- * Shooting notes (this is the Rumi Spice look we're matching): shoot the pack
- * straight-on against ONE flat colour sheet — teal, deep saffron or clay — with
- * soft light and a little shadow under the jar. Same sheet, same angle, same
- * distance for every product. The consistency is what reads as premium; the
- * camera matters far less than the backdrop matching across the set.
+ * NOTE: this registry serves the storefront's own catalogue in
+ * `data/products.ts`. The admin panel reads its images from the `image_url`
+ * column on `products` / `inventory_items` instead, pointing at these same
+ * files. When the storefront moves onto the live API the two converge and this
+ * file goes away.
  */
 
 /** Photo per product, keyed by `Product.slug`. */
 export const productImages: Record<string, string | null> = {
-  'sun-dried-turmeric-powder': null,
-  'kashmiri-red-chilli-powder': null,
-  'guntur-chilli-powder': null,
-  'roasted-coriander-powder': null,
-  'signature-garam-masala': null,
+  'sun-dried-turmeric-powder': '/images/products/turmeric.jpg',
+  'kashmiri-red-chilli-powder': '/images/products/red_chilli_powder.jpg',
+  'guntur-chilli-powder': '/images/products/dry_red_chilli.jpg',
+  'roasted-coriander-powder': '/images/products/spice_powder.jpg',
+  'signature-garam-masala': '/images/products/masala_powder.jpg',
   'south-indian-sambar-powder': null,
   'tangy-rasam-powder': null,
-  'wood-pressed-groundnut-oil': null,
-  'virgin-coconut-oil': null,
+  'wood-pressed-groundnut-oil': '/images/products/peanut_oil.jpg',
+  'virgin-coconut-oil': '/images/products/coconut_oil.jpg',
   'cold-pressed-sesame-oil': null,
   'extra-virgin-olive-oil': null,
-  'single-origin-black-pepper': null,
+  'single-origin-black-pepper': '/images/products/black_pepper.jpg',
   'the-everyday-essentials-set': null,
   'the-cold-pressed-oil-trio': null,
 }
 
 /** Photo per category tile, keyed by `CategoryInfo.id`. */
 export const categoryImages: Record<string, string | null> = {
-  'spice-powders': null,
-  blends: null,
-  'cooking-oils': null,
+  'spice-powders': '/images/products/red_chilli_powder.jpg',
+  blends: '/images/products/masala_powder.jpg',
+  'cooking-oils': '/images/products/coconut_oil.jpg',
   'gift-sets': null,
 }
 
 /** One-off editorial slots across the site. */
 export const siteImages = {
-  /** Wide hero shot — the full product lineup on a coloured backdrop. */
+  /** Wide hero shot. Null keeps the generated lineup of the first five products. */
   heroLineup: null as string | null,
-  /** Portrait/landscape shot for the "our story" section. */
-  story: null as string | null,
+  /** "Our story" section on the home page, and the About page banner. */
+  story: '/images/products/coriander.jpg' as string | null,
   /** Three lifestyle tiles in the "shop most popular" row. */
-  popular: [null, null, null] as (string | null)[],
+  popular: [
+    '/images/products/honey.jpg',
+    '/images/products/turmeric.jpg',
+    '/images/products/peanut_oil.jpg',
+  ] as (string | null)[],
   /** Recipe cards at the bottom of the home page. */
-  recipes: [null, null, null, null] as (string | null)[],
+  recipes: [
+    '/images/products/cumin.jpg',
+    '/images/products/masala_powder.jpg',
+    '/images/products/dry_red_chilli.jpg',
+    '/images/products/spice_powder.jpg',
+  ] as (string | null)[],
 }
 
 export function productImage(slug: string): string | null {

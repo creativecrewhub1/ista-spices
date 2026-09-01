@@ -9,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { ItemThumbnail } from './ItemThumbnail'
 import type { Product } from '@/data/types'
 import { categoryConfig, spiceLevelConfig, stockLevelConfig } from '@/lib/status'
 import { formatCurrency } from '@/lib/format'
@@ -33,7 +34,8 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
     <Card className="gap-3">
       <CardContent className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
+          <ItemThumbnail src={product.imageUrl} alt={product.name} />
+          <div className="min-w-0 flex-1">
             <div className="mb-1 flex items-center gap-1.5">
               <Badge variant="outline" className={cn('text-[11px]', category.badgeClass)}>
                 {category.label}

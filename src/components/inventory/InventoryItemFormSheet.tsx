@@ -39,6 +39,7 @@ function emptyItem(type: InventoryItemType): InventoryItem {
     quantityOnHand: 0,
     lowStockThreshold: 0,
     isActive: true,
+    imageUrl: null,
   }
 }
 
@@ -143,6 +144,19 @@ export function InventoryItemFormSheet({
                 onChange={(e) => setDraft({ ...draft, lowStockThreshold: Number(e.target.value) })}
               />
             </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="item-image">Image URL</Label>
+            <Input
+              id="item-image"
+              value={draft.imageUrl ?? ''}
+              onChange={(e) => setDraft({ ...draft, imageUrl: e.target.value.trim() || null })}
+              placeholder="/images/products/coriander.jpg"
+            />
+            <p className="text-xs text-muted-foreground">
+              A file under <code>public/images/products/</code>, or a full URL. Leave blank for no photo.
+            </p>
           </div>
 
           <SheetFooter className="px-0">
