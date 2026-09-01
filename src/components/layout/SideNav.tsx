@@ -18,8 +18,8 @@ export function SideNav() {
       {/* Brand Header */}
       <div className="flex h-20 items-center justify-between border-b border-[#F0E8DD] px-6">
         <NavLink to="/" className="flex items-center gap-2.5 group">
-          <span className="flex size-9 items-center justify-center rounded-2xl bg-gradient-to-tr from-orange-500 to-rose-500 text-white shadow-md shadow-orange-500/30 group-hover:scale-105 transition-transform">
-            <Flame className="size-5 fill-white/20" aria-hidden="true" />
+          <span className="flex size-9 items-center justify-center rounded-2xl bg-gradient-to-tr from-orange-500 to-rose-500 text-white shadow-md shadow-orange-500/30 group-hover:scale-110 transition-all duration-300">
+            <Flame className="size-5 fill-white/20 group-hover:rotate-12 transition-transform duration-300" aria-hidden="true" />
           </span>
           <div className="flex flex-col">
             <span className="font-display text-xl font-black tracking-wider text-slate-900">
@@ -41,15 +41,28 @@ export function SideNav() {
               end={end}
               className={({ isActive }) =>
                 cn(
-                  'group flex items-center gap-3.5 rounded-2xl px-4 py-3 text-sm font-semibold transition-all duration-300',
+                  'group relative flex items-center gap-3.5 rounded-2xl px-4 py-3 text-sm font-semibold transition-all duration-300 ease-out active:scale-[0.98]',
                   isActive
-                    ? 'bg-gradient-to-r from-orange-500 via-orange-600 to-rose-500 text-white shadow-lg shadow-orange-500/25 font-bold'
-                    : 'text-slate-600 hover:bg-[#F7F3ED] hover:text-orange-600 hover:translate-x-1',
+                    ? 'bg-gradient-to-r from-orange-500 via-orange-600 to-rose-500 text-white shadow-lg shadow-orange-500/30 font-bold scale-[1.02]'
+                    : 'text-slate-600 hover:bg-[#F7F3ED] hover:text-orange-600 hover:translate-x-1.5',
                 )
               }
             >
-              <Icon className="size-4.5 transition-transform duration-300 group-hover:scale-110" aria-hidden="true" />
-              <span>{label}</span>
+              {({ isActive }) => (
+                <>
+                  <Icon
+                    className={cn(
+                      'size-4.5 transition-all duration-300',
+                      isActive ? 'scale-110' : 'group-hover:scale-110 group-hover:rotate-6',
+                    )}
+                    aria-hidden="true"
+                  />
+                  <span className="truncate">{label}</span>
+                  {isActive && (
+                    <span className="absolute right-3 size-2 rounded-full bg-white shadow-xs animate-pulse" />
+                  )}
+                </>
+              )}
             </NavLink>
           </li>
         ))}
@@ -57,12 +70,12 @@ export function SideNav() {
 
       {/* REDISH Style Bottom Promotional Widget */}
       <div className="p-4 space-y-3">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-orange-50 via-amber-50 to-rose-50 p-4 border border-orange-200/60 shadow-xs text-center">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-orange-50 via-amber-50 to-rose-50 p-4 border border-orange-200/60 shadow-xs text-center group">
           <div className="h-16 w-full flex items-center justify-center mb-2">
             <img
               src="/images/spicest/hero_spices.png"
               alt="Spices"
-              className="max-h-full object-contain drop-shadow-md"
+              className="max-h-full object-contain drop-shadow-md group-hover:scale-105 transition-transform duration-300"
             />
           </div>
           <p className="text-xs font-bold text-slate-800 leading-tight">
@@ -73,7 +86,7 @@ export function SideNav() {
           </p>
           <button
             onClick={() => navigate('/inventory')}
-            className="w-full rounded-2xl bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600 text-white py-2 px-3 text-xs font-bold shadow-md shadow-orange-500/20 flex items-center justify-center gap-1.5 transition-all"
+            className="w-full rounded-2xl bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600 text-white py-2 px-3 text-xs font-bold shadow-md shadow-orange-500/20 flex items-center justify-center gap-1.5 transition-all duration-300 hover:scale-[1.02] active:scale-95"
           >
             <Plus className="size-3.5" />
             <span>Manage Spices</span>
@@ -83,7 +96,7 @@ export function SideNav() {
         {/* Customer Storefront Link */}
         <NavLink
           to="/shop"
-          className="flex items-center justify-center gap-2 w-full rounded-2xl border border-orange-200 bg-white py-2 px-4 text-xs font-bold text-orange-600 hover:bg-orange-50 hover:border-orange-300 transition-all shadow-xs"
+          className="flex items-center justify-center gap-2 w-full rounded-2xl border border-orange-200 bg-white py-2 px-4 text-xs font-bold text-orange-600 hover:bg-orange-50 hover:border-orange-300 transition-all duration-300 hover:scale-[1.02] active:scale-95 shadow-xs"
         >
           <Store className="size-3.5" />
           <span>Customer Shop →</span>

@@ -17,9 +17,9 @@ import {
 import { OrderDetailSheet } from '@/components/orders/OrderDetailSheet'
 import { CardListSkeleton, ErrorState } from '@/components/common/QueryState'
 import { useOrders, useOrderStatusCounts } from '@/data/queries'
+import { useUpdateOrderStatus } from '@/data/mutations'
 import { useDebouncedValue } from '@/lib/useDebouncedValue'
 import { productImage } from '@/lib/productImage'
-import { useUpdateOrderStatus } from '@/data/mutations'
 import type { Order, OrderStatus } from '@/data/types'
 import { orderStatusConfig } from '@/lib/status'
 import { formatCurrency, formatDateLong } from '@/lib/format'
@@ -65,6 +65,7 @@ export function OrdersPage() {
   const { data: statusCounts } = useOrderStatusCounts()
   const updateStatus = useUpdateOrderStatus()
 
+  // Whole-business tallies, independent of the filter the list is under.
   const counts = useMemo(() => {
     const c = statusCounts
     if (!c) return { total: 0, pending: 0, inProgress: 0, delivered: 0 }
@@ -102,7 +103,7 @@ export function OrdersPage() {
 
       <div className="mx-auto flex max-w-7xl flex-col gap-5 px-3 py-4 md:px-8 md:py-6">
         
-        {/* RESPONSIVE 2X2 MOBILE / 4-COL DESKTOP ORDERS KPI METRIC CARDS */}
+        {/* RESPONSIVE 2X2 MOBILE / 4-COL DESKTOP ORDERS KPI METRIC CARDS WITH SMOOTH TRANSITIONS */}
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
           {stats.map((stat) => {
             const isActive = filter === stat.filter
@@ -113,16 +114,16 @@ export function OrdersPage() {
                 type="button"
                 onClick={() => setFilter(stat.filter)}
                 className={cn(
-                  'flex items-center justify-between gap-2 rounded-2xl p-3.5 sm:p-4 text-left transition-all cursor-pointer border shadow-2xs group',
+                  'flex items-center justify-between gap-2 rounded-2xl p-3.5 sm:p-4 text-left transition-all duration-300 ease-out cursor-pointer border shadow-2xs group active:scale-95',
                   isActive
                     ? 'border-orange-500 bg-gradient-to-br from-orange-500 to-rose-500 text-white shadow-md shadow-orange-500/25 ring-2 ring-orange-500/30 scale-[1.02]'
-                    : 'border-orange-100/80 bg-white text-slate-900 hover:bg-orange-50/60 hover:border-orange-200',
+                    : 'border-orange-100/80 bg-white text-slate-900 hover:bg-orange-50/60 hover:border-orange-200 hover:-translate-y-0.5',
                 )}
               >
                 <div className="space-y-0.5 min-w-0">
                   <span
                     className={cn(
-                      'block text-[11px] font-bold uppercase tracking-wider truncate',
+                      'block text-[11px] font-bold uppercase tracking-wider truncate transition-colors duration-300',
                       isActive ? 'text-white/80' : 'text-slate-500',
                     )}
                   >
@@ -130,7 +131,7 @@ export function OrdersPage() {
                   </span>
                   <span
                     className={cn(
-                      'block font-mono text-xl sm:text-2xl font-black tabular-nums tracking-tight',
+                      'block font-mono text-xl sm:text-2xl font-black tabular-nums tracking-tight transition-colors duration-300',
                       isActive ? 'text-white' : 'text-slate-900',
                     )}
                   >
@@ -140,7 +141,7 @@ export function OrdersPage() {
 
                 <span
                   className={cn(
-                    'flex size-9 sm:size-10 items-center justify-center rounded-xl shrink-0 transition-transform group-hover:scale-110',
+                    'flex size-9 sm:size-10 items-center justify-center rounded-xl shrink-0 transition-transform duration-300 group-hover:scale-110',
                     isActive ? 'bg-white/20 text-white' : stat.color,
                   )}
                 >
@@ -159,7 +160,7 @@ export function OrdersPage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search ID or customer..."
-              className="rounded-2xl border-slate-200 bg-white pl-10 pr-4 text-xs font-medium text-slate-900 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
+              className="rounded-2xl border-slate-200 bg-white pl-10 pr-4 text-xs font-medium text-slate-900 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300"
               aria-label="Search orders"
             />
           </div>
@@ -169,7 +170,7 @@ export function OrdersPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="rounded-2xl border-slate-200 bg-white text-slate-700 hover:bg-orange-50 font-bold text-xs gap-1.5 h-9 shrink-0"
+                className="rounded-2xl border-slate-200 bg-white text-slate-700 hover:bg-orange-50 font-bold text-xs gap-1.5 h-9 shrink-0 transition-all duration-300"
               >
                 <Filter className="size-3.5 text-orange-500" aria-hidden="true" />
                 <span className="hidden sm:inline">Filter</span>
@@ -211,7 +212,7 @@ export function OrdersPage() {
           )}
         </div>
 
-        {/* CONTENT AREA: MOBILE CARD LIST (< md) VS DESKTOP TABLE (>= md) */}
+        {/* CONTENT AREA WITH SMOOTH FADE & SLIDE TRANSITIONS */}
         {isLoading ? (
           <div className="p-6 bg-white rounded-3xl border border-orange-100">
             <CardListSkeleton />
@@ -226,7 +227,10 @@ export function OrdersPage() {
             <p className="text-sm font-semibold">No orders match your search criteria.</p>
           </div>
         ) : (
-          <>
+          <div
+            key={`${filter}-${query}`}
+            className="motion-safe:animate-in motion-safe:fade-in-50 motion-safe:slide-in-from-bottom-2 duration-300 ease-out"
+          >
             {/* 1. MOBILE VIEW (< md): Touch-friendly card list */}
             <div className="flex flex-col gap-3 md:hidden">
               {filteredOrders.map((order) => {
@@ -238,14 +242,14 @@ export function OrdersPage() {
                     key={order.id}
                     onClick={() => setSelectedOrder(order)}
                     className={cn(
-                      'group rounded-3xl border bg-white p-4 shadow-2xs transition-all active:scale-[0.99] cursor-pointer space-y-3',
-                      isSelected ? 'border-orange-500 bg-orange-50/50 ring-2 ring-orange-500/20' : 'border-orange-100/90',
+                      'group rounded-3xl border bg-white p-4 shadow-2xs transition-all duration-300 active:scale-[0.99] cursor-pointer space-y-3',
+                      isSelected ? 'border-orange-500 bg-orange-50/50 ring-2 ring-orange-500/20' : 'border-orange-100/90 hover:border-orange-200 hover:-translate-y-0.5',
                     )}
                   >
                     {/* Top Row: Order ID & Status Badge */}
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono font-black text-sm text-slate-900">
+                        <span className="font-mono font-black text-sm text-slate-900 group-hover:text-orange-600 transition-colors">
                           #{order.id}
                         </span>
                         <span className="text-[11px] font-semibold text-slate-400">
@@ -256,7 +260,7 @@ export function OrdersPage() {
                       <Badge
                         variant="outline"
                         className={cn(
-                          'inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[10px] font-bold rounded-full border',
+                          'inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[10px] font-bold rounded-full border shadow-2xs',
                           config.badgeClass,
                         )}
                       >
@@ -293,7 +297,7 @@ export function OrdersPage() {
                               key={i}
                               src={productImage(item.imageUrl)}
                               alt={item.name}
-                              className="size-6.5 rounded-md border-2 border-white object-cover shadow-2xs"
+                              className="size-6.5 rounded-md border-2 border-white object-cover shadow-2xs transition-transform group-hover:scale-105"
                             />
                           ))}
                         </div>
@@ -306,7 +310,7 @@ export function OrdersPage() {
                         <span className="font-mono text-sm font-black text-slate-900">
                           {formatCurrency(order.total)}
                         </span>
-                        <ChevronRight className="size-4 text-slate-400 group-hover:text-orange-500 group-hover:translate-x-0.5 transition-all" />
+                        <ChevronRight className="size-4 text-slate-400 group-hover:text-orange-500 group-hover:translate-x-1 transition-all duration-300" />
                       </div>
                     </div>
                   </div>
@@ -339,7 +343,7 @@ export function OrdersPage() {
                           key={order.id}
                           onClick={() => setSelectedOrder(order)}
                           className={cn(
-                            'group cursor-pointer transition-all duration-200 hover:bg-orange-50/60',
+                            'group cursor-pointer transition-all duration-300 ease-out hover:bg-orange-50/70',
                             isSelected ? 'bg-orange-50/90 font-semibold border-l-4 border-orange-500' : 'bg-white',
                           )}
                         >
@@ -356,7 +360,7 @@ export function OrdersPage() {
 
                           <td className="py-4 px-5">
                             <div className="flex items-center gap-2.5">
-                              <Avatar className="size-7.5 ring-2 ring-orange-200/60 shrink-0">
+                              <Avatar className="size-7.5 ring-2 ring-orange-200/60 shrink-0 transition-transform group-hover:scale-110 duration-300">
                                 <AvatarFallback className="bg-gradient-to-tr from-orange-400 to-rose-400 text-white font-bold text-[10px]">
                                   {getInitials(order.customerName)}
                                 </AvatarFallback>
@@ -375,7 +379,7 @@ export function OrdersPage() {
                                     key={i}
                                     src={productImage(item.imageUrl)}
                                     alt={item.name}
-                                    className="size-7 rounded-lg border-2 border-white object-cover shadow-2xs"
+                                    className="size-7 rounded-lg border-2 border-white object-cover shadow-2xs transition-transform group-hover:scale-110 duration-300"
                                   />
                                 ))}
                               </div>
@@ -394,7 +398,7 @@ export function OrdersPage() {
                             <Badge
                               variant="outline"
                               className={cn(
-                                'inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold rounded-full border shadow-2xs',
+                                'inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold rounded-full border shadow-2xs transition-all duration-300',
                                 config.badgeClass,
                               )}
                             >
@@ -413,7 +417,7 @@ export function OrdersPage() {
                 </table>
               </div>
             </div>
-          </>
+          </div>
         )}
       </div>
 
