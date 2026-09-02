@@ -150,6 +150,22 @@ export interface ProductRevenueRow {
   unitsSold: number
 }
 
+/**
+ * The four headline figures. Each is a whole-business number read straight
+ * from the database, not a rolling window:
+ *  - totalRevenue  every non-cancelled order to date
+ *  - monthRevenue  non-cancelled orders placed in the current calendar month
+ *  - pendingOrders orders awaiting action, all time
+ *  - activeOrders  orders being fulfilled (processing, packed or shipped)
+ */
+export interface DashboardKpis {
+  totalRevenue: number
+  monthRevenue: number
+  pendingOrders: number
+  activeOrders: number
+}
+
+/** Today's activity only — drives the "Orders today" panel. */
 export interface TodaySummary {
   totalOrders: number
   statusCounts: {
@@ -158,8 +174,6 @@ export interface TodaySummary {
     packed: number
     delivered: number
   }
-  pendingCount: number
-  avgOrderValue: number
 }
 
 export type AttentionItem =

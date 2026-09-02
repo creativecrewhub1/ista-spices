@@ -3,6 +3,11 @@ import { DashboardService } from '../services/dashboard.service.ts'
 
 export const dashboardRoute = new Hono()
 
+dashboardRoute.get('/kpis', async (c) => {
+  const kpis = await DashboardService.kpis()
+  return c.json(kpis)
+})
+
 dashboardRoute.get('/today', async (c) => {
   const summary = await DashboardService.today()
   return c.json(summary)

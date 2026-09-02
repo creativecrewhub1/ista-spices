@@ -45,14 +45,19 @@ export function RevenuePage() {
             <KpiCard
               label="Total revenue"
               value={formatCurrency(summaryQuery.data!.total)}
+              caption="All orders to date"
               icon={Wallet}
               tone="primary"
             />
+            {/* This figure is a rolling 30-day window, not a calendar month —
+                the label says so rather than claiming "vs last week". */}
             <KpiCard
-              label="Monthly revenue"
+              label="Revenue, last 30 days"
               value={formatCurrency(summaryQuery.data!.monthly)}
+              caption="Rolling 30-day window"
               icon={IndianRupee}
               deltaPercent={summaryQuery.data!.monthlyDelta}
+              deltaLabel="vs previous 30 days"
               tone="accent"
             />
           </div>

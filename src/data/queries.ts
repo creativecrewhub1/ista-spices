@@ -5,6 +5,7 @@ import type {
   CatalogProduct,
   Customer,
   CustomerCounts,
+  DashboardKpis,
   InventoryItem,
   Order,
   OrderStatusEvent,
@@ -115,6 +116,14 @@ export function useOrderStatusCounts() {
   return useQuery({
     queryKey: ['order-status-counts'],
     queryFn: () => api.get<Record<OrderStatus, number>>('/orders/counts'),
+  })
+}
+
+/** The four headline figures, aggregated in Postgres. */
+export function useDashboardKpis() {
+  return useQuery({
+    queryKey: ['dashboard-kpis'],
+    queryFn: () => api.get<DashboardKpis>('/dashboard/kpis'),
   })
 }
 
