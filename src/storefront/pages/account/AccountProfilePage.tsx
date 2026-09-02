@@ -56,7 +56,7 @@ export function AccountProfilePage() {
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {mockAddresses.map((address) => (
-            <div key={address.id} className="flex flex-col gap-2 rounded-md border border-border p-4">
+            <div key={address.id} className="flex flex-col gap-2 rounded-2xl border border-border bg-card p-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-foreground">{address.label}</span>
                 {address.isDefault ? <Badge variant="outline">Default</Badge> : null}

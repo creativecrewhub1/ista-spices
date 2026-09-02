@@ -1,7 +1,8 @@
 import { Hono } from 'npm:hono@4'
 import { AuthService } from '../services/auth.service.ts'
+import type { AppEnv } from '../types/context.ts'
 
-export const authRoute = new Hono()
+export const authRoute = new Hono<AppEnv>()
 
 // Reachable before login — no requireAuth on this router.
 authRoute.get('/status', async (c) => {

@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils'
 const NAV_LINKS = [
   { label: 'Shop All', to: '/shop' },
   { label: 'Spice Powders', to: '/shop?category=spice-powders' },
+  { label: 'House Blends', to: '/shop?category=blends' },
   { label: 'Cooking Oils', to: '/shop?category=cooking-oils' },
   { label: 'Gift Sets', to: '/shop?category=gift-sets' },
   { label: 'Our Story', to: '/about' },
@@ -23,35 +24,84 @@ export function Header() {
   const { open: openSearch } = useSearch()
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-2 lg:hidden">
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Open menu"
-            onClick={() => setMobileOpen(true)}
-          >
-            <Menu className="size-5" aria-hidden="true" />
-          </Button>
+    <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85">
+      {/* Announcement strip — the reference opens on one, and it is the natural
+          home for the shipping threshold that otherwise only appears at checkout. */}
+      <div className="bg-primary text-primary-foreground">
+        <p className="mx-auto max-w-7xl px-4 py-2 text-center text-xs font-medium tracking-wide sm:px-6 lg:px-8">
+          Free shipping on orders over &#8377;999 · Ground fresh to order
+        </p>
+      </div>
+
+      <div className="border-b border-border">
+        {/* Row 1 — search / wordmark / account, wordmark centred like the
+            reference so the brand reads first on every page. */}
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-1 items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Open menu"
+              className="lg:hidden"
+              onClick={() => setMobileOpen(true)}
+            >
+              <Menu className="size-5" aria-hidden="true" />
+            </Button>
+            <Button variant="ghost" size="icon" aria-label="Search" onClick={openSearch}>
+              <Search className="size-[1.15rem]" aria-hidden="true" />
+            </Button>
+          </div>
+
+          <Link to="/" className="flex shrink-0 items-center gap-2">
+            <span className="flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
+              <Flame className="size-4" aria-hidden="true" />
+            </span>
+            <span className="font-display text-xl font-medium tracking-tight text-foreground">Ista Spices</span>
+          </Link>
+
+          <div className="flex flex-1 items-center justify-end gap-1">
+            <Button variant="ghost" size="icon" aria-label="Wishlist" className="relative hidden sm:inline-flex" asChild>
+              <Link to="/account/wishlist">
+                <Heart className="size-[1.15rem]" aria-hidden="true" />
+                {wishlistIds.size > 0 ? (
+                  <span className="absolute right-1 top-1 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
+                    {wishlistIds.size}
+                  </span>
+                ) : null}
+              </Link>
+            </Button>
+            <Button variant="ghost" size="icon" aria-label="Account" className="hidden sm:inline-flex" asChild>
+              <Link to="/account">
+                <User className="size-[1.15rem]" aria-hidden="true" />
+              </Link>
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label={`Cart, ${itemCount} items`}
+              className="relative"
+              onClick={openCart}
+            >
+              <ShoppingBag className="size-[1.15rem]" aria-hidden="true" />
+              {itemCount > 0 ? (
+                <span className="absolute right-1 top-1 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
+                  {itemCount}
+                </span>
+              ) : null}
+            </Button>
+          </div>
         </div>
 
-        <Link to="/" className="flex items-center gap-2">
-          <span className="flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-            <Flame className="size-4" aria-hidden="true" />
-          </span>
-          <span className="font-display text-lg font-medium tracking-tight text-foreground">Ista Spices</span>
-        </Link>
-
-        <nav className="hidden items-center gap-8 lg:flex" aria-label="Primary">
+        {/* Row 2 — the nav itself, centred and quiet under the wordmark. */}
+        <nav className="hidden justify-center gap-9 border-t border-border py-3 lg:flex" aria-label="Primary">
           {NAV_LINKS.map((link) => (
             <NavLink
               key={link.label}
               to={link.to}
               className={({ isActive }) =>
                 cn(
-                  'text-sm text-muted-foreground transition-colors hover:text-foreground',
-                  isActive && 'text-foreground',
+                  'text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground transition-colors hover:text-primary',
+                  isActive && 'text-primary',
                 )
               }
             >
@@ -59,35 +109,6 @@ export function Header() {
             </NavLink>
           ))}
         </nav>
-
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" aria-label="Search" onClick={openSearch}>
-            <Search className="size-[1.15rem]" aria-hidden="true" />
-          </Button>
-          <Button variant="ghost" size="icon" aria-label="Wishlist" className="relative hidden sm:inline-flex" asChild>
-            <Link to="/account/wishlist">
-              <Heart className="size-[1.15rem]" aria-hidden="true" />
-              {wishlistIds.size > 0 ? (
-                <span className="absolute right-1 top-1 flex size-4 items-center justify-center rounded-full bg-accent text-[10px] font-medium text-accent-foreground">
-                  {wishlistIds.size}
-                </span>
-              ) : null}
-            </Link>
-          </Button>
-          <Button variant="ghost" size="icon" aria-label="Account" className="hidden sm:inline-flex" asChild>
-            <Link to="/account">
-              <User className="size-[1.15rem]" aria-hidden="true" />
-            </Link>
-          </Button>
-          <Button variant="ghost" size="icon" aria-label={`Cart, ${itemCount} items`} className="relative" onClick={openCart}>
-            <ShoppingBag className="size-[1.15rem]" aria-hidden="true" />
-            {itemCount > 0 ? (
-              <span className="absolute right-1 top-1 flex size-4 items-center justify-center rounded-full bg-accent text-[10px] font-medium text-accent-foreground">
-                {itemCount}
-              </span>
-            ) : null}
-          </Button>
-        </div>
       </div>
 
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>

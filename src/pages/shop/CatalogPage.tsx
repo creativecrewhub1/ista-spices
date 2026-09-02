@@ -1,127 +1,77 @@
-import { useState } from 'react'
-import { Check, Plus } from 'lucide-react'
-import { ShopHeader } from '@/components/shop/ShopHeader'
-import { ProductVisual } from '@/components/shop/ProductVisual'
-import { CardListSkeleton, ErrorState } from '@/components/common/QueryState'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { useState, useMemo } from 'react'
+import { SpicestHeader } from '@/components/shop/SpicestHeader'
+import { SpicestHero } from '@/components/shop/SpicestHero'
+import { SpicestCategoryBanners } from '@/components/shop/SpicestCategoryBanners'
+import { SpicestProductGrid } from '@/components/shop/SpicestProductGrid'
+import { SpicestTestimonials } from '@/components/shop/SpicestTestimonials'
+import { SpicestBlogSection } from '@/components/shop/SpicestBlogSection'
+import { SpicestNewsletter } from '@/components/shop/SpicestNewsletter'
+import { SpicestFooter } from '@/components/shop/SpicestFooter'
 import { useCatalog } from '@/data/queries'
-import { useCart } from '@/shop/CartContext'
-import { categoryConfig, spiceLevelConfig } from '@/lib/status'
-import { formatCurrency } from '@/lib/format'
 import { pageEnter } from '@/lib/motion'
 import { cn } from '@/lib/utils'
-import type { CatalogProduct, PackSizeLabel } from '@/data/types'
 
-function ProductTile({ product }: { product: CatalogProduct }) {
-  const { addItem } = useCart()
-  const [size, setSize] = useState<PackSizeLabel>(product.packSizes[0]?.size ?? '250g')
-  const [added, setAdded] = useState(false)
+export function CatalogPage() {
+  const { data: products } = useCatalog()
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('all')
 
-  const price = product.packSizes.find((p) => p.size === size)?.price ?? 0
-  const category = categoryConfig[product.category]
+  const filteredProducts = useMemo(() => {
+    if (!products) return undefined
+    return products.filter((p) => {
+      const matchesSearch = searchQuery === '' || 
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        p.description.toLowerCase().includes(searchQuery.toLowerCase())
+      
+      const matchesCat = selectedCategory === 'all' || 
+        (selectedCategory === 'blends' ? p.category === 'spice-powder' : p.category === selectedCategory)
+      
+      return matchesSearch && matchesCat
+    })
+  }, [products, searchQuery, selectedCategory])
 
-  function handleAdd() {
-    addItem(product, size, 1)
-    setAdded(true)
-    setTimeout(() => setAdded(false), 1200)
+  const scrollToProducts = () => {
+    const el = document.getElementById('products')
+    if (el) el.scrollIntoView({ behavior: 'smooth' })
   }
 
   return (
-    <div className="group flex flex-col overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-black/5 transition-shadow duration-200 hover:shadow-lg">
-      <ProductVisual
-        id={product.id}
-        category={product.category}
-        className="aspect-square w-full transition-transform duration-300 group-hover:scale-[1.03]"
+    <div className={cn('storefront min-h-svh bg-white font-sans text-gray-900', pageEnter)}>
+      {/* 1. Header Navbar */}
+      <SpicestHeader 
+        onSearchChange={setSearchQuery} 
+        activeCategory={selectedCategory}
+        onCategorySelect={setSelectedCategory}
       />
 
-      <div className="flex flex-1 flex-col p-4">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="text-sm font-semibold text-foreground">{product.name}</h3>
-          <Badge variant="outline" className={cn('shrink-0 text-[11px]', category.badgeClass)}>
-            {category.label}
-          </Badge>
-        </div>
-        <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{product.description}</p>
-        {product.spiceLevel ? (
-          <div className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span className={cn('size-1.5 rounded-full', spiceLevelConfig[product.spiceLevel].dotClass)} />
-            {spiceLevelConfig[product.spiceLevel].label}
-          </div>
-        ) : null}
+      {/* 2. Hero Section */}
+      <SpicestHero 
+        onBuyNowClick={scrollToProducts}
+        onMoreProductClick={scrollToProducts}
+      />
 
-        <div className="mt-3 flex flex-wrap gap-1.5" role="radiogroup" aria-label={`Pack size for ${product.name}`}>
-          {product.packSizes.map((pack) => (
-            <button
-              key={pack.size}
-              type="button"
-              role="radio"
-              aria-checked={size === pack.size}
-              onClick={() => setSize(pack.size)}
-              className={cn(
-                'rounded-full border px-2.5 py-1 text-xs transition-colors',
-                size === pack.size
-                  ? 'border-primary bg-primary text-primary-foreground'
-                  : 'border-border text-muted-foreground hover:border-primary/50 hover:text-foreground',
-              )}
-            >
-              {pack.size}
-            </button>
-          ))}
-        </div>
+      {/* 3. Category Feature Banners */}
+      <SpicestCategoryBanners 
+        onCategoryClick={(cat) => {
+          setSelectedCategory(cat)
+          scrollToProducts()
+        }}
+      />
 
-        <div className="mt-4 flex items-center justify-between gap-2">
-          <span className="text-base font-semibold tabular-nums text-foreground">{formatCurrency(price)}</span>
-          <Button
-            size="sm"
-            className={cn('gap-1.5 transition-colors', added && 'bg-success hover:bg-success')}
-            onClick={handleAdd}
-          >
-            {added ? (
-              <>
-                <Check className="size-3.5 motion-safe:animate-in motion-safe:zoom-in-50" aria-hidden="true" />
-                Added
-              </>
-            ) : (
-              <>
-                <Plus className="size-3.5" aria-hidden="true" />
-                Add
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
-    </div>
-  )
-}
+      {/* 4. "Our Best product" Grid */}
+      <SpicestProductGrid products={filteredProducts} />
 
-export function CatalogPage() {
-  const { data: products, isLoading, error } = useCatalog()
+      {/* 5. Customer Testimonials */}
+      <SpicestTestimonials />
 
-  return (
-    <div className={cn('storefront min-h-svh bg-background pb-8 font-sans text-foreground', pageEnter)}>
-      <ShopHeader />
-      <div className="mx-auto max-w-6xl px-4 py-8 md:px-8">
-        <span className="mb-2 inline-block text-xs font-semibold uppercase tracking-[0.14em] text-primary">
-          Fresh & small-batch
-        </span>
-        <h1 className="mb-1.5 font-display text-3xl font-bold text-foreground sm:text-4xl">
-          Shop spices &amp; oils
-        </h1>
-        <p className="mb-8 text-muted-foreground">Freshly ground spices and cold-pressed oils, packed to order.</p>
+      {/* 6. Blog Section */}
+      <SpicestBlogSection />
 
-        {isLoading ? (
-          <CardListSkeleton />
-        ) : error ? (
-          <ErrorState message={error.message} />
-        ) : (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
-            {products?.map((product) => (
-              <ProductTile key={product.id} product={product} />
-            ))}
-          </div>
-        )}
-      </div>
+      {/* 7. Newsletter Subscription Banner */}
+      <SpicestNewsletter />
+
+      {/* 8. Footer */}
+      <SpicestFooter />
     </div>
   )
 }

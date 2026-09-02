@@ -92,19 +92,25 @@ export function ShopPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <Breadcrumbs items={[{ label: 'Home', to: '/' }, { label: activeCategory?.label ?? 'Shop All' }]} />
+    <div className="band-cream">
+      {/* Page header sits on its own white band, matching the alternating
+          section rhythm the rest of the storefront uses. */}
+      <section className="band-white border-b border-border">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+          <Breadcrumbs items={[{ label: 'Home', to: '/' }, { label: activeCategory?.label ?? 'Shop All' }]} />
+          <div className="mt-4 flex flex-col gap-2">
+            <h1 className="font-display text-3xl font-medium text-foreground sm:text-4xl">
+              {activeCategory?.label ?? 'Shop All'}
+            </h1>
+            <p className="max-w-2xl text-muted-foreground">
+              {activeCategory?.description ??
+                'Every spice powder, oil, and blend we make — small-batch and ground fresh to order.'}
+            </p>
+          </div>
+        </div>
+      </section>
 
-      <div className="mt-4 flex flex-col gap-2 border-b border-border pb-6">
-        <h1 className="font-display text-3xl font-medium text-foreground sm:text-4xl">
-          {activeCategory?.label ?? 'Shop All'}
-        </h1>
-        <p className="max-w-2xl text-muted-foreground">
-          {activeCategory?.description ?? 'Every spice powder, oil, and blend we make — small-batch and ground fresh to order.'}
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 gap-10 py-8 lg:grid-cols-[240px_1fr]">
+      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-10 px-4 py-10 sm:px-6 lg:grid-cols-[240px_1fr] lg:px-8">
         <aside className="hidden lg:block">
           <FilterPanel filters={filters} onChange={updateFilters} />
         </aside>
@@ -145,7 +151,7 @@ export function ShopPage() {
             <div
               className={
                 view === 'grid'
-                  ? 'grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 xl:grid-cols-4'
+                  ? 'grid grid-cols-2 gap-5 sm:grid-cols-3 xl:grid-cols-4'
                   : 'flex flex-col gap-4'
               }
             >
@@ -168,7 +174,7 @@ export function ShopPage() {
             <div
               className={
                 view === 'grid'
-                  ? 'grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 xl:grid-cols-4'
+                  ? 'grid grid-cols-2 gap-5 sm:grid-cols-3 xl:grid-cols-4'
                   : 'flex flex-col gap-4'
               }
             >

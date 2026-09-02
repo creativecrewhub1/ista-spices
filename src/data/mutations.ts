@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/apiClient'
 import { supabaseAuth } from '@/lib/supabaseAuthClient'
-import type { CheckoutInput, Order, OrderStatus, Product } from './types'
+import type { CheckoutInput, InventoryItem, Order, OrderStatus, Product } from './types'
 
 /**
  * Signs up the one admin account. The "only if none exists yet" rule is
@@ -46,6 +46,28 @@ export function useDeleteProduct() {
   })
 }
 
+export function useSaveInventoryItem() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (item: InventoryItem) => api.post('/inventory-items', item),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['inventory-items'] })
+    },
+  })
+}
+
+export function useDeleteInventoryItem() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (itemId: string) => api.delete(`/inventory-items/${itemId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['inventory-items'] })
+    },
+  })
+}
+
 /** Places a storefront order — server resolves/creates the customer record and recomputes prices from the DB. */
 export function useCheckout() {
   const queryClient = useQueryClient()
@@ -64,19 +86,25 @@ export function useUpdateOrderStatus() {
   return useMutation({
     mutationFn: ({ orderId, status }: { orderId: string; status: OrderStatus }) =>
       api.patch(`/orders/${orderId}/status`, { status }),
+    // The list is cached per filter/search combination, so the optimistic
+    // patch has to reach every ['orders', ...] variant, not just a bare key.
     onMutate: async ({ orderId, status }) => {
       await queryClient.cancelQueries({ queryKey: ['orders'] })
-      const previous = queryClient.getQueryData<Order[]>(['orders'])
-      queryClient.setQueryData<Order[]>(['orders'], (old) =>
+      const previous = queryClient.getQueriesData<Order[]>({ queryKey: ['orders'] })
+      queryClient.setQueriesData<Order[]>({ queryKey: ['orders'] }, (old) =>
         old?.map((order) => (order.id === orderId ? { ...order, status } : order)),
       )
       return { previous }
     },
     onError: (_err, _vars, context) => {
-      if (context?.previous) queryClient.setQueryData(['orders'], context.previous)
+      for (const [key, data] of context?.previous ?? []) {
+        queryClient.setQueryData(key, data)
+      }
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] })
+      // A status change moves an order between KPI buckets.
+      queryClient.invalidateQueries({ queryKey: ['order-status-counts'] })
     },
   })
 }

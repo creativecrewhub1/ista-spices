@@ -21,6 +21,7 @@ import { QuantityStepper } from '../components/QuantityStepper'
 import { ProductCard } from '../components/ProductCard'
 import { getProductBySlug, getRelatedProducts, categories } from '../data/products'
 import { reviewsForProduct } from '../data/reviews'
+import { productImage } from '../data/images'
 import { useCart } from '../cart/CartContext'
 import { useWishlist } from '../wishlist/WishlistContext'
 import { cn } from '@/lib/utils'
@@ -52,8 +53,10 @@ export function ProductDetailPage() {
     toast.success(`Added ${qty} × ${product!.name} (${variant.label}) to cart`)
   }
 
+  const photo = productImage(product.slug)
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="band-cream mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <Breadcrumbs
         items={[
           { label: 'Home', to: '/' },
@@ -65,7 +68,13 @@ export function ProductDetailPage() {
       <div className="mt-6 grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-16">
         {/* Gallery */}
         <div className="flex flex-col gap-3">
-          <ProductVisual accent={product.accent} className="aspect-square w-full rounded-md" iconClassName="size-16" />
+          <ProductVisual
+            accent={product.accent}
+            src={photo}
+            alt={product.name}
+            className="aspect-square w-full rounded-3xl"
+            iconClassName="size-16"
+          />
           <div className="flex gap-3">
             {[0, 1, 2, 3].map((i) => (
               <button
@@ -73,13 +82,18 @@ export function ProductDetailPage() {
                 type="button"
                 onClick={() => setActiveThumb(i)}
                 className={cn(
-                  'flex-1 overflow-hidden rounded-md border-2 transition-colors',
-                  activeThumb === i ? 'border-foreground' : 'border-transparent',
+                  'flex-1 overflow-hidden rounded-xl border-2 transition-colors',
+                  activeThumb === i ? 'border-primary' : 'border-transparent',
                 )}
                 aria-label={`View image ${i + 1}`}
                 aria-current={activeThumb === i}
               >
-                <ProductVisual accent={product.accent} className="aspect-square w-full" iconClassName="size-6" />
+                <ProductVisual
+                  accent={product.accent}
+                  src={photo}
+                  className="aspect-square w-full"
+                  iconClassName="size-6"
+                />
               </button>
             ))}
           </div>
@@ -126,7 +140,7 @@ export function ProductDetailPage() {
                   <RadioGroupItem value={v.id} id={`variant-${v.id}`} className="peer sr-only" />
                   <Label
                     htmlFor={`variant-${v.id}`}
-                    className="flex cursor-pointer items-center rounded-md border border-border px-4 py-2 text-sm text-foreground transition-colors peer-data-[state=checked]:border-foreground peer-data-[state=checked]:bg-foreground peer-data-[state=checked]:text-primary-foreground"
+                    className="flex cursor-pointer items-center rounded-full border border-border px-4 py-2 text-sm text-foreground transition-colors peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary peer-data-[state=checked]:text-primary-foreground"
                   >
                     {v.label}
                   </Label>
@@ -155,11 +169,11 @@ export function ProductDetailPage() {
               aria-pressed={isWishlisted}
               aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
             >
-              <Heart className={cn('size-4', isWishlisted && 'fill-accent text-accent')} aria-hidden="true" />
+              <Heart className={cn('size-4', isWishlisted && 'fill-primary text-primary')} aria-hidden="true" />
             </Button>
           </div>
 
-          <div className="flex flex-col gap-3 rounded-md border border-border p-4 text-sm text-muted-foreground">
+          <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground">
             <div className="flex items-center gap-2.5">
               <Truck className="size-4 shrink-0 text-accent" aria-hidden="true" />
               Free shipping on orders over &#8377;999 — dispatched within 48 hours.
@@ -247,7 +261,7 @@ export function ProductDetailPage() {
       {related.length > 0 ? (
         <section className="mt-20 border-t border-border pt-12">
           <h2 className="mb-8 font-display text-2xl font-medium text-foreground">You may also like</h2>
-          <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-5 sm:grid-cols-4">
             {related.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}

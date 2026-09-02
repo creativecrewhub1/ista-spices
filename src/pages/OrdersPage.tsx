@@ -1,122 +1,431 @@
 import { useMemo, useState } from 'react'
-import { Search } from 'lucide-react'
+import { Filter, Search, X, ShoppingBag, Calendar, ChevronRight, Clock, PackageCheck, CheckCircle2 } from 'lucide-react'
 import { TopBar } from '@/components/layout/TopBar'
 import { Input } from '@/components/ui/input'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { OrderCard } from '@/components/orders/OrderCard'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { OrderDetailSheet } from '@/components/orders/OrderDetailSheet'
 import { CardListSkeleton, ErrorState } from '@/components/common/QueryState'
-import { useOrders } from '@/data/queries'
+import { useOrders, useOrderStatusCounts } from '@/data/queries'
 import { useUpdateOrderStatus } from '@/data/mutations'
+import { useDebouncedValue } from '@/lib/useDebouncedValue'
+import { productImage } from '@/lib/productImage'
 import type { Order, OrderStatus } from '@/data/types'
+import { orderStatusConfig } from '@/lib/status'
+import { formatCurrency, formatDateLong } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { pageEnter } from '@/lib/motion'
 
-type FilterValue = 'all' | OrderStatus
+type FilterValue = 'all' | 'in_progress' | OrderStatus
+
+const IN_PROGRESS_STATUSES: OrderStatus[] = ['processing', 'packed', 'shipped']
+
+const FILTER_OPTIONS: { label: string; value: FilterValue }[] = [
+  { label: 'All', value: 'all' },
+  { label: 'Pending', value: 'pending' },
+  { label: 'Processing', value: 'processing' },
+  { label: 'Packed', value: 'packed' },
+  { label: 'Shipped', value: 'shipped' },
+  { label: 'Delivered', value: 'delivered' },
+  { label: 'Cancelled', value: 'cancelled' },
+]
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(' ')
+  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+  return name.slice(0, 2).toUpperCase()
+}
 
 export function OrdersPage() {
-  const { data: orders, isLoading, error } = useOrders()
-  const updateStatus = useUpdateOrderStatus()
-
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<FilterValue>('all')
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
 
+  // Don't fire a request on every keystroke.
+  const debouncedQuery = useDebouncedValue(query, 300)
+
+  const serverStatus = filter === 'all' || filter === 'in_progress' ? undefined : filter
+  const {
+    data: orders,
+    isLoading,
+    error,
+  } = useOrders({ status: serverStatus, search: debouncedQuery || undefined })
+  const { data: statusCounts } = useOrderStatusCounts()
+  const updateStatus = useUpdateOrderStatus()
+
+  // Whole-business tallies, independent of the filter the list is under.
   const counts = useMemo(() => {
-    const list = orders ?? []
+    const c = statusCounts
+    if (!c) return { total: 0, pending: 0, inProgress: 0, delivered: 0 }
     return {
-      total: list.length,
-      pending: list.filter((o) => o.status === 'pending').length,
-      inProgress: list.filter((o) => o.status === 'processing' || o.status === 'packed' || o.status === 'shipped').length,
-      delivered: list.filter((o) => o.status === 'delivered').length,
+      total: c.pending + c.processing + c.packed + c.shipped + c.delivered + c.cancelled,
+      pending: c.pending,
+      inProgress: c.processing + c.packed + c.shipped,
+      delivered: c.delivered,
     }
-  }, [orders])
+  }, [statusCounts])
+
+  const stats = [
+    { label: 'All Orders', value: counts.total, filter: 'all' as FilterValue, icon: ShoppingBag, color: 'text-orange-500 bg-orange-100/70' },
+    { label: 'Pending', value: counts.pending, filter: 'pending' as FilterValue, icon: Clock, color: 'text-amber-600 bg-amber-100/70' },
+    { label: 'In Progress', value: counts.inProgress, filter: 'in_progress' as FilterValue, icon: PackageCheck, color: 'text-blue-600 bg-blue-100/70' },
+    { label: 'Delivered', value: counts.delivered, filter: 'delivered' as FilterValue, icon: CheckCircle2, color: 'text-emerald-600 bg-emerald-100/70' },
+  ]
 
   const filteredOrders = useMemo(() => {
-    return (orders ?? []).filter((order) => {
-      const matchesQuery =
-        order.customerName.toLowerCase().includes(query.toLowerCase()) ||
-        order.id.toLowerCase().includes(query.toLowerCase())
-      const matchesFilter = filter === 'all' || order.status === filter
-      return matchesQuery && matchesFilter
-    })
-  }, [orders, query, filter])
+    const list = orders ?? []
+    if (filter !== 'in_progress') return list
+    return list.filter((order) => IN_PROGRESS_STATUSES.includes(order.status))
+  }, [orders, filter])
 
   function handleStatusChange(orderId: string, status: OrderStatus) {
     updateStatus.mutate({ orderId, status })
     setSelectedOrder((prev) => (prev && prev.id === orderId ? { ...prev, status } : prev))
   }
 
-  const now = Date.now()
-
   return (
-    <div className={cn('pb-8', pageEnter)}>
-      <TopBar title="Orders" subtitle={`${counts.total} orders total`} />
+    <div className={cn('pb-16 min-h-screen bg-[#F7F3ED]', pageEnter)}>
+      <TopBar title="Orders Management" subtitle={`${counts.total} total orders placed`} />
 
-      <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 md:px-8 md:py-6">
-        <div className="grid grid-cols-4 gap-2 text-center sm:max-w-md">
-          {[
-            { label: 'Total', value: counts.total },
-            { label: 'Pending', value: counts.pending },
-            { label: 'In progress', value: counts.inProgress },
-            { label: 'Delivered', value: counts.delivered },
-          ].map((stat) => (
-            <div key={stat.label} className="rounded-lg border border-border bg-card px-2 py-2.5">
-              <p className="font-mono text-lg font-semibold tabular-nums">{stat.value}</p>
-              <p className="text-[11px] text-muted-foreground">{stat.label}</p>
-            </div>
-          ))}
+      <div className="mx-auto flex max-w-7xl flex-col gap-5 px-3 py-4 md:px-8 md:py-6">
+        
+        {/* RESPONSIVE 2X2 MOBILE / 4-COL DESKTOP ORDERS KPI METRIC CARDS WITH SMOOTH TRANSITIONS */}
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
+          {stats.map((stat) => {
+            const isActive = filter === stat.filter
+            const Icon = stat.icon
+            return (
+              <button
+                key={stat.label}
+                type="button"
+                onClick={() => setFilter(stat.filter)}
+                className={cn(
+                  'flex items-center justify-between gap-2 rounded-2xl p-3.5 sm:p-4 text-left transition-all duration-300 ease-out cursor-pointer border shadow-2xs group active:scale-95',
+                  isActive
+                    ? 'border-orange-500 bg-gradient-to-br from-orange-500 to-rose-500 text-white shadow-md shadow-orange-500/25 ring-2 ring-orange-500/30 scale-[1.02]'
+                    : 'border-orange-100/80 bg-white text-slate-900 hover:bg-orange-50/60 hover:border-orange-200 hover:-translate-y-0.5',
+                )}
+              >
+                <div className="space-y-0.5 min-w-0">
+                  <span
+                    className={cn(
+                      'block text-[11px] font-bold uppercase tracking-wider truncate transition-colors duration-300',
+                      isActive ? 'text-white/80' : 'text-slate-500',
+                    )}
+                  >
+                    {stat.label}
+                  </span>
+                  <span
+                    className={cn(
+                      'block font-mono text-xl sm:text-2xl font-black tabular-nums tracking-tight transition-colors duration-300',
+                      isActive ? 'text-white' : 'text-slate-900',
+                    )}
+                  >
+                    {stat.value}
+                  </span>
+                </div>
+
+                <span
+                  className={cn(
+                    'flex size-9 sm:size-10 items-center justify-center rounded-xl shrink-0 transition-transform duration-300 group-hover:scale-110',
+                    isActive ? 'bg-white/20 text-white' : stat.color,
+                  )}
+                >
+                  <Icon className="size-4.5 sm:size-5" />
+                </span>
+              </button>
+            )
+          })}
         </div>
 
-        <div className="relative sm:max-w-xs">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by customer or order ID..."
-            className="pl-9"
-            aria-label="Search orders"
-          />
-        </div>
-
-        <Tabs value={filter} onValueChange={(v) => setFilter(v as FilterValue)}>
-          <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-            <TabsList className="w-max">
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="pending">Pending</TabsTrigger>
-              <TabsTrigger value="processing">Processing</TabsTrigger>
-              <TabsTrigger value="packed">Packed</TabsTrigger>
-              <TabsTrigger value="shipped">Shipped</TabsTrigger>
-              <TabsTrigger value="delivered">Delivered</TabsTrigger>
-              <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
-            </TabsList>
+        {/* Search Bar & Filter Controls */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search ID or customer..."
+              className="rounded-2xl border-slate-200 bg-white pl-10 pr-4 text-xs font-medium text-slate-900 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300"
+              aria-label="Search orders"
+            />
           </div>
-        </Tabs>
 
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-2xl border-slate-200 bg-white text-slate-700 hover:bg-orange-50 font-bold text-xs gap-1.5 h-9 shrink-0 transition-all duration-300"
+              >
+                <Filter className="size-3.5 text-orange-500" aria-hidden="true" />
+                <span className="hidden sm:inline">Filter</span>
+                {filter !== 'all' ? (
+                  <span className="ml-0.5 flex size-4 items-center justify-center rounded-full bg-orange-500 text-[10px] font-bold text-white">
+                    1
+                  </span>
+                ) : null}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="rounded-2xl border-slate-200 p-2 shadow-xl bg-white">
+              <DropdownMenuLabel className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Filter by Status
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-slate-100" />
+              <DropdownMenuRadioGroup value={filter} onValueChange={(v) => setFilter(v as FilterValue)}>
+                {FILTER_OPTIONS.map((option) => (
+                  <DropdownMenuRadioItem key={option.value} value={option.value} className="rounded-xl font-semibold cursor-pointer">
+                    {option.label}
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {(filter !== 'all' || query) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="rounded-2xl text-slate-500 hover:text-rose-600 font-semibold text-xs gap-1 shrink-0"
+              onClick={() => {
+                setFilter('all')
+                setQuery('')
+              }}
+            >
+              <X className="size-3.5" aria-hidden="true" />
+              <span className="hidden sm:inline">Clear</span>
+            </Button>
+          )}
+        </div>
+
+        {/* CONTENT AREA WITH SMOOTH FADE & SLIDE TRANSITIONS */}
         {isLoading ? (
-          <CardListSkeleton />
+          <div className="p-6 bg-white rounded-3xl border border-orange-100">
+            <CardListSkeleton />
+          </div>
         ) : error ? (
-          <ErrorState message={error.message} />
+          <div className="p-6 bg-white rounded-3xl border border-orange-100">
+            <ErrorState message={error.message} />
+          </div>
         ) : filteredOrders.length === 0 ? (
-          <p className="py-10 text-center text-sm text-muted-foreground">No orders match your search.</p>
+          <div className="py-16 bg-white rounded-3xl border border-orange-100 text-center text-slate-500 space-y-2">
+            <ShoppingBag className="size-10 mx-auto text-slate-300" />
+            <p className="text-sm font-semibold">No orders match your search criteria.</p>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredOrders.map((order) => (
-              <OrderCard
-                key={order.id}
-                order={order}
-                onOpen={setSelectedOrder}
-                isLate={
-                  order.status !== 'delivered' &&
-                  order.status !== 'cancelled' &&
-                  new Date(order.eta).getTime() < now
-                }
-              />
-            ))}
+          <div
+            key={`${filter}-${query}`}
+            className="motion-safe:animate-in motion-safe:fade-in-50 motion-safe:slide-in-from-bottom-2 duration-300 ease-out"
+          >
+            {/* 1. MOBILE VIEW (< md): Touch-friendly card list */}
+            <div className="flex flex-col gap-3 md:hidden">
+              {filteredOrders.map((order) => {
+                const config = orderStatusConfig[order.status]
+                const isSelected = selectedOrder?.id === order.id
+
+                return (
+                  <div
+                    key={order.id}
+                    onClick={() => setSelectedOrder(order)}
+                    className={cn(
+                      'group rounded-3xl border bg-white p-4 shadow-2xs transition-all duration-300 active:scale-[0.99] cursor-pointer space-y-3',
+                      isSelected ? 'border-orange-500 bg-orange-50/50 ring-2 ring-orange-500/20' : 'border-orange-100/90 hover:border-orange-200 hover:-translate-y-0.5 hover:shadow-md',
+                    )}
+                  >
+                    {/* Top Row: Order ID & Status Badge */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-black text-sm text-slate-900 group-hover:text-orange-600 transition-colors duration-300">
+                          #{order.id}
+                        </span>
+                        <span className="text-[11px] font-semibold text-slate-400">
+                          • {order.kind === 'subscription' ? 'Refill' : 'Standard'}
+                        </span>
+                      </div>
+
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          'inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[10px] font-bold rounded-full border shadow-2xs transition-all duration-300 group-hover:scale-105',
+                          config.badgeClass,
+                        )}
+                      >
+                        <span className={cn('size-1.5 rounded-full', config.dotClass)} />
+                        <span>{config.label}</span>
+                      </Badge>
+                    </div>
+
+                    {/* Middle Row: Customer Info & Date */}
+                    <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <Avatar className="size-7 ring-1 ring-orange-200/80 shrink-0 transition-transform duration-300 group-hover:scale-110">
+                          <AvatarFallback className="bg-gradient-to-tr from-orange-400 to-rose-400 text-white font-bold text-[10px]">
+                            {getInitials(order.customerName)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="font-bold text-xs text-slate-900 truncate group-hover:text-orange-600 transition-colors duration-300">
+                          {order.customerName}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1 text-[11px] text-slate-500 font-medium shrink-0">
+                        <Calendar className="size-3 text-orange-400" />
+                        <span>{formatDateLong(order.placedAt)}</span>
+                      </div>
+                    </div>
+
+                    {/* Bottom Row: Product Mini Thumbnails & Total Price */}
+                    <div className="flex items-center justify-between pt-1 border-t border-slate-100/80">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="flex -space-x-2 shrink-0">
+                          {order.items.slice(0, 3).map((item, i) => (
+                            <img
+                              key={i}
+                              src={productImage(item.imageUrl)}
+                              alt={item.name}
+                              className="size-6.5 rounded-md border-2 border-white object-cover shadow-2xs transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-0.5"
+                            />
+                          ))}
+                        </div>
+                        <span className="text-[11px] font-semibold text-slate-600 truncate">
+                          {order.items.length} item{order.items.length > 1 ? 's' : ''}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1 text-right">
+                        <span className="font-mono text-sm font-black text-slate-900 group-hover:text-orange-600 transition-colors duration-300">
+                          {formatCurrency(order.total)}
+                        </span>
+                        <ChevronRight className="size-4 text-slate-400 group-hover:text-orange-500 group-hover:translate-x-1 transition-all duration-300" />
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* 2. DESKTOP VIEW (>= md): Full 6-column Table with Smooth Full-Row Hover Effects */}
+            <div className="hidden md:block overflow-hidden rounded-3xl border border-orange-100/90 bg-white shadow-xs">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-orange-100/80 bg-[#FDF8F3] font-bold uppercase tracking-wider text-slate-500">
+                      <th className="py-4 px-5 w-32">Order ID</th>
+                      <th className="py-4 px-5 w-36">Placed Date</th>
+                      <th className="py-4 px-5 w-52">Customer</th>
+                      <th className="py-4 px-5">Products Ordered</th>
+                      <th className="py-4 px-5 w-36">Status</th>
+                      <th className="py-4 px-5 text-right w-32">Total</th>
+                    </tr>
+                  </thead>
+
+                  <tbody className="divide-y divide-slate-100/80">
+                    {filteredOrders.map((order) => {
+                      const isSelected = selectedOrder?.id === order.id
+                      const config = orderStatusConfig[order.status]
+
+                      return (
+                        <tr
+                          key={order.id}
+                          onClick={() => setSelectedOrder(order)}
+                          className={cn(
+                            'group cursor-pointer transition-all duration-300 ease-out',
+                            isSelected
+                              ? 'bg-gradient-to-r from-orange-100/80 via-orange-50/60 to-rose-50/30 font-semibold border-l-4 border-orange-500'
+                              : 'bg-white hover:bg-gradient-to-r hover:from-orange-50/90 hover:via-amber-50/40 hover:to-orange-50/20',
+                          )}
+                        >
+                          {/* Order ID */}
+                          <td className="py-4 px-5 font-mono font-bold text-slate-900 group-hover:text-orange-600 group-hover:translate-x-0.5 transition-all duration-300">
+                            #{order.id}
+                          </td>
+
+                          {/* Placed Date */}
+                          <td className="py-4 px-5 text-slate-600 font-medium">
+                            <div className="flex items-center gap-1.5 text-slate-500">
+                              <Calendar className="size-3 text-orange-400 shrink-0 group-hover:scale-110 transition-transform duration-300" />
+                              <span className="truncate">{formatDateLong(order.placedAt)}</span>
+                            </div>
+                          </td>
+
+                          {/* Customer */}
+                          <td className="py-4 px-5">
+                            <div className="flex items-center gap-2.5">
+                              <Avatar className="size-7.5 ring-2 ring-orange-200/60 shrink-0 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
+                                <AvatarFallback className="bg-gradient-to-tr from-orange-400 to-rose-400 text-white font-bold text-[10px]">
+                                  {getInitials(order.customerName)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="font-bold text-slate-900 group-hover:text-orange-600 transition-colors duration-300 text-xs truncate">
+                                {order.customerName}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* Products Ordered */}
+                          <td className="py-4 px-5">
+                            <div className="flex items-center gap-2">
+                              <div className="flex -space-x-2 shrink-0">
+                                {order.items.slice(0, 3).map((item, i) => (
+                                  <img
+                                    key={i}
+                                    src={productImage(item.imageUrl)}
+                                    alt={item.name}
+                                    className="size-7 rounded-lg border-2 border-white object-cover shadow-2xs transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-0.5"
+                                  />
+                                ))}
+                              </div>
+                              <span className="text-xs font-semibold text-slate-700 truncate group-hover:text-slate-900 transition-colors">
+                                {order.items.map((i) => i.name).join(', ')}
+                              </span>
+                              {order.items.length > 2 && (
+                                <span className="text-[10px] font-bold text-slate-400 shrink-0">
+                                  +{order.items.length - 2} more
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Status */}
+                          <td className="py-4 px-5">
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                'inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold rounded-full border shadow-2xs transition-all duration-300 group-hover:scale-105 group-hover:shadow-xs',
+                                config.badgeClass,
+                              )}
+                            >
+                              <span className={cn('size-1.5 rounded-full', config.dotClass)} />
+                              <span>{config.label}</span>
+                            </Badge>
+                          </td>
+
+                          {/* Total */}
+                          <td className="py-4 px-5 text-right font-mono text-sm font-black text-slate-900 group-hover:text-orange-600 group-hover:scale-105 transition-all duration-300">
+                            {formatCurrency(order.total)}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         )}
       </div>
 
+      {/* RIGHT SIDE ORDER DETAIL SHEET */}
       <OrderDetailSheet
         order={selectedOrder}
         onOpenChange={(open) => !open && setSelectedOrder(null)}

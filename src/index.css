@@ -167,7 +167,7 @@
   --radius: 1rem;
   font-family: var(--font-store-sans);
 
-  --background: #fffaf3;
+  --background: #fdf5e9;
   --foreground: #2b1b12;
   --card: #ffffff;
   --card-foreground: #2b1b12;
@@ -222,6 +222,53 @@
   --success-foreground: #0b1a0f;
   --warning: #fbbf24;
   --warning-foreground: #1c130a;
+}
+
+/*
+ * Storefront section bands.
+ *
+ * The reference storefront never sits on one flat colour — it alternates
+ * cream → white → sand → cream down the page, so each section reads as its own
+ * block without needing a divider line. These four classes are that system;
+ * page code just picks a band per <section> and never hand-codes a hex.
+ */
+.storefront .band-cream {
+  background-color: var(--background);
+}
+
+.storefront .band-white {
+  background-color: var(--card);
+}
+
+.storefront .band-sand {
+  background-color: #f9ead3;
+}
+
+.storefront .band-ink {
+  background-color: #241812;
+  color: #f7ead9;
+}
+
+.storefront.dark .band-sand {
+  background-color: #33230f;
+}
+
+.storefront.dark .band-ink {
+  background-color: #150e07;
+}
+
+/* Muted copy inside the dark band needs its own value — the token is tuned for
+   light surfaces and disappears against ink. */
+.storefront .band-ink .text-muted-foreground {
+  color: #bfa78f;
+}
+
+.storefront .band-ink .text-foreground {
+  color: #f7ead9;
+}
+
+.storefront .band-ink .border-border {
+  border-color: #3d2b1e;
 }
 
 /* Buttons across the whole app (admin + storefront) read as pills, not

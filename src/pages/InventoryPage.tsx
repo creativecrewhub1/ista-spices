@@ -14,52 +14,108 @@ import {
 } from '@/components/ui/dialog'
 import { ProductCard } from '@/components/inventory/ProductCard'
 import { ProductFormSheet } from '@/components/inventory/ProductFormSheet'
+import { InventoryItemCard } from '@/components/inventory/InventoryItemCard'
+import { InventoryItemFormSheet } from '@/components/inventory/InventoryItemFormSheet'
 import { CardListSkeleton, ErrorState } from '@/components/common/QueryState'
-import { useProducts } from '@/data/queries'
-import { useDeleteProduct, useSaveProduct } from '@/data/mutations'
-import type { Product, StockState } from '@/data/types'
+import { useInventoryItems, useProducts } from '@/data/queries'
+import { useDeleteInventoryItem, useDeleteProduct, useSaveInventoryItem, useSaveProduct } from '@/data/mutations'
+import type { InventoryItem, Product } from '@/data/types'
+import { useDebouncedValue } from '@/lib/useDebouncedValue'
 import { cn } from '@/lib/utils'
 import { pageEnter } from '@/lib/motion'
 
-type FilterValue = 'all' | StockState
+type TabValue = 'raw_material' | 'b2b' | 'product'
+
+type Row = { kind: 'product'; data: Product } | { kind: 'inventory'; data: InventoryItem }
 
 export function InventoryPage() {
-  const { data: items, isLoading, error } = useProducts()
+  const [query, setQuery] = useState('')
+  const [tab, setTab] = useState<TabValue>('raw_material')
+
+  // Don't fire a request on every keystroke.
+  const debouncedQuery = useDebouncedValue(query, 300)
+  const search = debouncedQuery || undefined
+
+  // Only the tab in view is fetched; each list is searched server-side.
+  const {
+    data: products,
+    isLoading: productsLoading,
+    error: productsError,
+  } = useProducts(tab === 'product' ? search : undefined, tab === 'product')
+  const {
+    data: inventoryItems,
+    isLoading: itemsLoading,
+    error: itemsError,
+  } = useInventoryItems({ type: tab, search }, tab !== 'product')
+
   const saveProduct = useSaveProduct()
   const deleteProduct = useDeleteProduct()
+  const saveItem = useSaveInventoryItem()
+  const deleteItem = useDeleteInventoryItem()
 
-  const [query, setQuery] = useState('')
-  const [filter, setFilter] = useState<FilterValue>('all')
-  const [formOpen, setFormOpen] = useState(false)
-  const [editingItem, setEditingItem] = useState<Product | null>(null)
-  const [deletingItem, setDeletingItem] = useState<Product | null>(null)
+  const [productFormOpen, setProductFormOpen] = useState(false)
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [deletingProduct, setDeletingProduct] = useState<Product | null>(null)
 
-  const filteredItems = useMemo(() => {
-    return (items ?? []).filter((item) => {
-      const matchesQuery = item.name.toLowerCase().includes(query.toLowerCase())
-      const matchesFilter = filter === 'all' || item.stockState === filter
-      return matchesQuery && matchesFilter
-    })
-  }, [items, query, filter])
+  const [itemFormOpen, setItemFormOpen] = useState(false)
+  const [editingItem, setEditingItem] = useState<InventoryItem | null>(null)
+  const [deletingItem, setDeletingItem] = useState<InventoryItem | null>(null)
 
-  function handleSave(item: Product) {
-    saveProduct.mutate(item)
-    setFormOpen(false)
+  const isLoading = productsLoading || itemsLoading
+  const error = productsError ?? itemsError
+
+  // Search and type filtering are applied server-side.
+  const filteredRows: Row[] = useMemo(
+    () =>
+      tab === 'product'
+        ? (products ?? []).map((p) => ({ kind: 'product', data: p }))
+        : (inventoryItems ?? []).map((i) => ({ kind: 'inventory', data: i })),
+    [products, inventoryItems, tab],
+  )
+
+  const totalCount = filteredRows.length
+
+  function handleSaveProduct(product: Product) {
+    saveProduct.mutate(product)
+    setProductFormOpen(false)
+    setEditingProduct(null)
+  }
+
+  function handleDeleteProductConfirm() {
+    if (!deletingProduct) return
+    deleteProduct.mutate(deletingProduct.id)
+    setDeletingProduct(null)
+  }
+
+  function handleSaveItem(item: InventoryItem) {
+    saveItem.mutate(item)
+    setItemFormOpen(false)
     setEditingItem(null)
   }
 
-  function handleDeleteConfirm() {
+  function handleDeleteItemConfirm() {
     if (!deletingItem) return
-    deleteProduct.mutate(deletingItem.id)
+    deleteItem.mutate(deletingItem.id)
     setDeletingItem(null)
   }
 
+  function handleAdd() {
+    if (tab === 'product') {
+      setEditingProduct(null)
+      setProductFormOpen(true)
+    } else {
+      setEditingItem(null)
+      setItemFormOpen(true)
+    }
+  }
+
+  const addLabel = tab === 'raw_material' ? 'Add raw material' : tab === 'b2b' ? 'Add B2B item' : 'Add product'
+  const tabLabel = tab === 'raw_material' ? 'raw materials' : tab === 'b2b' ? 'B2B items' : 'products'
+
   return (
     <div className={cn('pb-8', pageEnter)}>
-      <TopBar
-        title="Products & Inventory"
-        subtitle={`${items?.length ?? 0} products in the catalogue`}
-      />
+      {/* Counts what's actually listed — only the tab in view is fetched. */}
+      <TopBar title="Products & Inventory" subtitle={`${totalCount} ${tabLabel}`} />
 
       <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 md:px-8 md:py-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -68,29 +124,22 @@ export function InventoryPage() {
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search spices & oils..."
+              placeholder="Search inventory..."
               className="pl-9"
-              aria-label="Search products"
+              aria-label="Search inventory"
             />
           </div>
-          <Button
-            onClick={() => {
-              setEditingItem(null)
-              setFormOpen(true)
-            }}
-            className="gap-1.5"
-          >
+          <Button onClick={handleAdd} className="gap-1.5">
             <Plus className="size-4" aria-hidden="true" />
-            Add product
+            {addLabel}
           </Button>
         </div>
 
-        <Tabs value={filter} onValueChange={(v) => setFilter(v as FilterValue)}>
+        <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)}>
           <TabsList className="w-full sm:w-auto">
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="processing">Processing</TabsTrigger>
-            <TabsTrigger value="packing">Packing</TabsTrigger>
-            <TabsTrigger value="ready">Ready</TabsTrigger>
+            <TabsTrigger value="raw_material">Raw Material</TabsTrigger>
+            <TabsTrigger value="b2b">B2B</TabsTrigger>
+            <TabsTrigger value="product">Manufacturing</TabsTrigger>
           </TabsList>
         </Tabs>
 
@@ -98,50 +147,92 @@ export function InventoryPage() {
           <CardListSkeleton />
         ) : error ? (
           <ErrorState message={error.message} />
-        ) : filteredItems.length === 0 ? (
-          <p className="py-10 text-center text-sm text-muted-foreground">No products match your search.</p>
+        ) : filteredRows.length === 0 ? (
+          <p className="py-10 text-center text-sm text-muted-foreground">No items match your search.</p>
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredItems.map((item) => (
-              <ProductCard
-                key={item.id}
-                product={item}
-                onEdit={(i) => {
-                  setEditingItem(i)
-                  setFormOpen(true)
-                }}
-                onDelete={setDeletingItem}
-              />
-            ))}
+            {filteredRows.map((row) =>
+              row.kind === 'product' ? (
+                <ProductCard
+                  key={row.data.id}
+                  product={row.data}
+                  onEdit={(p) => {
+                    setEditingProduct(p)
+                    setProductFormOpen(true)
+                  }}
+                  onDelete={setDeletingProduct}
+                />
+              ) : (
+                <InventoryItemCard
+                  key={row.data.id}
+                  item={row.data}
+                  onEdit={(i) => {
+                    setEditingItem(i)
+                    setItemFormOpen(true)
+                  }}
+                  onDelete={setDeletingItem}
+                />
+              ),
+            )}
           </div>
         )}
       </div>
 
       <ProductFormSheet
-        open={formOpen}
+        open={productFormOpen}
         onOpenChange={(open) => {
-          setFormOpen(open)
-          if (!open) setEditingItem(null)
+          setProductFormOpen(open)
+          if (!open) setEditingProduct(null)
         }}
-        product={editingItem}
-        onSave={handleSave}
+        product={editingProduct}
+        onSave={handleSaveProduct}
       />
 
-      <Dialog open={Boolean(deletingItem)} onOpenChange={(open) => !open && setDeletingItem(null)}>
+      <InventoryItemFormSheet
+        open={itemFormOpen}
+        onOpenChange={(open) => {
+          setItemFormOpen(open)
+          if (!open) setEditingItem(null)
+        }}
+        item={editingItem}
+        defaultType={tab === 'b2b' ? 'b2b' : 'raw_material'}
+        onSave={handleSaveItem}
+      />
+
+      <Dialog open={Boolean(deletingProduct)} onOpenChange={(open) => !open && setDeletingProduct(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Remove product?</DialogTitle>
             <DialogDescription>
-              {deletingItem
-                ? `"${deletingItem.name}" will be removed from the catalogue. This can't be undone.`
+              {deletingProduct
+                ? `"${deletingProduct.name}" will be removed from the catalogue. This can't be undone.`
                 : ''}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeletingProduct(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteProductConfirm}>
+              Remove
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(deletingItem)} onOpenChange={(open) => !open && setDeletingItem(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove item?</DialogTitle>
+            <DialogDescription>
+              {deletingItem ? `"${deletingItem.name}" will be removed from inventory. This can't be undone.` : ''}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeletingItem(null)}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDeleteConfirm}>
+            <Button variant="destructive" onClick={handleDeleteItemConfirm}>
               Remove
             </Button>
           </DialogFooter>
