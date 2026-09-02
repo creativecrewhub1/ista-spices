@@ -1,5 +1,5 @@
-import { useMemo, useState, type FormEvent } from 'react'
-import { ArrowDownToLine, PackagePlus, Search } from 'lucide-react'
+import { Fragment, useMemo, useState, type FormEvent } from 'react'
+import { ArrowDownToLine, ChevronRight, PackagePlus, Search } from 'lucide-react'
 import { TopBar } from '@/components/layout/TopBar'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -21,6 +21,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { CardListSkeleton, ErrorState } from '@/components/common/QueryState'
+import { ItemMovements } from '@/components/stock/ItemMovements'
 import { useStock, useStockMovements } from '@/data/queries'
 import { useReceiveStock } from '@/data/mutations'
 import type { StockItem } from '@/data/types'
@@ -47,6 +48,7 @@ export function StockPage() {
   const receiveStock = useReceiveStock()
 
   const [query, setQuery] = useState('')
+  const [expandedId, setExpandedId] = useState<string | null>(null)
   const [formOpen, setFormOpen] = useState(false)
   const [itemId, setItemId] = useState('')
   const [qty, setQty] = useState('')
@@ -61,7 +63,9 @@ export function StockPage() {
   const totals = useMemo(() => {
     const list = stock ?? []
     return {
-      value: list.reduce((sum, s) => sum + s.stockValue, 0),
+      // Only items with a purchase behind them can be valued.
+      value: list.reduce((sum, s) => sum + (s.stockValue ?? 0), 0),
+      unvalued: list.filter((s) => s.stockValue === null).length,
       lowCount: list.filter((s) => s.isLowStock).length,
       itemCount: list.length,
     }
@@ -108,7 +112,11 @@ export function StockPage() {
             <span className="mt-0.5 block font-mono text-2xl font-black tabular-nums text-slate-900">
               {formatCurrency(totals.value)}
             </span>
-            <span className="text-[11px] font-semibold text-slate-400">At average purchase cost</span>
+            <span className="text-[11px] font-semibold text-slate-400">
+              {totals.unvalued > 0
+                ? `${totals.unvalued} item${totals.unvalued > 1 ? 's' : ''} not yet costed`
+                : 'At average purchase cost'}
+            </span>
           </div>
           <div className="rounded-2xl border border-orange-100/80 bg-white p-4 shadow-2xs">
             <span className="block text-[11px] font-bold uppercase tracking-wider text-slate-500">
@@ -191,9 +199,25 @@ export function StockPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filtered.map((item) => (
-                    <tr key={item.itemId} className="transition-colors hover:bg-orange-50/40">
+                  {filtered.map((item) => {
+                    const isOpen = expandedId === item.itemId
+                    return (
+                    <Fragment key={item.itemId}>
+                    <tr
+                      onClick={() => setExpandedId(isOpen ? null : item.itemId)}
+                      className={cn(
+                        'cursor-pointer transition-colors hover:bg-orange-50/40',
+                        isOpen && 'bg-orange-50/60',
+                      )}
+                    >
                       <td className="px-4 py-3">
+                        <ChevronRight
+                          className={cn(
+                            'mr-1.5 inline size-3.5 text-slate-400 transition-transform',
+                            isOpen && 'rotate-90',
+                          )}
+                          aria-hidden="true"
+                        />
                         <span className="font-bold text-slate-900">{item.name}</span>
                         {item.isLowStock ? (
                           <Badge
@@ -219,13 +243,24 @@ export function StockPage() {
                         ) : null}
                       </td>
                       <td className="px-4 py-3 text-right font-mono tabular-nums text-slate-600">
-                        {item.avgUnitCost > 0 ? formatCurrency(item.avgUnitCost) : '—'}
+                        {item.avgUnitCost !== null ? formatCurrency(item.avgUnitCost) : '—'}
                       </td>
                       <td className="px-4 py-3 text-right font-mono font-bold tabular-nums text-slate-900">
-                        {item.stockValue > 0 ? formatCurrency(item.stockValue) : '—'}
+                        {item.stockValue !== null ? formatCurrency(item.stockValue) : '—'}
                       </td>
                     </tr>
-                  ))}
+
+                    {/* The entries behind that position, each with its batch. */}
+                    {isOpen ? (
+                      <tr className="bg-slate-50/60">
+                        <td colSpan={6} className="p-0">
+                          <ItemMovements itemId={item.itemId} unit={item.unit} />
+                        </td>
+                      </tr>
+                    ) : null}
+                    </Fragment>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

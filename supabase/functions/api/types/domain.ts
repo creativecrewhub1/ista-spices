@@ -53,9 +53,11 @@ export interface StockItem {
   unit: string
   quantityOnHand: number
   lowStockThreshold: number
-  /** Weighted average of what receipts cost — the basis for valuation. */
-  avgUnitCost: number
-  stockValue: number
+  /** Weighted average of what receipts cost. Null when nothing has been
+   *  purchased yet: unknown cost, which is not the same as zero cost. */
+  avgUnitCost: number | null
+  /** Null wherever avgUnitCost is — stock can't be valued without a basis. */
+  stockValue: number | null
   isLowStock: boolean
   /** Per-unit cost of the most recent consignment — today's buying price. */
   lastPurchaseCost: number | null

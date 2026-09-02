@@ -12,8 +12,9 @@ function mapStockRow(row: any): StockItem {
     unit: row.unit,
     quantityOnHand: Number(row.quantity_on_hand),
     lowStockThreshold: Number(row.low_stock_threshold),
-    avgUnitCost: Number(row.avg_unit_cost),
-    stockValue: Number(row.stock_value),
+    // Null means "never purchased, so cost unknown" — distinct from ₹0.
+    avgUnitCost: row.avg_unit_cost === null ? null : Number(row.avg_unit_cost),
+    stockValue: row.stock_value === null ? null : Number(row.stock_value),
     isLowStock: row.is_low_stock,
     lastPurchaseCost: row.last_purchase_cost === null ? null : Number(row.last_purchase_cost),
     lastPurchasedAt: row.last_purchased_at ?? null,
