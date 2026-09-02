@@ -1,10 +1,11 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Package, ClipboardList, IndianRupee, Users, Store, Flame, Plus } from 'lucide-react'
+import { LayoutDashboard, Boxes, Package, ClipboardList, IndianRupee, Users, Store, Flame, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/inventory', label: 'Products & Inventory', icon: Package },
+  { to: '/stock', label: 'Stock', icon: Boxes },
   { to: '/orders', label: 'Orders', icon: ClipboardList },
   { to: '/revenue', label: 'Revenue', icon: IndianRupee },
   { to: '/customers', label: 'Customers', icon: Users },

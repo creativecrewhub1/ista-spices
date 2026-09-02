@@ -8,6 +8,7 @@ import { CartProvider } from '@/shop/CartContext'
 import { LoginPage } from '@/pages/LoginPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { InventoryPage } from '@/pages/InventoryPage'
+import { StockPage } from '@/pages/StockPage'
 import { OrdersPage } from '@/pages/OrdersPage'
 import { RevenuePage } from '@/pages/RevenuePage'
 import { CustomersPage } from '@/pages/CustomersPage'
@@ -40,6 +41,7 @@ export default function App() {
                 <Route element={<AppShell />}>
                   <Route index element={<DashboardPage />} />
                   <Route path="inventory" element={<InventoryPage />} />
+                  <Route path="stock" element={<StockPage />} />
                   <Route path="orders" element={<OrdersPage />} />
                   <Route path="revenue" element={<RevenuePage />} />
                   <Route path="customers" element={<CustomersPage />} />

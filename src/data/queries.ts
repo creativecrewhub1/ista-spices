@@ -14,6 +14,8 @@ import type {
   ProductRevenueRow,
   RevenuePoint,
   RevenueSummary,
+  StockItem,
+  StockMovement,
   TodaySummary,
 } from './types'
 
@@ -193,5 +195,25 @@ export function useMyOrders() {
   return useQuery({
     queryKey: ['storefront-orders'],
     queryFn: () => api.get<Order[]>('/storefront/orders'),
+  })
+}
+
+/** Current stock position for every item — quantity, average cost, value. */
+export function useStock() {
+  return useQuery({
+    queryKey: ['stock'],
+    queryFn: () => api.get<StockItem[]>('/stock'),
+  })
+}
+
+/** Movement history. Pass an itemId to narrow it to one item. */
+export function useStockMovements(itemId?: string, limit = 50) {
+  const params = new URLSearchParams()
+  if (itemId) params.set('itemId', itemId)
+  params.set('limit', String(limit))
+
+  return useQuery({
+    queryKey: ['stock-movements', itemId ?? null, limit],
+    queryFn: () => api.get<StockMovement[]>(`/stock/movements?${params.toString()}`),
   })
 }

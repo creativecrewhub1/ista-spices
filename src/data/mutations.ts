@@ -1,7 +1,14 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/apiClient'
 import { supabaseAuth } from '@/lib/supabaseAuthClient'
-import type { CheckoutInput, InventoryItem, Order, OrderStatus, Product } from './types'
+import type {
+  CheckoutInput,
+  InventoryItem,
+  Order,
+  OrderStatus,
+  Product,
+  StockReceiptInput,
+} from './types'
 
 /**
  * Signs up the one admin account. The "only if none exists yet" rule is
@@ -105,6 +112,35 @@ export function useUpdateOrderStatus() {
       queryClient.invalidateQueries({ queryKey: ['orders'] })
       // A status change moves an order between KPI buckets.
       queryClient.invalidateQueries({ queryKey: ['order-status-counts'] })
+    },
+  })
+}
+
+/** Stock in — the only path by which a purchase cost enters the system. */
+export function useReceiveStock() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: StockReceiptInput) => api.post('/stock/receipts', input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stock'] })
+      queryClient.invalidateQueries({ queryKey: ['stock-movements'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-needs-attention'] })
+    },
+  })
+}
+
+/** Recount or wastage. Signed quantity; a reason is required. */
+export function useAdjustStock() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: { itemId: string; qty: number; note: string }) =>
+      api.post('/stock/adjustments', input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stock'] })
+      queryClient.invalidateQueries({ queryKey: ['stock-movements'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-needs-attention'] })
     },
   })
 }

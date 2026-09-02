@@ -30,6 +30,55 @@ export interface Product {
   imageUrl: string | null
 }
 
+/** Where an item came from: made here, or bought in for resale. */
+export type ItemOrigin = 'manufactured' | 'purchased'
+
+export type StockMovementKind =
+  | 'receipt'
+  | 'sale'
+  | 'consumption'
+  | 'production'
+  | 'adjustment'
+
+/** An item's current position, derived from the movement ledger. */
+export interface StockItem {
+  itemId: string
+  name: string
+  origin: ItemOrigin
+  isSellable: boolean
+  isConsumable: boolean
+  unit: string
+  quantityOnHand: number
+  lowStockThreshold: number
+  /** Weighted average of what receipts cost — the basis for valuation. */
+  avgUnitCost: number
+  stockValue: number
+  isLowStock: boolean
+}
+
+export interface StockMovement {
+  id: string
+  itemId: string
+  itemName: string
+  unit: string
+  kind: StockMovementKind
+  /** Signed: positive brought stock in, negative took it out. */
+  qty: number
+  unitCost: number | null
+  occurredAt: string
+  orderId: string | null
+  note: string | null
+}
+
+export interface StockReceiptInput {
+  itemId: string
+  qty: number
+  /** Purchase cost per unit — not the sale price. */
+  unitCost: number
+  occurredAt?: string
+  note?: string
+}
+
 /** Raw materials (chilli, coriander seeds, cumin…) and B2B goods (soaps,
  * honey…) — simple quantity-on-hand tracking, no pack-size/pricing tiers. */
 export type InventoryItemType = 'raw_material' | 'b2b'
