@@ -188,12 +188,6 @@ export function StockPage() {
                       On hand
                     </th>
                     <th className="px-4 py-3 text-right font-bold uppercase tracking-wider text-slate-500">
-                      Last price
-                    </th>
-                    <th className="px-4 py-3 text-right font-bold uppercase tracking-wider text-slate-500">
-                      Avg cost
-                    </th>
-                    <th className="px-4 py-3 text-right font-bold uppercase tracking-wider text-slate-500">
                       Value
                     </th>
                   </tr>
@@ -232,19 +226,6 @@ export function StockPage() {
                       <td className="px-4 py-3 text-right font-mono tabular-nums text-slate-900">
                         {item.quantityOnHand} <span className="text-slate-400">{item.unit}</span>
                       </td>
-                      <td className="px-4 py-3 text-right font-mono tabular-nums text-slate-900">
-                        {item.lastPurchaseCost !== null && item.lastPurchaseCost > 0
-                          ? formatCurrency(item.lastPurchaseCost)
-                          : '—'}
-                        {item.lastBatchNo ? (
-                          <span className="block text-[10px] font-medium text-slate-400">
-                            {item.lastBatchNo}
-                          </span>
-                        ) : null}
-                      </td>
-                      <td className="px-4 py-3 text-right font-mono tabular-nums text-slate-600">
-                        {item.avgUnitCost !== null ? formatCurrency(item.avgUnitCost) : '—'}
-                      </td>
                       <td className="px-4 py-3 text-right font-mono font-bold tabular-nums text-slate-900">
                         {item.stockValue !== null ? formatCurrency(item.stockValue) : '—'}
                       </td>
@@ -253,7 +234,7 @@ export function StockPage() {
                     {/* The entries behind that position, each with its batch. */}
                     {isOpen ? (
                       <tr className="bg-slate-50/60">
-                        <td colSpan={6} className="p-0">
+                        <td colSpan={4} className="p-0">
                           <ItemMovements itemId={item.itemId} unit={item.unit} />
                         </td>
                       </tr>
