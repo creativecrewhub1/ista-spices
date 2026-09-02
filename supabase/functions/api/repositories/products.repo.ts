@@ -11,13 +11,20 @@ export function classifyStockLevel(unitsPacked: number, batchCapacity: number): 
   return 'ok'
 }
 
+/**
+ * Units in hand come from the movement ledger, never from a column — the
+ * same balance the Stock screen shows. `units_packed_this_batch` survives
+ * only as the pre-ledger seed and is no longer read.
+ */
 // deno-lint-ignore no-explicit-any
-function mapRow(row: any): Product {
+function mapRow(row: any, quantityOnHand: number): Product {
   const packSizes = [...row.product_pack_sizes]
     // deno-lint-ignore no-explicit-any
     .sort((a: any, b: any) => PACK_SIZE_ORDER.indexOf(a.size) - PACK_SIZE_ORDER.indexOf(b.size))
     // deno-lint-ignore no-explicit-any
     .map((p: any) => ({ size: p.size, price: Number(p.price) }))
+
+  const batchCapacity = row.batch_capacity ?? 0
 
   return {
     id: row.id,
@@ -27,21 +34,34 @@ function mapRow(row: any): Product {
     packSizes,
     discountPercent: row.discount_percent,
     spiceLevel: row.spice_level,
-    batchCapacity: row.batch_capacity,
-    unitsPackedThisBatch: row.units_packed_this_batch,
-    stockLevel: classifyStockLevel(row.units_packed_this_batch, row.batch_capacity),
+    batchCapacity,
+    unitsPackedThisBatch: quantityOnHand,
+    stockLevel: batchCapacity > 0 ? classifyStockLevel(quantityOnHand, batchCapacity) : 'ok',
     isActive: row.is_active,
     imageUrl: row.image_url ?? null,
   }
 }
 
+/** item_id → quantity on hand, from the ledger. */
+async function stockByItem(): Promise<Map<string, number>> {
+  const { data, error } = await supabase.from('item_stock').select('item_id, quantity_on_hand')
+  if (error) throw error
+  // deno-lint-ignore no-explicit-any
+  return new Map((data as any[]).map((r) => [r.item_id, Number(r.quantity_on_hand)]))
+}
+
+/** Goods the shop makes — the Manufacturing tab and the storefront catalogue. */
 export async function listActive(search?: string): Promise<Product[]> {
-  let query = supabase.from('products').select('*, product_pack_sizes(*)').eq('is_active', true)
+  let query = supabase
+    .from('products')
+    .select('*, product_pack_sizes(*)')
+    .eq('is_active', true)
+    .eq('origin', 'manufactured')
   if (search) query = query.ilike('name', `%${search}%`)
 
-  const { data, error } = await query.order('name')
+  const [{ data, error }, stock] = await Promise.all([query.order('name'), stockByItem()])
   if (error) throw error
-  return data.map(mapRow)
+  return data.map((row) => mapRow(row, stock.get(row.id) ?? 0))
 }
 
 export async function upsert(product: Product): Promise<void> {
@@ -85,11 +105,19 @@ export async function listPublicCatalog(): Promise<CatalogProduct[]> {
     .from('products')
     .select('id, name, category, description, discount_percent, spice_level, image_url, product_pack_sizes(*)')
     .eq('is_active', true)
+    // Raw materials sit in the same table now; only sellable goods belong
+    // in front of a customer.
+    .eq('is_sellable', true)
     .order('name')
   if (error) throw error
 
-  // deno-lint-ignore no-explicit-any
-  return data.map((row: any) => ({
+  return (
+    data
+      // An item with no pack size has no price, so it cannot be bought.
+      // deno-lint-ignore no-explicit-any
+      .filter((row: any) => row.product_pack_sizes.length > 0)
+      // deno-lint-ignore no-explicit-any
+      .map((row: any) => ({
     id: row.id,
     name: row.name,
     category: row.category,
@@ -99,8 +127,9 @@ export async function listPublicCatalog(): Promise<CatalogProduct[]> {
       .sort((a: any, b: any) => PACK_SIZE_ORDER.indexOf(a.size) - PACK_SIZE_ORDER.indexOf(b.size))
       // deno-lint-ignore no-explicit-any
       .map((p: any) => ({ size: p.size, price: Number(p.price) })),
-    discountPercent: row.discount_percent,
-    spiceLevel: row.spice_level,
-    imageUrl: row.image_url ?? null,
-  }))
+        discountPercent: row.discount_percent,
+        spiceLevel: row.spice_level,
+        imageUrl: row.image_url ?? null,
+      }))
+  )
 }

@@ -192,14 +192,17 @@ export function InventoryItemFormSheet({
                 <Label htmlFor="item-qty" className="text-[11px] font-bold uppercase text-slate-600">
                   In Hand
                 </Label>
+                {/* On-hand is the balance of the stock ledger. Typing over it
+                    here would put this screen and Stock back out of step, so
+                    it is shown rather than edited. */}
                 <Input
                   id="item-qty"
-                  type="number"
-                  min={0}
+                  readOnly
+                  disabled
                   value={draft.quantityOnHand}
-                  onChange={(e) => setDraft({ ...draft, quantityOnHand: Number(e.target.value) })}
-                  className="rounded-2xl border-slate-200 bg-slate-50/70 py-2 px-3 text-sm font-bold text-center"
+                  className="rounded-2xl border-slate-200 bg-slate-100 py-2 px-3 text-center text-sm font-bold text-slate-500"
                 />
+                <p className="text-[10px] font-medium text-slate-400">Changes via Stock in</p>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="item-threshold" className="text-[11px] font-bold uppercase text-slate-600 flex items-center gap-1">
