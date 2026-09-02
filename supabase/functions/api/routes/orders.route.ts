@@ -17,6 +17,17 @@ ordersRoute.get('/counts', async (c) => {
   return c.json(counts)
 })
 
+ordersRoute.get('/:id', async (c) => {
+  const order = await OrdersService.get(c.req.param('id'))
+  return c.json(order)
+})
+
+/** Recorded transition history, so the timeline shows when each step happened. */
+ordersRoute.get('/:id/events', async (c) => {
+  const events = await OrdersService.statusEvents(c.req.param('id'))
+  return c.json(events)
+})
+
 ordersRoute.patch('/:id/status', async (c) => {
   const body = await c.req.json<{ status?: string }>()
   if (!body.status) throw new HttpError(400, 'status is required')

@@ -36,6 +36,14 @@ export const OrdersService = {
     return [...merged.values()].sort((a, b) => b.placedAt.localeCompare(a.placedAt))
   },
 
+  get: async (orderId: string): Promise<Order> => {
+    const order = await ordersRepo.findById(orderId)
+    if (!order) throw new HttpError(404, `Order ${orderId} not found`)
+    return order
+  },
+
+  statusEvents: (orderId: string) => ordersRepo.getStatusEvents(orderId),
+
   statusCounts: () => ordersRepo.getStatusCounts(),
 
   updateStatus: (orderId: string, status: string) => {

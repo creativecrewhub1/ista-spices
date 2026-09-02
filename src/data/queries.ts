@@ -4,8 +4,10 @@ import type {
   AttentionItem,
   CatalogProduct,
   Customer,
+  CustomerCounts,
   InventoryItem,
   Order,
+  OrderStatusEvent,
   OrderStatus,
   Product,
   ProductRevenueRow,
@@ -22,24 +24,70 @@ export function useAuthStatus() {
   })
 }
 
-export function useProducts() {
+export function useProducts(search?: string, enabled = true) {
+  const queryString = search ? `?q=${encodeURIComponent(search)}` : ''
   return useQuery({
-    queryKey: ['products'],
-    queryFn: () => api.get<Product[]>('/products'),
+    queryKey: ['products', search ?? null],
+    queryFn: () => api.get<Product[]>(`/products${queryString}`),
+    placeholderData: (previous) => previous,
+    enabled,
   })
 }
 
-export function useInventoryItems() {
+export function useInventoryItems(
+  filters: { type?: string; search?: string } = {},
+  enabled = true,
+) {
+  const params = new URLSearchParams()
+  if (filters.type) params.set('type', filters.type)
+  if (filters.search) params.set('q', filters.search)
+  const queryString = params.toString()
+
   return useQuery({
-    queryKey: ['inventory-items'],
-    queryFn: () => api.get<InventoryItem[]>('/inventory-items'),
+    queryKey: ['inventory-items', filters.type ?? null, filters.search ?? null],
+    queryFn: () => api.get<InventoryItem[]>(`/inventory-items${queryString ? `?${queryString}` : ''}`),
+    placeholderData: (previous) => previous,
+    enabled,
   })
 }
 
-export function useCustomers() {
+export function useCustomers(filters: { search?: string; segment?: string; activity?: string } = {}) {
+  const params = new URLSearchParams()
+  if (filters.search) params.set('q', filters.search)
+  if (filters.segment) params.set('segment', filters.segment)
+  if (filters.activity) params.set('activity', filters.activity)
+  const queryString = params.toString()
+
   return useQuery({
-    queryKey: ['customers'],
-    queryFn: () => api.get<Customer[]>('/customers'),
+    queryKey: ['customers', filters.search ?? null, filters.segment ?? null, filters.activity ?? null],
+    queryFn: () => api.get<Customer[]>(`/customers${queryString ? `?${queryString}` : ''}`),
+    placeholderData: (previous) => previous,
+  })
+}
+
+/** Whole-book tallies for the KPI tiles, independent of the active filter. */
+export function useCustomerCounts() {
+  return useQuery({
+    queryKey: ['customer-counts'],
+    queryFn: () => api.get<CustomerCounts>('/customers/counts'),
+  })
+}
+
+/** A customer's order history, resolved by foreign key on the server. */
+export function useCustomerOrders(customerId: string | null) {
+  return useQuery({
+    queryKey: ['customer-orders', customerId],
+    queryFn: () => api.get<Order[]>(`/customers/${customerId}/orders`),
+    enabled: Boolean(customerId),
+  })
+}
+
+/** Recorded status transitions for one order — the real fulfilment timeline. */
+export function useOrderStatusEvents(orderId: string | null) {
+  return useQuery({
+    queryKey: ['order-status-events', orderId],
+    queryFn: () => api.get<OrderStatusEvent[]>(`/orders/${orderId}/events`),
+    enabled: Boolean(orderId),
   })
 }
 

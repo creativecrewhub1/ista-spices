@@ -57,6 +57,13 @@ export type OrderStatus =
 
 export type OrderKind = 'subscription' | 'one_time'
 
+/** One recorded status transition, written by a DB trigger on every change. */
+export interface OrderStatusEvent {
+  fromStatus: OrderStatus | null
+  toStatus: OrderStatus
+  changedAt: string
+}
+
 export interface OrderLineItem {
   productId: string
   name: string
@@ -101,6 +108,7 @@ export interface Customer {
   id: string
   name: string
   phone: string
+  email: string | null
   initials: string
   address: string
   joinedAt: string
@@ -108,7 +116,18 @@ export interface Customer {
   segment: CustomerSegment
   totalOrders: number
   totalSpend: number
-  lastOrderAt: string
+  lastOrderAt: string | null
+  /** Ordered within the last 90 days — computed in customers_with_stats. */
+  isActive: boolean
+}
+
+export interface CustomerCounts {
+  total: number
+  active: number
+  inactive: number
+  new: number
+  regular: number
+  vip: number
 }
 
 export interface RevenuePoint {

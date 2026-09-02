@@ -16,12 +16,14 @@ function mapRow(row: any): InventoryItem {
   }
 }
 
-export async function listActive(): Promise<InventoryItem[]> {
-  const { data, error } = await supabase
-    .from('inventory_items')
-    .select('*')
-    .eq('is_active', true)
-    .order('name')
+export async function listActive(
+  filters: { type?: string; search?: string } = {},
+): Promise<InventoryItem[]> {
+  let query = supabase.from('inventory_items').select('*').eq('is_active', true)
+  if (filters.type) query = query.eq('type', filters.type)
+  if (filters.search) query = query.ilike('name', `%${filters.search}%`)
+
+  const { data, error } = await query.order('name')
   if (error) throw error
   return data.map(mapRow)
 }

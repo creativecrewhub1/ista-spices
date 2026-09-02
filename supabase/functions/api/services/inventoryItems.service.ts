@@ -8,7 +8,7 @@ function generateInventoryItemId(type: InventoryItem['type']): string {
 }
 
 export const InventoryItemsService = {
-  list: () => inventoryItemsRepo.listActive(),
+  list: (filters: { type?: string; search?: string } = {}) => inventoryItemsRepo.listActive(filters),
 
   save: (item: InventoryItem) => {
     if (!item.name) {

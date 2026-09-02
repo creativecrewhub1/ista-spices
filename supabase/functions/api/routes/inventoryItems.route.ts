@@ -5,7 +5,7 @@ import type { InventoryItem } from '../types/domain.ts'
 export const inventoryItemsRoute = new Hono()
 
 inventoryItemsRoute.get('/', async (c) => {
-  const items = await InventoryItemsService.list()
+  const items = await InventoryItemsService.list({ type: c.req.query('type'), search: c.req.query('q')?.trim() || undefined })
   return c.json(items)
 })
 

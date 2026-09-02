@@ -20,6 +20,7 @@ import { CardListSkeleton, ErrorState } from '@/components/common/QueryState'
 import { useInventoryItems, useProducts } from '@/data/queries'
 import { useDeleteInventoryItem, useDeleteProduct, useSaveInventoryItem, useSaveProduct } from '@/data/mutations'
 import type { InventoryItem, Product } from '@/data/types'
+import { useDebouncedValue } from '@/lib/useDebouncedValue'
 import { cn } from '@/lib/utils'
 import { pageEnter } from '@/lib/motion'
 
@@ -28,15 +29,29 @@ type TabValue = 'raw_material' | 'b2b' | 'product'
 type Row = { kind: 'product'; data: Product } | { kind: 'inventory'; data: InventoryItem }
 
 export function InventoryPage() {
-  const { data: products, isLoading: productsLoading, error: productsError } = useProducts()
-  const { data: inventoryItems, isLoading: itemsLoading, error: itemsError } = useInventoryItems()
+  const [query, setQuery] = useState('')
+  const [tab, setTab] = useState<TabValue>('raw_material')
+
+  // Don't fire a request on every keystroke.
+  const debouncedQuery = useDebouncedValue(query, 300)
+  const search = debouncedQuery || undefined
+
+  // Only the tab in view is fetched; each list is searched server-side.
+  const {
+    data: products,
+    isLoading: productsLoading,
+    error: productsError,
+  } = useProducts(tab === 'product' ? search : undefined, tab === 'product')
+  const {
+    data: inventoryItems,
+    isLoading: itemsLoading,
+    error: itemsError,
+  } = useInventoryItems({ type: tab, search }, tab !== 'product')
+
   const saveProduct = useSaveProduct()
   const deleteProduct = useDeleteProduct()
   const saveItem = useSaveInventoryItem()
   const deleteItem = useDeleteInventoryItem()
-
-  const [query, setQuery] = useState('')
-  const [tab, setTab] = useState<TabValue>('raw_material')
 
   const [productFormOpen, setProductFormOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
@@ -49,22 +64,16 @@ export function InventoryPage() {
   const isLoading = productsLoading || itemsLoading
   const error = productsError ?? itemsError
 
-  const rows: Row[] = useMemo(() => {
-    const productRows: Row[] = (products ?? []).map((p) => ({ kind: 'product', data: p }))
-    const itemRows: Row[] = (inventoryItems ?? []).map((i) => ({ kind: 'inventory', data: i }))
-    return [...productRows, ...itemRows]
-  }, [products, inventoryItems])
+  // Search and type filtering are applied server-side.
+  const filteredRows: Row[] = useMemo(
+    () =>
+      tab === 'product'
+        ? (products ?? []).map((p) => ({ kind: 'product', data: p }))
+        : (inventoryItems ?? []).map((i) => ({ kind: 'inventory', data: i })),
+    [products, inventoryItems, tab],
+  )
 
-  const filteredRows = useMemo(() => {
-    return rows.filter((row) => {
-      const matchesQuery = row.data.name.toLowerCase().includes(query.toLowerCase())
-      const rowType = row.kind === 'product' ? 'product' : row.data.type
-      const matchesTab = tab === rowType
-      return matchesQuery && matchesTab
-    })
-  }, [rows, query, tab])
-
-  const totalCount = rows.length
+  const totalCount = filteredRows.length
 
   function handleSaveProduct(product: Product) {
     saveProduct.mutate(product)
@@ -101,10 +110,12 @@ export function InventoryPage() {
   }
 
   const addLabel = tab === 'raw_material' ? 'Add raw material' : tab === 'b2b' ? 'Add B2B item' : 'Add product'
+  const tabLabel = tab === 'raw_material' ? 'raw materials' : tab === 'b2b' ? 'B2B items' : 'products'
 
   return (
     <div className={cn('pb-8', pageEnter)}>
-      <TopBar title="Products & Inventory" subtitle={`${totalCount} items in the catalogue`} />
+      {/* Counts what's actually listed — only the tab in view is fetched. */}
+      <TopBar title="Products & Inventory" subtitle={`${totalCount} ${tabLabel}`} />
 
       <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 md:px-8 md:py-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

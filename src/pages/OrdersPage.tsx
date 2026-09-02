@@ -54,8 +54,6 @@ export function OrdersPage() {
   // Don't fire a request on every keystroke.
   const debouncedQuery = useDebouncedValue(query, 300)
 
-  // 'in_progress' spans three statuses, so it stays a client-side narrowing of
-  // an unfiltered fetch; every other filter is applied server-side.
   const serverStatus = filter === 'all' || filter === 'in_progress' ? undefined : filter
   const {
     data: orders,
@@ -84,8 +82,6 @@ export function OrdersPage() {
     { label: 'Delivered', value: counts.delivered, filter: 'delivered' as FilterValue, icon: CheckCircle2, color: 'text-emerald-600 bg-emerald-100/70' },
   ]
 
-  // Status and search already applied server-side; only the 'in_progress'
-  // bucket (three statuses at once) is narrowed here.
   const filteredOrders = useMemo(() => {
     const list = orders ?? []
     if (filter !== 'in_progress') return list
@@ -243,13 +239,13 @@ export function OrdersPage() {
                     onClick={() => setSelectedOrder(order)}
                     className={cn(
                       'group rounded-3xl border bg-white p-4 shadow-2xs transition-all duration-300 active:scale-[0.99] cursor-pointer space-y-3',
-                      isSelected ? 'border-orange-500 bg-orange-50/50 ring-2 ring-orange-500/20' : 'border-orange-100/90 hover:border-orange-200 hover:-translate-y-0.5',
+                      isSelected ? 'border-orange-500 bg-orange-50/50 ring-2 ring-orange-500/20' : 'border-orange-100/90 hover:border-orange-200 hover:-translate-y-0.5 hover:shadow-md',
                     )}
                   >
                     {/* Top Row: Order ID & Status Badge */}
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono font-black text-sm text-slate-900 group-hover:text-orange-600 transition-colors">
+                        <span className="font-mono font-black text-sm text-slate-900 group-hover:text-orange-600 transition-colors duration-300">
                           #{order.id}
                         </span>
                         <span className="text-[11px] font-semibold text-slate-400">
@@ -260,7 +256,7 @@ export function OrdersPage() {
                       <Badge
                         variant="outline"
                         className={cn(
-                          'inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[10px] font-bold rounded-full border shadow-2xs',
+                          'inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[10px] font-bold rounded-full border shadow-2xs transition-all duration-300 group-hover:scale-105',
                           config.badgeClass,
                         )}
                       >
@@ -272,12 +268,12 @@ export function OrdersPage() {
                     {/* Middle Row: Customer Info & Date */}
                     <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100">
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <Avatar className="size-7 ring-1 ring-orange-200/80 shrink-0">
+                        <Avatar className="size-7 ring-1 ring-orange-200/80 shrink-0 transition-transform duration-300 group-hover:scale-110">
                           <AvatarFallback className="bg-gradient-to-tr from-orange-400 to-rose-400 text-white font-bold text-[10px]">
                             {getInitials(order.customerName)}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="font-bold text-xs text-slate-900 truncate">
+                        <span className="font-bold text-xs text-slate-900 truncate group-hover:text-orange-600 transition-colors duration-300">
                           {order.customerName}
                         </span>
                       </div>
@@ -297,7 +293,7 @@ export function OrdersPage() {
                               key={i}
                               src={productImage(item.imageUrl)}
                               alt={item.name}
-                              className="size-6.5 rounded-md border-2 border-white object-cover shadow-2xs transition-transform group-hover:scale-105"
+                              className="size-6.5 rounded-md border-2 border-white object-cover shadow-2xs transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-0.5"
                             />
                           ))}
                         </div>
@@ -307,7 +303,7 @@ export function OrdersPage() {
                       </div>
 
                       <div className="flex items-center gap-1 text-right">
-                        <span className="font-mono text-sm font-black text-slate-900">
+                        <span className="font-mono text-sm font-black text-slate-900 group-hover:text-orange-600 transition-colors duration-300">
                           {formatCurrency(order.total)}
                         </span>
                         <ChevronRight className="size-4 text-slate-400 group-hover:text-orange-500 group-hover:translate-x-1 transition-all duration-300" />
@@ -318,10 +314,10 @@ export function OrdersPage() {
               })}
             </div>
 
-            {/* 2. DESKTOP VIEW (>= md): Full 6-column Table */}
+            {/* 2. DESKTOP VIEW (>= md): Full 6-column Table with Smooth Full-Row Hover Effects */}
             <div className="hidden md:block overflow-hidden rounded-3xl border border-orange-100/90 bg-white shadow-xs">
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="border-b border-orange-100/80 bg-[#FDF8F3] font-bold uppercase tracking-wider text-slate-500">
                       <th className="py-4 px-5 w-32">Order ID</th>
@@ -333,7 +329,7 @@ export function OrdersPage() {
                     </tr>
                   </thead>
 
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-slate-100/80">
                     {filteredOrders.map((order) => {
                       const isSelected = selectedOrder?.id === order.id
                       const config = orderStatusConfig[order.status]
@@ -343,34 +339,40 @@ export function OrdersPage() {
                           key={order.id}
                           onClick={() => setSelectedOrder(order)}
                           className={cn(
-                            'group cursor-pointer transition-all duration-300 ease-out hover:bg-orange-50/70',
-                            isSelected ? 'bg-orange-50/90 font-semibold border-l-4 border-orange-500' : 'bg-white',
+                            'group cursor-pointer transition-all duration-300 ease-out',
+                            isSelected
+                              ? 'bg-gradient-to-r from-orange-100/80 via-orange-50/60 to-rose-50/30 font-semibold border-l-4 border-orange-500'
+                              : 'bg-white hover:bg-gradient-to-r hover:from-orange-50/90 hover:via-amber-50/40 hover:to-orange-50/20',
                           )}
                         >
-                          <td className="py-4 px-5 font-mono font-bold text-slate-900 group-hover:text-orange-600 transition-colors">
+                          {/* Order ID */}
+                          <td className="py-4 px-5 font-mono font-bold text-slate-900 group-hover:text-orange-600 group-hover:translate-x-0.5 transition-all duration-300">
                             #{order.id}
                           </td>
 
+                          {/* Placed Date */}
                           <td className="py-4 px-5 text-slate-600 font-medium">
                             <div className="flex items-center gap-1.5 text-slate-500">
-                              <Calendar className="size-3 text-orange-400 shrink-0" />
+                              <Calendar className="size-3 text-orange-400 shrink-0 group-hover:scale-110 transition-transform duration-300" />
                               <span className="truncate">{formatDateLong(order.placedAt)}</span>
                             </div>
                           </td>
 
+                          {/* Customer */}
                           <td className="py-4 px-5">
                             <div className="flex items-center gap-2.5">
-                              <Avatar className="size-7.5 ring-2 ring-orange-200/60 shrink-0 transition-transform group-hover:scale-110 duration-300">
+                              <Avatar className="size-7.5 ring-2 ring-orange-200/60 shrink-0 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
                                 <AvatarFallback className="bg-gradient-to-tr from-orange-400 to-rose-400 text-white font-bold text-[10px]">
                                   {getInitials(order.customerName)}
                                 </AvatarFallback>
                               </Avatar>
-                              <span className="font-bold text-slate-900 group-hover:text-orange-600 transition-colors text-xs truncate">
+                              <span className="font-bold text-slate-900 group-hover:text-orange-600 transition-colors duration-300 text-xs truncate">
                                 {order.customerName}
                               </span>
                             </div>
                           </td>
 
+                          {/* Products Ordered */}
                           <td className="py-4 px-5">
                             <div className="flex items-center gap-2">
                               <div className="flex -space-x-2 shrink-0">
@@ -379,11 +381,11 @@ export function OrdersPage() {
                                     key={i}
                                     src={productImage(item.imageUrl)}
                                     alt={item.name}
-                                    className="size-7 rounded-lg border-2 border-white object-cover shadow-2xs transition-transform group-hover:scale-110 duration-300"
+                                    className="size-7 rounded-lg border-2 border-white object-cover shadow-2xs transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-0.5"
                                   />
                                 ))}
                               </div>
-                              <span className="text-xs font-semibold text-slate-700 truncate">
+                              <span className="text-xs font-semibold text-slate-700 truncate group-hover:text-slate-900 transition-colors">
                                 {order.items.map((i) => i.name).join(', ')}
                               </span>
                               {order.items.length > 2 && (
@@ -394,11 +396,12 @@ export function OrdersPage() {
                             </div>
                           </td>
 
+                          {/* Status */}
                           <td className="py-4 px-5">
                             <Badge
                               variant="outline"
                               className={cn(
-                                'inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold rounded-full border shadow-2xs transition-all duration-300',
+                                'inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold rounded-full border shadow-2xs transition-all duration-300 group-hover:scale-105 group-hover:shadow-xs',
                                 config.badgeClass,
                               )}
                             >
@@ -407,7 +410,8 @@ export function OrdersPage() {
                             </Badge>
                           </td>
 
-                          <td className="py-4 px-5 text-right font-mono text-sm font-black text-slate-900 group-hover:text-orange-600 transition-colors">
+                          {/* Total */}
+                          <td className="py-4 px-5 text-right font-mono text-sm font-black text-slate-900 group-hover:text-orange-600 group-hover:scale-105 transition-all duration-300">
                             {formatCurrency(order.total)}
                           </td>
                         </tr>

@@ -1,5 +1,11 @@
 import { supabase } from '../lib/supabaseClient.ts'
-import type { Order, OrderListFilters, OrderStatus, PackSizeLabel } from '../types/domain.ts'
+import type {
+  Order,
+  OrderListFilters,
+  OrderStatus,
+  OrderStatusEvent,
+  PackSizeLabel,
+} from '../types/domain.ts'
 
 /** Every read of an order returns the same shape — one place to change it. */
 const ORDER_SELECT = '*, customers(name, phone, email), order_items(*, products(name, image_url))'
@@ -123,6 +129,28 @@ export async function updateStatus(orderId: string, status: OrderStatus): Promis
 
   const { error } = await supabase.from('orders').update(patch).eq('id', orderId)
   if (error) throw error
+}
+
+export async function findById(orderId: string): Promise<Order | null> {
+  const { data, error } = await supabase.from('orders').select(ORDER_SELECT).eq('id', orderId).maybeSingle()
+  if (error) throw error
+  return data ? mapRow(data) : null
+}
+
+/** The recorded transition history — when each step actually happened. */
+export async function getStatusEvents(orderId: string): Promise<OrderStatusEvent[]> {
+  const { data, error } = await supabase
+    .from('order_status_events')
+    .select('from_status, to_status, changed_at')
+    .eq('order_id', orderId)
+    .order('changed_at')
+  if (error) throw error
+  // deno-lint-ignore no-explicit-any
+  return (data as any[]).map((row) => ({
+    fromStatus: row.from_status,
+    toStatus: row.to_status,
+    changedAt: row.changed_at,
+  }))
 }
 
 export async function listForCustomer(customerId: string): Promise<Order[]> {

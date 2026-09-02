@@ -91,6 +91,7 @@ export interface Customer {
   id: string
   name: string
   phone: string
+  email: string | null
   initials: string
   address: string
   joinedAt: string
@@ -98,7 +99,26 @@ export interface Customer {
   segment: CustomerSegment
   totalOrders: number
   totalSpend: number
-  lastOrderAt: string
+  /** Null when they have never ordered. */
+  lastOrderAt: string | null
+  /** Ordered within the last 90 days — computed server-side. */
+  isActive: boolean
+}
+
+export interface CustomerCounts {
+  total: number
+  active: number
+  inactive: number
+  new: number
+  regular: number
+  vip: number
+}
+
+/** One recorded status transition, written by a DB trigger on every change. */
+export interface OrderStatusEvent {
+  fromStatus: OrderStatus | null
+  toStatus: OrderStatus
+  changedAt: string
 }
 
 export interface RevenuePoint {

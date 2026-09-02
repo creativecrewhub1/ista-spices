@@ -35,12 +35,11 @@ function mapRow(row: any): Product {
   }
 }
 
-export async function listActive(): Promise<Product[]> {
-  const { data, error } = await supabase
-    .from('products')
-    .select('*, product_pack_sizes(*)')
-    .eq('is_active', true)
-    .order('name')
+export async function listActive(search?: string): Promise<Product[]> {
+  let query = supabase.from('products').select('*, product_pack_sizes(*)').eq('is_active', true)
+  if (search) query = query.ilike('name', `%${search}%`)
+
+  const { data, error } = await query.order('name')
   if (error) throw error
   return data.map(mapRow)
 }
