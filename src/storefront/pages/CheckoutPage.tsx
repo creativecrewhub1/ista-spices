@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { ProductVisual } from '../components/ProductVisual'
+import { productImage } from '../data/images'
 import { PriceTag, formatINR } from '../components/PriceTag'
 import { useCart } from '../cart/CartContext'
 import { cn } from '@/lib/utils'
@@ -72,7 +73,7 @@ export function CheckoutPage() {
 
   if (placed) {
     return (
-      <div className="mx-auto flex max-w-lg flex-col items-center gap-4 px-4 py-24 text-center sm:px-6">
+      <div className="band-cream mx-auto flex max-w-lg flex-col items-center gap-4 px-4 py-24 text-center sm:px-6">
         <span className="flex size-14 items-center justify-center rounded-full bg-success/15 text-success">
           <Check className="size-6" aria-hidden="true" />
         </span>
@@ -95,7 +96,7 @@ export function CheckoutPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="band-cream mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Step indicator */}
       <ol className="mb-10 flex items-center justify-center gap-3 sm:gap-6">
         {STEPS.map((s, i) => (
@@ -237,7 +238,7 @@ export function CheckoutPage() {
                     key={method.id}
                     htmlFor={`pay-${method.id}`}
                     className={cn(
-                      'flex cursor-pointer items-center gap-3 rounded-md border border-border p-4 transition-colors has-[[data-state=checked]]:border-foreground has-[[data-state=checked]]:bg-secondary',
+                      'flex cursor-pointer items-center gap-3 rounded-2xl border border-border bg-card p-4 transition-colors has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-secondary',
                     )}
                   >
                     <RadioGroupItem value={method.id} id={`pay-${method.id}`} />
@@ -251,7 +252,7 @@ export function CheckoutPage() {
               </RadioGroup>
 
               {paymentMethod === 'card' ? (
-                <div className="grid grid-cols-1 gap-4 rounded-md border border-border p-4 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-4 rounded-2xl border border-border bg-card p-4 sm:grid-cols-2">
                   <div className="flex flex-col gap-1.5 sm:col-span-2">
                     <Label htmlFor="card-number">Card number</Label>
                     <Input id="card-number" inputMode="numeric" placeholder="1234 5678 9012 3456" />
@@ -282,7 +283,7 @@ export function CheckoutPage() {
             <div className="flex flex-col gap-6">
               <h1 className="font-display text-2xl font-medium text-foreground">Review your order</h1>
 
-              <div className="rounded-md border border-border p-4">
+              <div className="rounded-2xl border border-border bg-card p-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-sm font-medium text-foreground">Shipping to</h2>
                   <button type="button" onClick={() => setStep('shipping')} className="text-xs text-accent hover:underline">
@@ -296,7 +297,7 @@ export function CheckoutPage() {
                 </p>
               </div>
 
-              <div className="rounded-md border border-border p-4">
+              <div className="rounded-2xl border border-border bg-card p-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-sm font-medium text-foreground">Payment method</h2>
                   <button type="button" onClick={() => setStep('payment')} className="text-xs text-accent hover:underline">
@@ -308,10 +309,10 @@ export function CheckoutPage() {
                 </p>
               </div>
 
-              <ul className="flex flex-col divide-y divide-border rounded-md border border-border">
+              <ul className="flex flex-col divide-y divide-border rounded-2xl border border-border bg-card">
                 {lines.map((line) => (
                   <li key={`${line.productId}-${line.variantId}`} className="flex items-center gap-3 p-4">
-                    <ProductVisual accent={line.accent} className="size-14 shrink-0 rounded-md" iconClassName="size-5" />
+                    <ProductVisual accent={line.accent} src={productImage(line.slug)} alt={line.name} className="size-14 shrink-0 rounded-xl" iconClassName="size-5" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-foreground">{line.name}</p>
                       <p className="text-xs text-muted-foreground">
@@ -336,13 +337,13 @@ export function CheckoutPage() {
         </div>
 
         {/* Order summary */}
-        <aside className="flex h-fit flex-col gap-4 rounded-md border border-border p-6 lg:sticky lg:top-24">
+        <aside className="flex h-fit flex-col gap-4 rounded-2xl border border-border bg-card p-6 lg:sticky lg:top-24">
           <h2 className="text-sm font-medium text-foreground">Order summary</h2>
           <ul className="flex flex-col gap-3">
             {lines.map((line) => (
               <li key={`${line.productId}-${line.variantId}`} className="flex items-center gap-3">
                 <div className="relative shrink-0">
-                  <ProductVisual accent={line.accent} className="size-12 rounded-md" iconClassName="size-4" />
+                  <ProductVisual accent={line.accent} src={productImage(line.slug)} alt={line.name} className="size-12 rounded-xl" iconClassName="size-4" />
                   <span className="absolute -right-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full bg-foreground text-[10px] font-medium text-primary-foreground">
                     {line.qty}
                   </span>

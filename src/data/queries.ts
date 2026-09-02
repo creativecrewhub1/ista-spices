@@ -4,7 +4,11 @@ import type {
   AttentionItem,
   CatalogProduct,
   Customer,
+  CustomerCounts,
+  InventoryItem,
   Order,
+  OrderStatusEvent,
+  OrderStatus,
   Product,
   ProductRevenueRow,
   RevenuePoint,
@@ -20,24 +24,97 @@ export function useAuthStatus() {
   })
 }
 
-export function useProducts() {
+export function useProducts(search?: string, enabled = true) {
+  const queryString = search ? `?q=${encodeURIComponent(search)}` : ''
   return useQuery({
-    queryKey: ['products'],
-    queryFn: () => api.get<Product[]>('/products'),
+    queryKey: ['products', search ?? null],
+    queryFn: () => api.get<Product[]>(`/products${queryString}`),
+    placeholderData: (previous) => previous,
+    enabled,
   })
 }
 
-export function useCustomers() {
+export function useInventoryItems(
+  filters: { type?: string; search?: string } = {},
+  enabled = true,
+) {
+  const params = new URLSearchParams()
+  if (filters.type) params.set('type', filters.type)
+  if (filters.search) params.set('q', filters.search)
+  const queryString = params.toString()
+
   return useQuery({
-    queryKey: ['customers'],
-    queryFn: () => api.get<Customer[]>('/customers'),
+    queryKey: ['inventory-items', filters.type ?? null, filters.search ?? null],
+    queryFn: () => api.get<InventoryItem[]>(`/inventory-items${queryString ? `?${queryString}` : ''}`),
+    placeholderData: (previous) => previous,
+    enabled,
   })
 }
 
-export function useOrders() {
+export function useCustomers(filters: { search?: string; segment?: string; activity?: string } = {}) {
+  const params = new URLSearchParams()
+  if (filters.search) params.set('q', filters.search)
+  if (filters.segment) params.set('segment', filters.segment)
+  if (filters.activity) params.set('activity', filters.activity)
+  const queryString = params.toString()
+
   return useQuery({
-    queryKey: ['orders'],
-    queryFn: () => api.get<Order[]>('/orders'),
+    queryKey: ['customers', filters.search ?? null, filters.segment ?? null, filters.activity ?? null],
+    queryFn: () => api.get<Customer[]>(`/customers${queryString ? `?${queryString}` : ''}`),
+    placeholderData: (previous) => previous,
+  })
+}
+
+/** Whole-book tallies for the KPI tiles, independent of the active filter. */
+export function useCustomerCounts() {
+  return useQuery({
+    queryKey: ['customer-counts'],
+    queryFn: () => api.get<CustomerCounts>('/customers/counts'),
+  })
+}
+
+/** A customer's order history, resolved by foreign key on the server. */
+export function useCustomerOrders(customerId: string | null) {
+  return useQuery({
+    queryKey: ['customer-orders', customerId],
+    queryFn: () => api.get<Order[]>(`/customers/${customerId}/orders`),
+    enabled: Boolean(customerId),
+  })
+}
+
+/** Recorded status transitions for one order — the real fulfilment timeline. */
+export function useOrderStatusEvents(orderId: string | null) {
+  return useQuery({
+    queryKey: ['order-status-events', orderId],
+    queryFn: () => api.get<OrderStatusEvent[]>(`/orders/${orderId}/events`),
+    enabled: Boolean(orderId),
+  })
+}
+
+/**
+ * Admin order list. Status and search are applied server-side (indexed) —
+ * `keepPreviousData` keeps the current rows on screen while a new filter
+ * loads, so switching filters doesn't flash an empty list.
+ */
+export function useOrders(filters: { status?: string; search?: string } = {}) {
+  const params = new URLSearchParams()
+  if (filters.status) params.set('status', filters.status)
+  if (filters.search) params.set('q', filters.search)
+  const queryString = params.toString()
+
+  return useQuery({
+    queryKey: ['orders', filters.status ?? null, filters.search ?? null],
+    queryFn: () => api.get<Order[]>(`/orders${queryString ? `?${queryString}` : ''}`),
+    placeholderData: (previous) => previous,
+  })
+}
+
+/** Whole-business status tallies for the KPI tiles — independent of whatever
+ * filter the order list is currently under, so the numbers never shift. */
+export function useOrderStatusCounts() {
+  return useQuery({
+    queryKey: ['order-status-counts'],
+    queryFn: () => api.get<Record<OrderStatus, number>>('/orders/counts'),
   })
 }
 

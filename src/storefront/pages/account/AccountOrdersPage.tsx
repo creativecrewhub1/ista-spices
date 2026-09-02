@@ -25,7 +25,7 @@ export function AccountOrdersPage() {
   return (
     <div className="flex flex-col gap-4">
       <h2 className="text-base font-medium text-foreground">Order history</h2>
-      <Accordion type="single" collapsible className="rounded-md border border-border">
+      <Accordion type="single" collapsible className="rounded-2xl border border-border bg-card">
         {mockOrders.map((order, index) => (
           <AccordionItem key={order.id} value={order.id} className={index === mockOrders.length - 1 ? 'border-none' : ''}>
             <AccordionTrigger className="px-4 hover:no-underline">

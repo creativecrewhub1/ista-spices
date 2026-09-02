@@ -1,4 +1,11 @@
-import type { CustomerSegment, OrderStatus, ProductCategory, SpiceLevel, StockLevel, StockState } from '@/data/types'
+import type {
+  CustomerSegment,
+  InventoryItemType,
+  OrderStatus,
+  ProductCategory,
+  SpiceLevel,
+  StockLevel,
+} from '@/data/types'
 
 export type { OrderStatus }
 
@@ -38,10 +45,9 @@ export const orderStatusConfig: Record<
   },
 }
 
-export const stockStateConfig: Record<StockState, { label: string; badgeClass: string }> = {
-  processing: { label: 'Processing', badgeClass: 'bg-muted text-muted-foreground border-border' },
-  packing: { label: 'Packing', badgeClass: 'bg-accent/15 text-accent border-accent/30' },
-  ready: { label: 'Ready', badgeClass: 'bg-success/15 text-success border-success/30' },
+export const inventoryItemTypeConfig: Record<InventoryItemType, { label: string; badgeClass: string }> = {
+  raw_material: { label: 'Raw Material', badgeClass: 'bg-accent/15 text-accent border-accent/30' },
+  b2b: { label: 'B2B', badgeClass: 'bg-violet-500/15 text-violet-600 border-violet-500/30' },
 }
 
 export const categoryConfig: Record<ProductCategory, { label: string; badgeClass: string }> = {

@@ -2,6 +2,7 @@ import { Hono } from 'npm:hono@4'
 import { cors } from 'npm:hono/cors'
 import { authRoute } from './routes/auth.route.ts'
 import { productsRoute } from './routes/products.route.ts'
+import { inventoryItemsRoute } from './routes/inventoryItems.route.ts'
 import { customersRoute } from './routes/customers.route.ts'
 import { ordersRoute } from './routes/orders.route.ts'
 import { revenueRoute } from './routes/revenue.route.ts'
@@ -41,7 +42,14 @@ app.use('*', async (c, next) => {
 // Admin-only surface: everything that manages the business rather than a
 // customer's own cart/orders. Google sign-in can never reach these, since it
 // only ever produces role='customer' (see the on_auth_user_created trigger).
-const ADMIN_PREFIXES = ['/api/products', '/api/customers', '/api/orders', '/api/revenue', '/api/dashboard']
+const ADMIN_PREFIXES = [
+  '/api/products',
+  '/api/inventory-items',
+  '/api/customers',
+  '/api/orders',
+  '/api/revenue',
+  '/api/dashboard',
+]
 
 app.use('*', async (c, next) => {
   if (ADMIN_PREFIXES.some((prefix) => c.req.path.startsWith(prefix))) {
@@ -52,6 +60,7 @@ app.use('*', async (c, next) => {
 
 app.route('/auth', authRoute)
 app.route('/products', productsRoute)
+app.route('/inventory-items', inventoryItemsRoute)
 app.route('/customers', customersRoute)
 app.route('/orders', ordersRoute)
 app.route('/revenue', revenueRoute)

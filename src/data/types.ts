@@ -7,8 +7,6 @@ export interface PackSize {
   price: number
 }
 
-export type StockState = 'processing' | 'packing' | 'ready'
-
 export type SpiceLevel = 'mild' | 'medium' | 'hot'
 
 export type StockLevel = 'low' | 'ok' | 'high'
@@ -23,10 +21,28 @@ export interface Product {
   spiceLevel: SpiceLevel | null
   batchCapacity: number
   unitsPackedThisBatch: number
-  stockState: StockState
   /** low/ok/high classification, computed server-side from unitsPackedThisBatch vs batchCapacity. */
   stockLevel: StockLevel
   isActive: boolean
+  /** Display image — app-relative path or absolute URL. Null until a photo exists. */
+  imageUrl: string | null
+}
+
+/** Raw materials (chilli, coriander seeds, cumin…) and B2B goods (soaps,
+ * honey…) — simple quantity-on-hand tracking, no pack-size/pricing tiers. */
+export type InventoryItemType = 'raw_material' | 'b2b'
+
+export interface InventoryItem {
+  id: string
+  type: InventoryItemType
+  name: string
+  description: string
+  unit: string
+  quantityOnHand: number
+  lowStockThreshold: number
+  isActive: boolean
+  /** Display image — app-relative path or absolute URL. Null until a photo exists. */
+  imageUrl: string | null
 }
 
 export type OrderStatus =
@@ -42,6 +58,8 @@ export type OrderKind = 'subscription' | 'one_time'
 export interface OrderLineItem {
   productId: string
   name: string
+  /** The product's real photo — never guessed from its name. */
+  imageUrl: string | null
   packSize: PackSizeLabel
   qty: number
   price: number
@@ -51,6 +69,10 @@ export interface Order {
   id: string
   customerId: string
   customerName: string
+  /** From the customer record — null when no contact is on file. */
+  customerPhone: string | null
+  /** Captured at storefront checkout; null for admin-created walk-in customers. */
+  customerEmail: string | null
   items: OrderLineItem[]
   total: number
   status: OrderStatus
@@ -69,6 +91,7 @@ export interface Customer {
   id: string
   name: string
   phone: string
+  email: string | null
   initials: string
   address: string
   joinedAt: string
@@ -76,7 +99,26 @@ export interface Customer {
   segment: CustomerSegment
   totalOrders: number
   totalSpend: number
-  lastOrderAt: string
+  /** Null when they have never ordered. */
+  lastOrderAt: string | null
+  /** Ordered within the last 90 days — computed server-side. */
+  isActive: boolean
+}
+
+export interface CustomerCounts {
+  total: number
+  active: number
+  inactive: number
+  new: number
+  regular: number
+  vip: number
+}
+
+/** One recorded status transition, written by a DB trigger on every change. */
+export interface OrderStatusEvent {
+  fromStatus: OrderStatus | null
+  toStatus: OrderStatus
+  changedAt: string
 }
 
 export interface RevenuePoint {
@@ -120,6 +162,7 @@ export interface CatalogProduct {
   packSizes: PackSize[]
   discountPercent: number
   spiceLevel: SpiceLevel | null
+  imageUrl: string | null
 }
 
 export interface CheckoutItemInput {

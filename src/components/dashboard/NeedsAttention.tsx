@@ -1,4 +1,4 @@
-import { Clock, PackageX } from 'lucide-react'
+import { Clock, PackageX, ArrowUpRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { SectionCard } from './SectionCard'
 import { LoadingState, ErrorState } from '@/components/common/QueryState'
@@ -28,9 +28,9 @@ export function NeedsAttention() {
   return (
     <SectionCard title="Needs attention">
       {items.length === 0 ? (
-        <p className="py-2 text-sm text-muted-foreground">All clear — nothing needs action right now.</p>
+        <p className="py-2 text-sm font-semibold text-slate-500">All clear — nothing needs action right now.</p>
       ) : (
-        <ul className="flex flex-col gap-1">
+        <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {items.map((item) => {
             const isLate = item.kind === 'late-order'
             const Icon = isLate ? Clock : PackageX
@@ -45,20 +45,27 @@ export function NeedsAttention() {
               <li key={item.id}>
                 <Link
                   to={item.linkTo}
-                  className="flex items-start gap-3 rounded-lg px-1 py-2 transition-colors hover:bg-muted"
+                  className="group flex items-center justify-between gap-3.5 rounded-2xl border border-slate-100 bg-slate-50/60 p-4 transition-all duration-300 hover:bg-white hover:border-orange-300 hover:shadow-md hover:-translate-y-0.5"
                 >
-                  <span
-                    className={
-                      isLate
-                        ? 'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-destructive/15 text-destructive'
-                        : 'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-warning/15 text-warning'
-                    }
-                  >
-                    <Icon className="size-4" aria-hidden="true" />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block truncate text-sm font-medium text-foreground">{text}</span>
-                    <span className="block text-xs text-muted-foreground">{meta}</span>
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <span
+                      className={
+                        isLate
+                          ? 'flex size-10 shrink-0 items-center justify-center rounded-2xl bg-rose-100/80 text-rose-600 shadow-xs group-hover:scale-110 transition-transform'
+                          : 'flex size-10 shrink-0 items-center justify-center rounded-2xl bg-amber-100/80 text-amber-700 shadow-xs group-hover:scale-110 transition-transform'
+                      }
+                    >
+                      <Icon className="size-5" aria-hidden="true" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-bold text-slate-900 group-hover:text-orange-600 transition-colors">{text}</span>
+                      <span className="block text-xs font-semibold text-slate-500">{meta}</span>
+                    </span>
+                  </div>
+
+                  <span className="flex items-center gap-1 text-xs font-bold text-orange-600 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    <span>Resolve</span>
+                    <ArrowUpRight className="size-3.5" />
                   </span>
                 </Link>
               </li>

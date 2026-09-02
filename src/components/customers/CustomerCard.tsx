@@ -39,7 +39,9 @@ export function CustomerCard({ customer, onOpen }: CustomerCardProps) {
           <p className="truncate text-xs text-muted-foreground">
             {customer.totalOrders} orders &middot; {formatCurrency(customer.totalSpend)} lifetime
           </p>
-          <p className="text-[11px] text-muted-foreground">Last order {formatDate(customer.lastOrderAt)}</p>
+          <p className="text-[11px] text-muted-foreground">
+            {customer.lastOrderAt ? `Last order ${formatDate(customer.lastOrderAt)}` : 'No orders yet'}
+          </p>
         </div>
         <Button
           variant="ghost"

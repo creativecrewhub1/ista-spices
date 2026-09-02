@@ -7,7 +7,7 @@ function generateProductId(): string {
 }
 
 export const ProductsService = {
-  list: () => productsRepo.listActive(),
+  list: (search?: string) => productsRepo.listActive(search?.trim() || undefined),
 
   save: (product: Product) => {
     if (!product.name) {

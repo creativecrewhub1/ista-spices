@@ -5,7 +5,7 @@ import type { Product } from '../types/domain.ts'
 export const productsRoute = new Hono()
 
 productsRoute.get('/', async (c) => {
-  const products = await ProductsService.list()
+  const products = await ProductsService.list(c.req.query('q'))
   return c.json(products)
 })
 

@@ -21,7 +21,7 @@ export function SectionHeading({ eyebrow, title, description, align = 'left', ac
     >
       <div className={cn('flex flex-col gap-2', align === 'center' && 'items-center')}>
         {eyebrow ? (
-          <span className="text-xs font-medium uppercase tracking-[0.14em] text-accent">{eyebrow}</span>
+          <span className="text-xs font-medium uppercase tracking-[0.14em] text-primary">{eyebrow}</span>
         ) : null}
         <h2 className="font-display text-3xl font-medium leading-tight text-foreground sm:text-4xl">{title}</h2>
         {description ? (
