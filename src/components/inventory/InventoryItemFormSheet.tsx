@@ -173,8 +173,9 @@ export function InventoryItemFormSheet({
               </Select>
             </div>
 
-            {/* Metrics: Unit, In Hand, Alert */}
-            <div className="grid grid-cols-3 gap-3 pt-1">
+            {/* Unit and alert threshold. On-hand isn't here: it's the balance
+                of the stock ledger, changed by Stock In, not by typing. */}
+            <div className="grid grid-cols-2 gap-3 pt-1">
               <div className="space-y-1.5">
                 <Label htmlFor="item-unit" className="text-[11px] font-bold uppercase text-slate-600 flex items-center gap-1">
                   <Scale className="size-3 text-slate-400" /> Unit
@@ -187,22 +188,6 @@ export function InventoryItemFormSheet({
                   placeholder="kg"
                   className="rounded-2xl border-slate-200 bg-slate-50/70 py-2 px-3 text-sm font-bold text-center"
                 />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="item-qty" className="text-[11px] font-bold uppercase text-slate-600">
-                  In Hand
-                </Label>
-                {/* On-hand is the balance of the stock ledger. Typing over it
-                    here would put this screen and Stock back out of step, so
-                    it is shown rather than edited. */}
-                <Input
-                  id="item-qty"
-                  readOnly
-                  disabled
-                  value={draft.quantityOnHand}
-                  className="rounded-2xl border-slate-200 bg-slate-100 py-2 px-3 text-center text-sm font-bold text-slate-500"
-                />
-                <p className="text-[10px] font-medium text-slate-400">Changes via Stock in</p>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="item-threshold" className="text-[11px] font-bold uppercase text-slate-600 flex items-center gap-1">
