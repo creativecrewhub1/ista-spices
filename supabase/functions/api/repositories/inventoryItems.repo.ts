@@ -15,27 +15,53 @@ function typeOf(row: { is_consumable: boolean }): InventoryItem['type'] {
   return row.is_consumable ? 'raw_material' : 'b2b'
 }
 
+export interface LedgerPosition {
+  quantityOnHand: number
+  lastPurchaseCost: number | null
+  lastPurchasedAt: string | null
+}
+
+const EMPTY_POSITION: LedgerPosition = {
+  quantityOnHand: 0,
+  lastPurchaseCost: null,
+  lastPurchasedAt: null,
+}
+
 // deno-lint-ignore no-explicit-any
-function mapRow(row: any, quantityOnHand: number): InventoryItem {
+function mapRow(row: any, position: LedgerPosition): InventoryItem {
   return {
     id: row.id,
     type: typeOf(row),
     name: row.name,
     description: row.description ?? '',
     unit: row.unit,
-    quantityOnHand,
+    quantityOnHand: position.quantityOnHand,
     lowStockThreshold: Number(row.low_stock_threshold),
+    lastPurchaseCost: position.lastPurchaseCost,
+    lastPurchasedAt: position.lastPurchasedAt,
     isActive: row.is_active,
     imageUrl: row.image_url ?? null,
   }
 }
 
-/** item_id → quantity on hand, from the ledger. */
-async function stockByItem(): Promise<Map<string, number>> {
-  const { data, error } = await supabase.from('item_stock').select('item_id, quantity_on_hand')
+/** item_id → its position in the ledger: quantity, and what it last cost. */
+export async function positionByItem(): Promise<Map<string, LedgerPosition>> {
+  const { data, error } = await supabase
+    .from('item_stock')
+    .select('item_id, quantity_on_hand, last_purchase_cost, last_purchased_at')
   if (error) throw error
-  // deno-lint-ignore no-explicit-any
-  return new Map((data as any[]).map((r) => [r.item_id, Number(r.quantity_on_hand)]))
+
+  return new Map(
+    // deno-lint-ignore no-explicit-any
+    (data as any[]).map((r) => [
+      r.item_id,
+      {
+        quantityOnHand: Number(r.quantity_on_hand),
+        lastPurchaseCost: r.last_purchase_cost === null ? null : Number(r.last_purchase_cost),
+        lastPurchasedAt: r.last_purchased_at ?? null,
+      },
+    ]),
+  )
 }
 
 export async function listActive(
@@ -48,9 +74,9 @@ export async function listActive(
   if (filters.type === 'b2b') query = query.eq('is_consumable', false)
   if (filters.search) query = query.ilike('name', `%${filters.search}%`)
 
-  const [{ data, error }, stock] = await Promise.all([query.order('name'), stockByItem()])
+  const [{ data, error }, positions] = await Promise.all([query.order('name'), positionByItem()])
   if (error) throw error
-  return data.map((row) => mapRow(row, stock.get(row.id) ?? 0))
+  return data.map((row) => mapRow(row, positions.get(row.id) ?? EMPTY_POSITION))
 }
 
 /**

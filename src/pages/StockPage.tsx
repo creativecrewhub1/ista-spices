@@ -180,6 +180,9 @@ export function StockPage() {
                       On hand
                     </th>
                     <th className="px-4 py-3 text-right font-bold uppercase tracking-wider text-slate-500">
+                      Last price
+                    </th>
+                    <th className="px-4 py-3 text-right font-bold uppercase tracking-wider text-slate-500">
                       Avg cost
                     </th>
                     <th className="px-4 py-3 text-right font-bold uppercase tracking-wider text-slate-500">
@@ -204,6 +207,16 @@ export function StockPage() {
                       <td className="px-4 py-3 text-slate-500">{originLabel(item)}</td>
                       <td className="px-4 py-3 text-right font-mono tabular-nums text-slate-900">
                         {item.quantityOnHand} <span className="text-slate-400">{item.unit}</span>
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono tabular-nums text-slate-900">
+                        {item.lastPurchaseCost !== null && item.lastPurchaseCost > 0
+                          ? formatCurrency(item.lastPurchaseCost)
+                          : '—'}
+                        {item.lastBatchNo ? (
+                          <span className="block text-[10px] font-medium text-slate-400">
+                            {item.lastBatchNo}
+                          </span>
+                        ) : null}
                       </td>
                       <td className="px-4 py-3 text-right font-mono tabular-nums text-slate-600">
                         {item.avgUnitCost > 0 ? formatCurrency(item.avgUnitCost) : '—'}
@@ -239,6 +252,11 @@ export function StockPage() {
                     </Badge>
                     <span className="min-w-0 flex-1 truncate text-xs font-semibold text-slate-900">
                       {m.itemName}
+                      {m.batchNo ? (
+                        <span className="ml-2 font-mono text-[10px] font-medium text-slate-400">
+                          {m.batchNo}
+                        </span>
+                      ) : null}
                     </span>
                     <span
                       className={cn(

@@ -11,6 +11,7 @@ import {
 import { ItemThumbnail } from './ItemThumbnail'
 import type { InventoryItem } from '@/data/types'
 import { inventoryItemTypeConfig } from '@/lib/status'
+import { formatCurrency } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
 interface InventoryItemCardProps {
@@ -63,6 +64,18 @@ export function InventoryItemCard({ item, onEdit, onDelete }: InventoryItemCardP
             {item.description}
           </p>
         </div>
+
+        {/* What the last consignment cost — the price to reorder at today,
+            which the running average hides once older stock is cheaper. */}
+        {item.lastPurchaseCost !== null ? (
+          <div className="flex items-baseline justify-between gap-2 border-t border-slate-100 pt-2">
+            <span className="text-[11px] font-semibold text-slate-400">Last purchased</span>
+            <span className="font-mono text-xs font-bold tabular-nums text-slate-700">
+              {formatCurrency(item.lastPurchaseCost)}
+              <span className="font-sans font-semibold text-slate-400"> / {item.unit}</span>
+            </span>
+          </div>
+        ) : null}
 
         {/* Quantity & Stock Level Badge */}
         <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">

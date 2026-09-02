@@ -25,6 +25,9 @@ export interface Product {
   unitsPackedThisBatch: number
   /** low/ok/high classification of unitsPackedThisBatch vs batchCapacity — a backend decision, not a frontend threshold. */
   stockLevel: StockLevel
+  /** Per-unit cost of the most recent consignment — today's buying price. */
+  lastPurchaseCost: number | null
+  lastPurchasedAt: string | null
   isActive: boolean
   /** Display image — app-relative path or absolute URL. Null until a photo exists. */
   imageUrl: string | null
@@ -54,6 +57,11 @@ export interface StockItem {
   avgUnitCost: number
   stockValue: number
   isLowStock: boolean
+  /** Per-unit cost of the most recent consignment — today's buying price. */
+  lastPurchaseCost: number | null
+  lastPurchasedAt: string | null
+  /** Consignment reference of that most recent receipt. */
+  lastBatchNo: string | null
 }
 
 export interface StockMovement {
@@ -68,6 +76,8 @@ export interface StockMovement {
   occurredAt: string
   orderId: string | null
   note: string | null
+  /** Consignment reference, assigned by the database on receipt. */
+  batchNo: string | null
 }
 
 export interface StockReceiptInput {
@@ -91,6 +101,9 @@ export interface InventoryItem {
   unit: string
   quantityOnHand: number
   lowStockThreshold: number
+  /** Per-unit cost of the most recent consignment — today's buying price. */
+  lastPurchaseCost: number | null
+  lastPurchasedAt: string | null
   isActive: boolean
   /** Display image — app-relative path or absolute URL. Null until a photo exists. */
   imageUrl: string | null

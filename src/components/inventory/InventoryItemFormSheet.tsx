@@ -56,6 +56,8 @@ function emptyItem(type: InventoryItemType): InventoryItem {
     unit: 'kg',
     quantityOnHand: 0,
     lowStockThreshold: 0,
+    lastPurchaseCost: null,
+    lastPurchasedAt: null,
     isActive: true,
     imageUrl: null,
   }

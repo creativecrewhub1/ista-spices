@@ -65,6 +65,8 @@ const emptyProduct: Product = {
   batchCapacity: 30,
   unitsPackedThisBatch: 0,
   stockLevel: 'ok',
+  lastPurchaseCost: null,
+  lastPurchasedAt: null,
   isActive: true,
 }
 

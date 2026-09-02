@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabaseClient.ts'
 import type { CatalogProduct, PackSizeLabel, Product, StockLevel } from '../types/domain.ts'
+import { positionByItem, type LedgerPosition } from './inventoryItems.repo.ts'
 
 const PACK_SIZE_ORDER: PackSizeLabel[] = ['250g', '500g', '1kg', '2kg']
 
@@ -17,7 +18,8 @@ export function classifyStockLevel(unitsPacked: number, batchCapacity: number): 
  * only as the pre-ledger seed and is no longer read.
  */
 // deno-lint-ignore no-explicit-any
-function mapRow(row: any, quantityOnHand: number): Product {
+function mapRow(row: any, position: LedgerPosition): Product {
+  const quantityOnHand = position.quantityOnHand
   const packSizes = [...row.product_pack_sizes]
     // deno-lint-ignore no-explicit-any
     .sort((a: any, b: any) => PACK_SIZE_ORDER.indexOf(a.size) - PACK_SIZE_ORDER.indexOf(b.size))
@@ -37,17 +39,11 @@ function mapRow(row: any, quantityOnHand: number): Product {
     batchCapacity,
     unitsPackedThisBatch: quantityOnHand,
     stockLevel: batchCapacity > 0 ? classifyStockLevel(quantityOnHand, batchCapacity) : 'ok',
+    lastPurchaseCost: position.lastPurchaseCost,
+    lastPurchasedAt: position.lastPurchasedAt,
     isActive: row.is_active,
     imageUrl: row.image_url ?? null,
   }
-}
-
-/** item_id → quantity on hand, from the ledger. */
-async function stockByItem(): Promise<Map<string, number>> {
-  const { data, error } = await supabase.from('item_stock').select('item_id, quantity_on_hand')
-  if (error) throw error
-  // deno-lint-ignore no-explicit-any
-  return new Map((data as any[]).map((r) => [r.item_id, Number(r.quantity_on_hand)]))
 }
 
 /** Goods the shop makes — the Manufacturing tab and the storefront catalogue. */
@@ -59,9 +55,9 @@ export async function listActive(search?: string): Promise<Product[]> {
     .eq('origin', 'manufactured')
   if (search) query = query.ilike('name', `%${search}%`)
 
-  const [{ data, error }, stock] = await Promise.all([query.order('name'), stockByItem()])
+  const [{ data, error }, positions] = await Promise.all([query.order('name'), positionByItem()])
   if (error) throw error
-  return data.map((row) => mapRow(row, stock.get(row.id) ?? 0))
+  return data.map((row) => mapRow(row, positions.get(row.id) ?? { quantityOnHand: 0, lastPurchaseCost: null, lastPurchasedAt: null }))
 }
 
 export async function upsert(product: Product): Promise<void> {

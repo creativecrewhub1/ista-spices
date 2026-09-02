@@ -15,6 +15,9 @@ function mapStockRow(row: any): StockItem {
     avgUnitCost: Number(row.avg_unit_cost),
     stockValue: Number(row.stock_value),
     isLowStock: row.is_low_stock,
+    lastPurchaseCost: row.last_purchase_cost === null ? null : Number(row.last_purchase_cost),
+    lastPurchasedAt: row.last_purchased_at ?? null,
+    lastBatchNo: row.last_batch_no ?? null,
   }
 }
 
@@ -38,6 +41,7 @@ function mapMovementRow(row: any): StockMovement {
     occurredAt: row.occurred_at,
     orderId: row.order_id,
     note: row.note,
+    batchNo: row.batch_no ?? null,
   }
 }
 
