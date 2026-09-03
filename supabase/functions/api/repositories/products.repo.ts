@@ -34,6 +34,7 @@ function mapRow(row: any, position: LedgerPosition): Product {
     name: row.name,
     category: row.category,
     description: row.description,
+    stockUnit: row.stock_unit,
     salesUnit: row.sales_unit,
     packSizes,
     discountPercent: row.discount_percent,

@@ -23,7 +23,8 @@ import type { ItemCategory, ItemInput, ProductCategory, SpiceLevel } from '@/dat
 import { formatCurrency } from '@/lib/format'
 import { formatPack } from '@/lib/packLabel'
 import { cn } from '@/lib/utils'
-import { useItemCategories, useUnits } from '@/data/queries'
+import { useItemCategories, useItemNames, useUnits } from '@/data/queries'
+import { matchNames, normaliseName } from '@/lib/nameMatch'
 
 export function emptyItem(category: ItemCategory): ItemInput {
   return {
@@ -38,8 +39,14 @@ export function emptyItem(category: ItemCategory): ItemInput {
     imageUrl: null,
     productCategory: 'spice-powder',
     spiceLevel: null,
-    // One row to start from; a new product's sizes are its own.
-    packSizes: category === 'manufacturing' ? [{ qty: 0.25, price: 0 }] : [],
+    // One row to start from; a new item's prices are its own. Nothing sells
+    // a raw material, so it carries none.
+    packSizes:
+      category === 'manufacturing'
+        ? [{ qty: 0.25, price: 0 }]
+        : category === 'b2b'
+          ? [{ qty: 1, price: 0 }]
+          : [],
     discountPercent: 0,
     batchCapacity: 30,
   }
@@ -77,6 +84,8 @@ export function ItemFormSheet({
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const { data: units = [] } = useUnits()
   const { data: categories = [] } = useItemCategories()
+  const { data: itemNames = [] } = useItemNames()
+  const [nameFocused, setNameFocused] = useState(false)
 
   // A conversion between two units of the same dimension is arithmetic:
   // 1 kg is 1000 g regardless of what is being weighed. Only a cross-
@@ -101,6 +110,24 @@ export function ItemFormSheet({
 
   const isEditing = Boolean(item?.id)
   const isManufacturing = draft.category === 'manufacturing'
+  // Manufactured goods and bought-in B2B goods are both sold, so both are
+  // priced. A raw material is consumed by production and never sold.
+  const isSellable = draft.category !== 'raw_material'
+
+  // Suggestions rank by how alike the names look rather than by prefix, so a
+  // typo still finds what it meant. Names close enough to be the same item
+  // are the only ones that block; "Turmeric Powder" and "Turmeric Fingers"
+  // are near matches and both belong in the catalogue.
+  const typed = draft.name.trim()
+  const wanted = normaliseName(typed)
+  const others = itemNames.filter((existing) => existing.id !== draft.id)
+  const duplicate = wanted
+    ? others.find((existing) => normaliseName(existing.name) === wanted) ?? null
+    : null
+
+  // An exact match is spelled out under the field already, so the list would
+  // only be showing the items it is not.
+  const suggestions = duplicate ? [] : matchNames(others, typed, 5)
 
   function handleCategoryChange(category: ItemCategory) {
     setDraft((prev) => ({
@@ -111,6 +138,12 @@ export function ItemFormSheet({
       // Nothing sells a raw material, so it carries no selling unit.
       salesUnit: category === 'raw_material' ? null : prev.salesUnit || prev.stockUnit || 'kg',
       spiceLevel: category === 'manufacturing' ? prev.spiceLevel : null,
+      packSizes:
+        category === 'raw_material'
+          ? []
+          : prev.packSizes.length > 0
+            ? prev.packSizes
+            : [{ qty: category === 'manufacturing' ? 0.25 : 1, price: 0 }],
     }))
   }
 
@@ -198,14 +231,48 @@ export function ItemFormSheet({
             >
               <Package className="size-3.5 text-orange-500" /> Item name
             </Label>
-            <Input
-              id="item-name"
-              required
-              value={draft.name}
-              onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-              placeholder={isManufacturing ? 'e.g. Turmeric Powder' : 'e.g. Black Peppercorns'}
-              className="rounded-2xl border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-sm font-semibold"
-            />
+            <div className="relative">
+              <Input
+                id="item-name"
+                required
+                // The browser's own history offers whatever was ever typed
+                // here, typos included. The catalogue below is the real list.
+                autoComplete="off"
+                value={draft.name}
+                onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+                onFocus={() => setNameFocused(true)}
+                onBlur={() => window.setTimeout(() => setNameFocused(false), 150)}
+                placeholder={isManufacturing ? 'e.g. Turmeric Powder' : 'e.g. Black Peppercorns'}
+                className={cn(
+                  'rounded-2xl border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-sm font-semibold',
+                  duplicate && 'border-red-300 bg-red-50/60',
+                )}
+              />
+              {nameFocused && suggestions.length > 0 ? (
+                <ul className="absolute z-20 mt-1 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
+                  {suggestions.map((existing) => (
+                    <li key={existing.id}>
+                      <button
+                        type="button"
+                        onClick={() => setDraft({ ...draft, name: existing.name })}
+                        className="flex w-full items-center justify-between gap-2 px-3.5 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-orange-50"
+                      >
+                        <span>{existing.name}</span>
+                        <span className="shrink-0 text-[10px] font-bold uppercase text-slate-400">
+                          {categories.find((o) => o.code === existing.category)?.label ?? existing.category}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+            {duplicate ? (
+              <p className="flex items-start gap-1.5 text-[11px] font-bold text-red-600">
+                <AlertCircle className="mt-px size-3.5 shrink-0" />
+                {`"${duplicate.name}" already exists. Edit that item instead of adding it twice.`}
+              </p>
+            ) : null}
           </div>
 
           <div className="space-y-1.5">
@@ -222,19 +289,20 @@ export function ItemFormSheet({
             />
           </div>
 
+          {/* Units: Inward Unit and Selling Unit side by side */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="flex items-center gap-1 text-[11px] font-bold uppercase text-slate-600">
-                <Scale className="size-3 text-slate-400" /> Inward unit
+              <Label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-700">
+                <Scale className="size-3.5 text-orange-500" /> Inward unit
               </Label>
               <Select
                 value={draft.stockUnit}
                 onValueChange={(v) => setDraft({ ...draft, stockUnit: v })}
               >
-                <SelectTrigger className="rounded-2xl border-slate-200 bg-slate-50/70 px-3 py-2 text-sm font-bold">
+                <SelectTrigger className="rounded-2xl border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-sm font-semibold text-slate-900">
                   <SelectValue placeholder="Unit" />
                 </SelectTrigger>
-                <SelectContent className="rounded-2xl">
+                <SelectContent position="popper" sideOffset={4} className="rounded-2xl">
                   {units.map((u) => (
                     <SelectItem key={u.code} value={u.code} className="rounded-xl font-semibold">
                       {u.name} ({u.code})
@@ -243,86 +311,51 @@ export function ItemFormSheet({
                 </SelectContent>
               </Select>
             </div>
+
             <div className="space-y-1.5">
-              <Label
-                htmlFor="item-threshold"
-                className="flex items-center gap-1 text-[11px] font-bold uppercase text-slate-600"
-              >
-                <AlertCircle className="size-3 text-rose-400" /> Min alert
+              <Label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-700">
+                <Scale className="size-3.5 text-orange-500" /> Selling unit
               </Label>
-              <Input
-                id="item-threshold"
-                type="number"
-                min={0}
-                value={draft.lowStockThreshold}
-                onChange={(e) => setDraft({ ...draft, lowStockThreshold: Number(e.target.value) })}
-                className="rounded-2xl border-slate-200 bg-slate-50/70 px-3 py-2 text-center text-sm font-bold"
-              />
+              <Select
+                value={draft.salesUnit ?? (draft.category === 'raw_material' ? '' : draft.stockUnit)}
+                onValueChange={(v) => setDraft({ ...draft, salesUnit: v })}
+                disabled={draft.category === 'raw_material'}
+              >
+                <SelectTrigger className="rounded-2xl border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-sm font-semibold text-slate-900 disabled:opacity-50">
+                  <SelectValue placeholder={draft.category === 'raw_material' ? 'N/A (Raw)' : 'Unit'} />
+                </SelectTrigger>
+                <SelectContent position="popper" sideOffset={4} className="rounded-2xl">
+                  {units.map((u) => (
+                    <SelectItem key={u.code} value={u.code} className="rounded-xl font-semibold">
+                      {u.name} ({u.code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
-          {/* Stock is counted in the unit it arrives in, but sold in whatever
-              unit customers buy — oil comes in by weight and leaves by volume.
-              Raw materials skip this: nothing sells them.
-
-              How the two convert depends on the category. Bought-in goods have
-              a fixed conversion the shop already knows, so it is asked for.
-              A manufactured item's is a yield — so many kilograms in, so many
-              litres out — which is only known once a batch has actually been
-              run, so it is not asked for here. */}
-          {draft.category !== 'raw_material' ? (
-            <div className={cn('grid gap-3', isManufacturing ? 'grid-cols-1' : 'grid-cols-2')}>
-              <div className="space-y-1.5">
-                <Label className="flex items-center gap-1 text-[11px] font-bold uppercase text-slate-600">
-                  <Scale className="size-3 text-orange-400" /> Selling unit
-                </Label>
-                <Select
-                  value={draft.salesUnit ?? ''}
-                  onValueChange={(v) => setDraft({ ...draft, salesUnit: v })}
-                >
-                  <SelectTrigger className="rounded-2xl border-slate-200 bg-slate-50/70 px-3 py-2 text-sm font-bold">
-                    <SelectValue placeholder="Unit" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-2xl">
-                    {units.map((u) => (
-                      <SelectItem key={u.code} value={u.code} className="rounded-xl font-semibold">
-                        {u.name} ({u.code})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {/* Bought-in goods only: a fixed conversion the shop knows,
-                  such as the density of an oil it resells. */}
-              {!isManufacturing ? (
-                <div className="space-y-1.5">
-                  <Label
-                    htmlFor="item-factor"
-                    className="text-[11px] font-bold uppercase text-slate-600"
-                  >
-                    {draft.stockUnit || 'unit'} per {draft.salesUnit || 'unit'}
-                  </Label>
-                  {/* Within a dimension the conversion is arithmetic — 1 kg is
-                      1000 g whoever is asked — so it's computed, not typed. */}
-                  <Input
-                    id="item-factor"
-                    type="number"
-                    min={0}
-                    step="any"
-                    required
-                    readOnly={derivedFactor !== null}
-                    disabled={derivedFactor !== null}
-                    value={derivedFactor ?? draft.salesToStockFactor}
-                    onChange={(e) =>
-                      setDraft({ ...draft, salesToStockFactor: Number(e.target.value) })
-                    }
-                    className={cn(
-                      'rounded-2xl border-slate-200 px-3 py-2 text-center text-sm font-bold',
-                      derivedFactor !== null ? 'bg-slate-100 text-slate-500' : 'bg-slate-50/70',
-                    )}
-                  />
-                </div>
-              ) : null}
+          {/* Conversion factor for B2B / bought-in resold goods */}
+          {draft.category === 'b2b' && draft.salesUnit && draft.salesUnit !== draft.stockUnit ? (
+            <div className="space-y-1.5">
+              <Label htmlFor="item-factor" className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                {draft.stockUnit || 'unit'} per {draft.salesUnit || 'unit'}
+              </Label>
+              <Input
+                id="item-factor"
+                type="number"
+                min={0}
+                step="any"
+                required
+                readOnly={derivedFactor !== null}
+                disabled={derivedFactor !== null}
+                value={derivedFactor ?? draft.salesToStockFactor}
+                onChange={(e) => setDraft({ ...draft, salesToStockFactor: Number(e.target.value) })}
+                className={cn(
+                  'rounded-2xl border-slate-200 px-3.5 py-2.5 text-center text-sm font-bold',
+                  derivedFactor !== null ? 'bg-slate-100 text-slate-500' : 'bg-slate-50/70',
+                )}
+              />
             </div>
           ) : null}
 
@@ -386,11 +419,19 @@ export function ItemFormSheet({
                   </Select>
                 </div>
               </div>
+            </>
+          ) : null}
 
-              <div className="space-y-2">
-                <Label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-700">
-                  <Layers className="size-3.5 text-orange-500" /> Pack sizes &amp; selling price
-                </Label>
+          {/* A price is what makes an item sellable. A B2B good is resold as
+              it was bought, so it is priced the same way — one quantity of
+              its selling unit, one amount — and everything downstream reads
+              it without a special case. */}
+          {isSellable ? (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-700">
+                <Layers className="size-3.5 text-orange-500" />{' '}
+                {isManufacturing ? 'Pack sizes & selling price' : 'Selling price'}
+              </Label>
                 <div className="space-y-2">
                   {draft.packSizes.map((pack, index) => (
                     <div key={index} className="flex items-end gap-2">
@@ -459,10 +500,13 @@ export function ItemFormSheet({
                         .filter((pack) => pack.qty > 0)
                         .map((pack) => formatPack(pack.qty, draft.salesUnit as string, units))
                         .join(', ') || '—'}.`
-                    : 'Add the sizes this product is sold in.'}
+                    : 'Add the quantities this is sold in.'}
                 </p>
-              </div>
+            </div>
+          ) : null}
 
+          {isManufacturing ? (
+            <>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="item-discount" className="text-[11px] font-bold uppercase text-slate-600">
@@ -555,7 +599,9 @@ export function ItemFormSheet({
           <SheetFooter className="px-0 pt-2">
             <Button
               type="submit"
-              disabled={isSaving}
+              // The server refuses a clash too; this just saves a round trip
+              // to be told what the field already says.
+              disabled={isSaving || Boolean(duplicate)}
               className="w-full rounded-2xl bg-gradient-to-r from-orange-500 to-rose-500 py-3 text-sm font-bold text-white"
             >
               {isSaving ? 'Saving…' : isEditing ? 'Save changes' : 'Add item'}

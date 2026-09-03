@@ -43,6 +43,15 @@ export function useSaveItem() {
   })
 }
 
+export function useRestoreItem() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (itemId: string) => api.post(`/items/${itemId}/restore`, {}),
+    onSuccess: invalidateItemViews(queryClient),
+  })
+}
+
 export function useDeleteItem() {
   const queryClient = useQueryClient()
 
@@ -57,6 +66,11 @@ function invalidateItemViews(queryClient: ReturnType<typeof useQueryClient>) {
   return () => {
     queryClient.invalidateQueries({ queryKey: ['products'] })
     queryClient.invalidateQueries({ queryKey: ['inventory-items'] })
+    // Without this the add form keeps suggesting an item that has just been
+    // removed, and misses one just added.
+    queryClient.invalidateQueries({ queryKey: ['item-names'] })
+    queryClient.invalidateQueries({ queryKey: ['items-removed'] })
+    queryClient.invalidateQueries({ queryKey: ['item-audit'] })
     queryClient.invalidateQueries({ queryKey: ['stock'] })
     queryClient.invalidateQueries({ queryKey: ['storefront-catalog'] })
     queryClient.invalidateQueries({ queryKey: ['dashboard-needs-attention'] })
