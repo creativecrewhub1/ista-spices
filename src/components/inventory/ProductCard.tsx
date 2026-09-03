@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { ItemThumbnail } from './ItemThumbnail'
 import type { Product } from '@/data/types'
-import { categoryConfig, spiceLevelConfig, stockLevelConfig } from '@/lib/status'
+import { categoryConfig, manufacturingBadge, spiceLevelConfig, stockLevelConfig } from '@/lib/status'
 import { formatCurrency } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { formatPack } from '@/lib/packLabel'
@@ -29,7 +29,10 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
   const level = product.stockLevel
   const levelBadge = stockLevelConfig[level]
   const percent = Math.min(100, Math.round((product.unitsPackedThisBatch / product.batchCapacity) * 100))
-  const basePack = product.packSizes[0]
+  const packSizes = product.packSizes ?? []
+  // A manufactured product is validated to have at least one priced pack, but
+  // an older row need not, and an unpriced card should still draw.
+  const basePack = packSizes[0] ?? { qty: 0, price: 0 }
   const discountedPrice =
     product.discountPercent > 0 ? basePack.price * (1 - product.discountPercent / 100) : basePack.price
 
@@ -73,6 +76,14 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
       <div className="space-y-3 p-1 flex-1 flex flex-col justify-between">
         <div>
           <div className="mb-1.5 flex flex-wrap gap-1.5">
+            {/* Which of the three categories it is, first and on every card —
+                a search spans all of them, so the tab no longer says. */}
+            <Badge
+              variant="outline"
+              className={cn('font-bold px-2.5 py-0.5 text-xs', manufacturingBadge.badgeClass)}
+            >
+              {manufacturingBadge.label}
+            </Badge>
             <Badge variant="outline" className={cn('font-bold px-2.5 py-0.5 text-xs', category.badgeClass)}>
               {category.label}
             </Badge>
@@ -110,7 +121,7 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
 
         {/* Pack Sizes */}
         <div className="flex flex-wrap gap-1">
-          {product.packSizes.map((pack) => (
+          {packSizes.map((pack) => (
             <span
               key={pack.qty}
               className="rounded-lg border border-slate-200/60 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-slate-600"

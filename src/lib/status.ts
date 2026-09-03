@@ -50,6 +50,12 @@ export const inventoryItemTypeConfig: Record<InventoryItemType, { label: string;
   b2b: { label: 'B2B', badgeClass: 'bg-violet-500/15 text-violet-600 border-violet-500/30' },
 }
 
+/** Manufactured goods have their own card, so the label is not a lookup. */
+export const manufacturingBadge = {
+  label: 'Manufacturing',
+  badgeClass: 'bg-emerald-500/15 text-emerald-700 border-emerald-500/30',
+}
+
 export const categoryConfig: Record<ProductCategory, { label: string; badgeClass: string }> = {
   'spice-powder': { label: 'Spice Powder', badgeClass: 'bg-primary/15 text-primary border-primary/30' },
   'cooking-oil': { label: 'Cooking Oil', badgeClass: 'bg-accent/15 text-accent border-accent/30' },
