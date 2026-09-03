@@ -45,6 +45,13 @@ export interface UnitOfMeasure {
   /** How many of the dimension base unit this is: 1 kg = 1000 g. */
   baseFactor: number
 }
+/** A category the item form offers. Labels live with the table the
+ *  generated item_category column references. */
+export interface ItemCategoryOption {
+  code: ItemCategory
+  label: string
+  hint: string
+}
 /** Where an item came from: made here, or bought in for resale. */
 export type ItemOrigin = 'manufactured' | 'purchased'
 

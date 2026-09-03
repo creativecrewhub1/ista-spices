@@ -5,6 +5,7 @@ import { productsRoute } from './routes/products.route.ts'
 import { inventoryItemsRoute } from './routes/inventoryItems.route.ts'
 import { stockRoute } from './routes/stock.route.ts'
 import { unitsRoute } from './routes/units.route.ts'
+import { itemCategoriesRoute } from './routes/itemCategories.route.ts'
 import { itemsRoute } from './routes/items.route.ts'
 import { customersRoute } from './routes/customers.route.ts'
 import { ordersRoute } from './routes/orders.route.ts'
@@ -50,6 +51,7 @@ const ADMIN_PREFIXES = [
   '/api/inventory-items',
   '/api/stock',
   '/api/units',
+  '/api/item-categories',
   '/api/items',
   '/api/customers',
   '/api/orders',
@@ -69,6 +71,7 @@ app.route('/products', productsRoute)
 app.route('/inventory-items', inventoryItemsRoute)
 app.route('/stock', stockRoute)
 app.route('/units', unitsRoute)
+app.route('/item-categories', itemCategoriesRoute)
 app.route('/items', itemsRoute)
 app.route('/customers', customersRoute)
 app.route('/orders', ordersRoute)

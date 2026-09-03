@@ -28,15 +28,9 @@ import type {
 } from '@/data/types'
 import { formatCurrency } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import { useUnits } from '@/data/queries'
+import { useItemCategories, useUnits } from '@/data/queries'
 
 const ALL_PACK_SIZES: PackSizeLabel[] = ['250g', '500g', '1kg', '2kg']
-
-const CATEGORY_OPTIONS: { value: ItemCategory; label: string; hint: string }[] = [
-  { value: 'raw_material', label: 'Raw Material', hint: 'Bought in and consumed by production' },
-  { value: 'b2b', label: 'B2B', hint: 'Bought in and resold as it is' },
-  { value: 'manufacturing', label: 'Manufacturing', hint: 'Made here and sold to customers' },
-]
 
 export function emptyItem(category: ItemCategory): ItemInput {
   return {
@@ -85,6 +79,7 @@ export function ItemFormSheet({
   const [draft, setDraft] = useState<ItemInput>(item ?? emptyItem(defaultCategory))
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const { data: units = [] } = useUnits()
+  const { data: categories = [] } = useItemCategories()
 
   // A conversion between two units of the same dimension is arithmetic:
   // 1 kg is 1000 g regardless of what is being weighed. Only a cross-
@@ -167,8 +162,8 @@ export function ItemFormSheet({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="rounded-2xl p-1">
-                {CATEGORY_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value} className="rounded-xl font-semibold">
+                {categories.map((option) => (
+                  <SelectItem key={option.code} value={option.code} className="rounded-xl font-semibold">
                     {option.label}
                   </SelectItem>
                 ))}
@@ -177,7 +172,7 @@ export function ItemFormSheet({
             <p className="text-[11px] font-medium text-slate-400">
               {isEditing
                 ? "An item's category can't change once it has stock history."
-                : CATEGORY_OPTIONS.find((o) => o.value === draft.category)?.hint}
+                : categories.find((o) => o.code === draft.category)?.hint}
             </p>
           </div>
 

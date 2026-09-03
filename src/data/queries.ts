@@ -7,6 +7,7 @@ import type {
   CustomerCounts,
   DashboardKpis,
   InventoryItem,
+  ItemCategoryOption,
   Order,
   OrderStatusEvent,
   OrderStatus,
@@ -225,6 +226,16 @@ export function useUnits() {
   return useQuery({
     queryKey: ['units'],
     queryFn: () => api.get<UnitOfMeasure[]>('/units'),
+    staleTime: Infinity,
+  })
+}
+
+/** The item categories the form offers — labels live beside the table the
+ *  generated item_category column references, not in the client. */
+export function useItemCategories() {
+  return useQuery({
+    queryKey: ['item-categories'],
+    queryFn: () => api.get<ItemCategoryOption[]>('/item-categories'),
     staleTime: Infinity,
   })
 }

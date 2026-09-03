@@ -52,7 +52,7 @@ export async function listActive(search?: string): Promise<Product[]> {
     .from('products')
     .select('*, product_pack_sizes(*)')
     .eq('is_active', true)
-    .eq('origin', 'manufactured')
+    .eq('item_category', 'manufacturing')
   if (search) query = query.ilike('name', `%${search}%`)
 
   const [{ data, error }, positions] = await Promise.all([query.order('name'), positionByItem()])
