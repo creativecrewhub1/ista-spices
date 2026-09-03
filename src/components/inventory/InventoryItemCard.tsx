@@ -24,6 +24,9 @@ interface InventoryItemCardProps {
 
 export function InventoryItemCard({ item, onEdit, onDelete }: InventoryItemCardProps) {
   const { data: units = [] } = useUnits()
+  // Defaulted rather than assumed: an older API build does not send this, and
+  // a card is not worth a blank screen.
+  const packSizes = item.packSizes ?? []
   const type = inventoryItemTypeConfig[item.type]
   const isLow = item.quantityOnHand <= item.lowStockThreshold
 
@@ -70,11 +73,11 @@ export function InventoryItemCard({ item, onEdit, onDelete }: InventoryItemCardP
 
         {/* What it resells for. Only a bought-in good that is sold has one;
             a raw material is consumed by production. */}
-        {item.packSizes.length > 0 ? (
+        {packSizes.length > 0 ? (
           <div className="flex flex-wrap items-baseline justify-between gap-2 border-t border-slate-100 pt-2">
             <span className="text-[11px] font-semibold text-slate-400">Selling price</span>
             <span className="flex flex-wrap justify-end gap-x-2 gap-y-0.5">
-              {item.packSizes.map((pack) => (
+              {packSizes.map((pack) => (
                 <span key={pack.qty} className="font-mono text-xs font-bold tabular-nums text-slate-700">
                   {formatCurrency(pack.price)}
                   <span className="font-sans font-semibold text-slate-400">
