@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Camera, Download, Loader2 } from 'lucide-react'
+import { Download, Loader2, Pencil } from 'lucide-react'
 import { ShopHeader } from '@/components/shop/ShopHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -126,12 +126,12 @@ export function ProfilePage() {
         ) : (
           <div className="flex flex-col gap-6">
             <Card>
-              <CardHeader className="flex-row items-center gap-4">
+              <CardHeader className="flex flex-col items-center gap-3 text-center">
                 <div className="relative shrink-0">
-                  <Avatar className="size-16">
+                  <Avatar className="size-28">
                     <AvatarImage src={avatarUrl || undefined} alt={name} />
-                    <AvatarFallback className="bg-primary/15 text-lg font-semibold text-primary">
-                      {(name || user?.email || 'U').slice(0, 2).toUpperCase()}
+                    <AvatarFallback className="bg-primary/15 text-4xl font-semibold text-primary">
+                      {(name || user?.email || 'U').slice(0, 1).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <button
@@ -139,12 +139,12 @@ export function ProfilePage() {
                     onClick={handleAvatarClick}
                     disabled={uploadAvatar.isPending}
                     aria-label="Change profile photo"
-                    className="absolute -bottom-1 -right-1 flex size-6 items-center justify-center rounded-full border-2 border-card bg-primary text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50"
+                    className="absolute bottom-1 right-1 flex size-8 items-center justify-center rounded-full border-2 border-card bg-foreground text-background shadow-sm transition-colors hover:bg-foreground/90 disabled:opacity-50"
                   >
                     {uploadAvatar.isPending ? (
-                      <Loader2 className="size-3 animate-spin" aria-hidden="true" />
+                      <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
                     ) : (
-                      <Camera className="size-3" aria-hidden="true" />
+                      <Pencil className="size-3.5" aria-hidden="true" />
                     )}
                   </button>
                   <input
@@ -155,8 +155,9 @@ export function ProfilePage() {
                     className="hidden"
                   />
                 </div>
-                <div className="min-w-0 flex-1">
-                  <CardTitle className="text-base">{name || user?.email}</CardTitle>
+                <div>
+                  <CardTitle className="text-xl">{name || user?.email}</CardTitle>
+                  {user?.email ? <p className="text-sm text-muted-foreground">{user.email}</p> : null}
                   {avatarError ? <p className="mt-1 text-xs text-destructive">{avatarError}</p> : null}
                 </div>
               </CardHeader>
