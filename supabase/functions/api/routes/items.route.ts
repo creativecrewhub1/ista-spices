@@ -15,6 +15,10 @@ itemsRoute.get('/names', async (c) => {
   return c.json(await ItemsService.names())
 })
 
+itemsRoute.get('/:id/removal-check', async (c) => {
+  return c.json(await ItemsService.removalCheck(c.req.param('id')))
+})
+
 itemsRoute.get('/removed', async (c) => {
   return c.json(await ItemsService.removed())
 })

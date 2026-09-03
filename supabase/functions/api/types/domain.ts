@@ -3,6 +3,19 @@
 // data shaped exactly like this, so the frontend never has to reshape it.
 
 export type ProductCategory = 'spice-powder' | 'cooking-oil'
+/**
+ * Whether an item can leave the catalogue, and what is holding it there.
+ * The dialog asks for this rather than working it out from a list row, so
+ * what it shows and what the service enforces cannot drift apart.
+ */
+export interface ItemRemovalCheck {
+  canRemove: boolean
+  quantityOnHand: number
+  stockUnit: string
+  /** Orders still owed to a customer. Delivered and cancelled ones do not count. */
+  openOrders: number
+}
+
 /** An item taken out of the catalogue, and what it left behind. */
 export interface RemovedItem {
   id: string

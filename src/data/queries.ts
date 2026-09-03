@@ -10,6 +10,7 @@ import type {
   ItemCategoryOption,
   ItemInput,
   ItemName,
+  ItemRemovalCheck,
   RemovedItem,
   Order,
   OrderStatusEvent,
@@ -225,6 +226,15 @@ export function useStockMovements(itemId?: string, limit = 50) {
 
 /** The unit list the item form offers — served from the reference table so
  *  the options shown and the values the database accepts are one list. */
+/** What is keeping an item in the catalogue, asked when removal is offered. */
+export function useRemovalCheck(itemId: string | null) {
+  return useQuery({
+    queryKey: ['item-removal-check', itemId],
+    queryFn: () => api.get<ItemRemovalCheck>(`/items/${itemId}/removal-check`),
+    enabled: Boolean(itemId),
+  })
+}
+
 /** Items taken out of the catalogue, for the restore list. */
 export function useRemovedItems(enabled = true) {
   return useQuery({

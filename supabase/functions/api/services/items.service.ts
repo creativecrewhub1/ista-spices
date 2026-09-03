@@ -89,6 +89,25 @@ export const ItemsService = {
     return itemsRepo.save(input)
   },
 
+  /**
+   * What is keeping an item in the catalogue, if anything. The dialog reads
+   * this so it can refuse before the admin commits to it.
+   */
+  removalCheck: async (id: string) => {
+    const state = await itemsRepo.findState(id)
+    if (!state) throw new HttpError(404, `Item ${id} not found`)
+    const [quantityOnHand, openOrders] = await Promise.all([
+      itemsRepo.quantityOnHand(id),
+      itemsRepo.openOrderLines(id),
+    ])
+    return {
+      canRemove: quantityOnHand === 0 && openOrders === 0,
+      quantityOnHand,
+      stockUnit: state.stockUnit,
+      openOrders,
+    }
+  },
+
   /** Items out of the catalogue, and what still depends on them. */
   removed: () => itemsRepo.listRemoved(),
 
@@ -110,6 +129,17 @@ export const ItemsService = {
       throw new HttpError(
         409,
         `"${state.name}" still holds ${onHand} ${state.stockUnit} in stock. Clear it first — sell it, consume it, or write it off in Stock — then remove the item.`,
+      )
+    }
+
+    // An order the shop has not finished with is a promise to a customer.
+    // Delivered and cancelled lines are history and deliberately do not
+    // count: they would keep a product in the catalogue for ever.
+    const openOrders = await itemsRepo.openOrderLines(id)
+    if (openOrders !== 0) {
+      throw new HttpError(
+        409,
+        `"${state.name}" is on ${openOrders} order ${openOrders === 1 ? 'line' : 'lines'} that ${openOrders === 1 ? 'is' : 'are'} not delivered yet. Finish or cancel ${openOrders === 1 ? 'it' : 'them'} before removing the item.`,
       )
     }
 

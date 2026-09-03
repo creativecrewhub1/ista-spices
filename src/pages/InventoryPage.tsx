@@ -16,7 +16,13 @@ import { ProductCard } from '@/components/inventory/ProductCard'
 import { InventoryItemCard } from '@/components/inventory/InventoryItemCard'
 import { ItemFormSheet } from '@/components/inventory/ItemFormSheet'
 import { CardListSkeleton, ErrorState } from '@/components/common/QueryState'
-import { useInventoryItems, useItem, useProducts, useRemovedItems } from '@/data/queries'
+import {
+  useInventoryItems,
+  useItem,
+  useProducts,
+  useRemovalCheck,
+  useRemovedItems,
+} from '@/data/queries'
 import { useDeleteItem, useRestoreItem, useSaveItem } from '@/data/mutations'
 import { RemovedItemsDialog } from '@/components/inventory/RemovedItemsDialog'
 import type { InventoryItem, ItemCategory, ItemInput, Product } from '@/data/types'
@@ -67,9 +73,9 @@ export function InventoryPage() {
   // Loaded means "this item", not merely "not fetching" — the previous item's
   // data is kept as placeholder while the next one is in flight.
   const editLoading = Boolean(editingId) && editing?.id !== editingId
-  const [deleting, setDeleting] = useState<
-    { id: string; name: string; onHand: number; unit: string } | null
-  >(null)
+  const [deleting, setDeleting] = useState<{ id: string; name: string } | null>(null)
+  // The server decides what may be removed; the dialog only reports it.
+  const { data: removal, isFetching: checkingRemoval } = useRemovalCheck(deleting?.id ?? null)
 
   const isLoading = productsLoading || itemsLoading
   const error = productsError ?? itemsError
@@ -104,11 +110,11 @@ export function InventoryPage() {
     })
   }
 
-  // Stock on hand has to be accounted for before an item can leave.
-  const hasStock = Boolean(deleting && deleting.onHand !== 0)
+  // Stock on hand and unfinished orders both have to be settled first.
+  const blocked = Boolean(removal && !removal.canRemove)
 
   function handleDeleteConfirm() {
-    if (!deleting || hasStock) return
+    if (!deleting || blocked || checkingRemoval) return
     deleteItem.mutate(deleting.id)
     setDeleting(null)
   }
@@ -168,28 +174,14 @@ export function InventoryPage() {
                   key={row.data.id}
                   product={row.data}
                   onEdit={(p) => openEdit(p.id)}
-                  onDelete={(p) =>
-                    setDeleting({
-                      id: p.id,
-                      name: p.name,
-                      onHand: p.unitsPackedThisBatch,
-                      unit: p.stockUnit,
-                    })
-                  }
+                  onDelete={(p) => setDeleting({ id: p.id, name: p.name })}
                 />
               ) : (
                 <InventoryItemCard
                   key={row.data.id}
                   item={row.data}
                   onEdit={(i) => openEdit(i.id)}
-                  onDelete={(i) =>
-                    setDeleting({
-                      id: i.id,
-                      name: i.name,
-                      onHand: i.quantityOnHand,
-                      unit: i.stockUnit,
-                    })
-                  }
+                  onDelete={(i) => setDeleting({ id: i.id, name: i.name })}
                 />
               ),
             )}
@@ -226,25 +218,43 @@ export function InventoryPage() {
       <Dialog open={Boolean(deleting)} onOpenChange={(open) => !open && setDeleting(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{hasStock ? 'Stock still on hand' : 'Remove item?'}</DialogTitle>
+            <DialogTitle>
+              {checkingRemoval ? 'Checking…' : blocked ? 'Not ready to remove' : 'Remove item?'}
+            </DialogTitle>
             <DialogDescription asChild>
               <div className="space-y-2">
-                {hasStock ? (
+                {checkingRemoval || !removal ? (
+                  <p>Checking what still depends on "{deleting?.name}"…</p>
+                ) : blocked ? (
                   <>
                     <p className="font-semibold text-amber-700">
-                      "{deleting?.name}" still holds {deleting?.onHand} {deleting?.unit} in stock.
+                      {[
+                        removal.quantityOnHand !== 0
+                          ? `${removal.quantityOnHand} ${removal.stockUnit} still in stock`
+                          : null,
+                        removal.openOrders !== 0
+                          ? `${removal.openOrders} order ${removal.openOrders === 1 ? 'line' : 'lines'} not delivered yet`
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' and ')}
+                      .
                     </p>
                     <p>
-                      Account for it first — sell it, consume it in production, or write it off in
-                      Stock. An item cannot leave the catalogue while the shop still owns some of
-                      it, or Stock and the ledger would disagree about what is on the shelf.
+                      {removal.quantityOnHand !== 0
+                        ? 'Account for the stock — sell it, consume it in production, or write it off in Stock. '
+                        : ''}
+                      {removal.openOrders !== 0
+                        ? 'Finish or cancel the outstanding orders. '
+                        : ''}
+                      An item cannot leave the catalogue while the shop still owns some of it or
+                      owes it to a customer. Orders already delivered or cancelled do not hold it
+                      back.
                     </p>
                   </>
                 ) : (
                   <p>
-                    {deleting
-                      ? `"${deleting.name}" comes out of the catalogue. Nothing is deleted — past orders, stock movements and revenue keep it, and it can be restored at any time.`
-                      : ''}
+                    {`"${deleting?.name}" comes out of the catalogue. Nothing is deleted — past orders, stock movements and revenue keep it, and it can be restored at any time.`}
                   </p>
                 )}
               </div>
@@ -252,10 +262,10 @@ export function InventoryPage() {
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleting(null)}>
-              {hasStock ? 'Close' : 'Cancel'}
+              {blocked ? 'Close' : 'Cancel'}
             </Button>
             {/* The server refuses this too; the dialog just says so first. */}
-            {hasStock ? null : (
+            {blocked || checkingRemoval ? null : (
               <Button variant="destructive" onClick={handleDeleteConfirm}>
                 Remove
               </Button>

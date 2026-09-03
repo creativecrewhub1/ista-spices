@@ -1,5 +1,18 @@
 export type ProductCategory = 'spice-powder' | 'cooking-oil'
 
+/**
+ * Whether an item can leave the catalogue, and what is holding it there.
+ * Asked of the server rather than worked out from a list row, so what the
+ * dialog shows and what the API enforces cannot drift apart.
+ */
+export interface ItemRemovalCheck {
+  canRemove: boolean
+  quantityOnHand: number
+  stockUnit: string
+  /** Orders still owed to a customer. Delivered and cancelled ones do not count. */
+  openOrders: number
+}
+
 /** An item taken out of the catalogue, and what it left behind. */
 export interface RemovedItem {
   id: string

@@ -1,5 +1,18 @@
 import { supabase } from '../lib/supabaseClient.ts'
-import type { ItemCategory, ItemInput, ItemName, PackSize, RemovedItem } from '../types/domain.ts'
+import type {
+  ItemCategory,
+  ItemInput,
+  ItemName,
+  PackSize,
+  RemovedItem,
+} from '../types/domain.ts'
+
+/**
+ * An order still owed to the customer. Once it is delivered or cancelled the
+ * shop owes nothing, and the line becomes history — which must not keep a
+ * product in the catalogue for good.
+ */
+const OPEN_STATUSES = ['pending', 'processing', 'packed', 'shipped']
 
 /**
  * Case, padding and repeated spaces are not what makes two items different.
@@ -153,6 +166,17 @@ export async function quantityOnHand(id: string): Promise<number> {
   if (error) throw error
   // deno-lint-ignore no-explicit-any
   return data ? Number((data as any).quantity_on_hand) : 0
+}
+
+/** Order lines for this item that the shop has not finished with. */
+export async function openOrderLines(id: string): Promise<number> {
+  const { data, error } = await supabase
+    .from('order_items')
+    .select('id, orders(status)')
+    .eq('product_id', id)
+  if (error) throw error
+  // deno-lint-ignore no-explicit-any
+  return (data as any[]).filter((line) => OPEN_STATUSES.includes(line.orders?.status)).length
 }
 
 /** Whether an item exists, and whether it is still in the catalogue. */
