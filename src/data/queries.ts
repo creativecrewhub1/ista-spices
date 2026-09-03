@@ -10,6 +10,7 @@ import type {
   ItemCategoryOption,
   ItemInput,
   ItemName,
+  RemovedItem,
   Order,
   OrderStatusEvent,
   OrderStatus,
@@ -224,6 +225,15 @@ export function useStockMovements(itemId?: string, limit = 50) {
 
 /** The unit list the item form offers — served from the reference table so
  *  the options shown and the values the database accepts are one list. */
+/** Items taken out of the catalogue, for the restore list. */
+export function useRemovedItems(enabled = true) {
+  return useQuery({
+    queryKey: ['items-removed'],
+    queryFn: () => api.get<RemovedItem[]>('/items/removed'),
+    enabled,
+  })
+}
+
 /** Names already on file, so the form can suggest as the admin types. */
 export function useItemNames() {
   return useQuery({

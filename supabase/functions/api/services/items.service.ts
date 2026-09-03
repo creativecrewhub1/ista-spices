@@ -89,5 +89,53 @@ export const ItemsService = {
     return itemsRepo.save(input)
   },
 
-  remove: (id: string) => itemsRepo.softDelete(id),
+  /** Items out of the catalogue, and what still depends on them. */
+  removed: () => itemsRepo.listRemoved(),
+
+  /**
+   * Takes an item out of the catalogue without deleting it. Order lines,
+   * stock movements and revenue all still point at the row.
+   */
+  remove: async (id: string, userId: string | null) => {
+    const state = await itemsRepo.findState(id)
+    if (!state) throw new HttpError(404, `Item ${id} not found`)
+    if (!state.isActive) throw new HttpError(409, `"${state.name}" has already been removed`)
+
+    // Stock on hand has to be accounted for before an item leaves the
+    // catalogue. Removing it would take the balance off the Stock screen
+    // while the movements stayed in the ledger, so the two would disagree
+    // about what the shop owns.
+    const onHand = await itemsRepo.quantityOnHand(id)
+    if (onHand !== 0) {
+      throw new HttpError(
+        409,
+        `"${state.name}" still holds ${onHand} ${state.stockUnit} in stock. Clear it first — sell it, consume it, or write it off in Stock — then remove the item.`,
+      )
+    }
+
+    await itemsRepo.softDelete(id, userId)
+  },
+
+  /** Puts one back. */
+  restore: async (id: string) => {
+    const state = await itemsRepo.findState(id)
+    if (!state) throw new HttpError(404, `Item ${id} not found`)
+    if (state.isActive) throw new HttpError(409, `"${state.name}" is already in the catalogue`)
+
+    // A removed item's name is free for something else to take, because the
+    // uniqueness rule only covers live items. If that happened, restoring
+    // would break it, so say so rather than let the index refuse.
+    const normalised = itemsRepo.normaliseName(state.name)
+    const taken = (await itemsRepo.listNames()).find(
+      (existing) => itemsRepo.normaliseName(existing.name) === normalised,
+    )
+    if (taken) {
+      throw new HttpError(
+        409,
+        `"${taken.name}" is in the catalogue again, so this one cannot come back under the same name. Rename that item first.`,
+      )
+    }
+
+    await itemsRepo.restore(id)
+  },
 }

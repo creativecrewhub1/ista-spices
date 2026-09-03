@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Plus, Search } from 'lucide-react'
+import { Archive, Plus, Search } from 'lucide-react'
 import { TopBar } from '@/components/layout/TopBar'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -16,8 +16,9 @@ import { ProductCard } from '@/components/inventory/ProductCard'
 import { InventoryItemCard } from '@/components/inventory/InventoryItemCard'
 import { ItemFormSheet } from '@/components/inventory/ItemFormSheet'
 import { CardListSkeleton, ErrorState } from '@/components/common/QueryState'
-import { useInventoryItems, useItem, useProducts } from '@/data/queries'
-import { useDeleteItem, useSaveItem } from '@/data/mutations'
+import { useInventoryItems, useItem, useProducts, useRemovedItems } from '@/data/queries'
+import { useDeleteItem, useRestoreItem, useSaveItem } from '@/data/mutations'
+import { RemovedItemsDialog } from '@/components/inventory/RemovedItemsDialog'
 import type { InventoryItem, ItemCategory, ItemInput, Product } from '@/data/types'
 import { useDebouncedValue } from '@/lib/useDebouncedValue'
 import { cn } from '@/lib/utils'
@@ -54,6 +55,9 @@ export function InventoryPage() {
 
   const saveItem = useSaveItem()
   const deleteItem = useDeleteItem()
+  const restoreItem = useRestoreItem()
+  const [removedOpen, setRemovedOpen] = useState(false)
+  const { data: removedItems = [], isLoading: removedLoading } = useRemovedItems(removedOpen)
 
   const [formOpen, setFormOpen] = useState(false)
   // The id only. The form is loaded from the API so nothing editable is
@@ -63,7 +67,9 @@ export function InventoryPage() {
   // Loaded means "this item", not merely "not fetching" — the previous item's
   // data is kept as placeholder while the next one is in flight.
   const editLoading = Boolean(editingId) && editing?.id !== editingId
-  const [deleting, setDeleting] = useState<{ id: string; name: string } | null>(null)
+  const [deleting, setDeleting] = useState<
+    { id: string; name: string; onHand: number; unit: string } | null
+  >(null)
 
   const isLoading = productsLoading || itemsLoading
   const error = productsError ?? itemsError
@@ -98,8 +104,11 @@ export function InventoryPage() {
     })
   }
 
+  // Stock on hand has to be accounted for before an item can leave.
+  const hasStock = Boolean(deleting && deleting.onHand !== 0)
+
   function handleDeleteConfirm() {
-    if (!deleting) return
+    if (!deleting || hasStock) return
     deleteItem.mutate(deleting.id)
     setDeleting(null)
   }
@@ -124,11 +133,17 @@ export function InventoryPage() {
               aria-label="Search inventory"
             />
           </div>
-          {/* One way in, whatever the tab — the category is chosen in the form. */}
-          <Button onClick={openAdd} className="gap-1.5">
-            <Plus className="size-4" aria-hidden="true" />
-            Add item
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setRemovedOpen(true)} className="gap-1.5">
+              <Archive className="size-4" aria-hidden="true" />
+              Removed
+            </Button>
+            {/* One way in, whatever the tab — the category is chosen in the form. */}
+            <Button onClick={openAdd} className="gap-1.5">
+              <Plus className="size-4" aria-hidden="true" />
+              Add item
+            </Button>
+          </div>
         </div>
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as ItemCategory)}>
@@ -153,14 +168,28 @@ export function InventoryPage() {
                   key={row.data.id}
                   product={row.data}
                   onEdit={(p) => openEdit(p.id)}
-                  onDelete={(p) => setDeleting({ id: p.id, name: p.name })}
+                  onDelete={(p) =>
+                    setDeleting({
+                      id: p.id,
+                      name: p.name,
+                      onHand: p.unitsPackedThisBatch,
+                      unit: p.stockUnit,
+                    })
+                  }
                 />
               ) : (
                 <InventoryItemCard
                   key={row.data.id}
                   item={row.data}
                   onEdit={(i) => openEdit(i.id)}
-                  onDelete={(i) => setDeleting({ id: i.id, name: i.name })}
+                  onDelete={(i) =>
+                    setDeleting({
+                      id: i.id,
+                      name: i.name,
+                      onHand: i.quantityOnHand,
+                      unit: i.stockUnit,
+                    })
+                  }
                 />
               ),
             )}
@@ -184,23 +213,53 @@ export function InventoryPage() {
         error={saveItem.isError ? (saveItem.error as Error).message : null}
       />
 
+      <RemovedItemsDialog
+        open={removedOpen}
+        onOpenChange={setRemovedOpen}
+        items={removedItems}
+        isLoading={removedLoading}
+        onRestore={(id) => restoreItem.mutate(id)}
+        restoringId={restoreItem.isPending ? (restoreItem.variables as string) : null}
+        error={restoreItem.isError ? (restoreItem.error as Error).message : null}
+      />
+
       <Dialog open={Boolean(deleting)} onOpenChange={(open) => !open && setDeleting(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Remove item?</DialogTitle>
-            <DialogDescription>
-              {deleting
-                ? `"${deleting.name}" will be removed from the catalogue. Past orders keep it.`
-                : ''}
+            <DialogTitle>{hasStock ? 'Stock still on hand' : 'Remove item?'}</DialogTitle>
+            <DialogDescription asChild>
+              <div className="space-y-2">
+                {hasStock ? (
+                  <>
+                    <p className="font-semibold text-amber-700">
+                      "{deleting?.name}" still holds {deleting?.onHand} {deleting?.unit} in stock.
+                    </p>
+                    <p>
+                      Account for it first — sell it, consume it in production, or write it off in
+                      Stock. An item cannot leave the catalogue while the shop still owns some of
+                      it, or Stock and the ledger would disagree about what is on the shelf.
+                    </p>
+                  </>
+                ) : (
+                  <p>
+                    {deleting
+                      ? `"${deleting.name}" comes out of the catalogue. Nothing is deleted — past orders, stock movements and revenue keep it, and it can be restored at any time.`
+                      : ''}
+                  </p>
+                )}
+              </div>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleting(null)}>
-              Cancel
+              {hasStock ? 'Close' : 'Cancel'}
             </Button>
-            <Button variant="destructive" onClick={handleDeleteConfirm}>
-              Remove
-            </Button>
+            {/* The server refuses this too; the dialog just says so first. */}
+            {hasStock ? null : (
+              <Button variant="destructive" onClick={handleDeleteConfirm}>
+                Remove
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

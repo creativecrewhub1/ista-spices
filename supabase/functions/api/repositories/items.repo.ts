@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabaseClient.ts'
-import type { ItemCategory, ItemInput, ItemName, PackSize } from '../types/domain.ts'
+import type { ItemCategory, ItemInput, ItemName, PackSize, RemovedItem } from '../types/domain.ts'
 
 /**
  * Case, padding and repeated spaces are not what makes two items different.
@@ -73,7 +73,6 @@ export async function save(input: ItemInput): Promise<string> {
     sales_to_stock_factor: input.salesToStockFactor,
     low_stock_threshold: input.lowStockThreshold,
     image_url: input.imageUrl,
-    is_active: true,
 
     origin: caps.origin,
     is_sellable: caps.isSellable,
@@ -116,10 +115,107 @@ export async function save(input: ItemInput): Promise<string> {
   return id
 }
 
-/** Soft delete — order_items reference products, so rows are never removed. */
-export async function softDelete(id: string): Promise<void> {
-  const { error } = await supabase.from('products').update({ is_active: false }).eq('id', id)
+/**
+ * Soft delete. Order lines, stock movements and revenue all point at this
+ * row, so it stays and is only hidden. deleted_at records when, deleted_by
+ * who — a check constraint keeps those in step with is_active.
+ */
+export async function softDelete(id: string, userId: string | null): Promise<void> {
+  const { error } = await supabase
+    .from('products')
+    .update({ is_active: false, deleted_at: new Date().toISOString(), deleted_by: userId })
+    .eq('id', id)
+    .eq('is_active', true)
   if (error) throw error
+}
+
+/** Puts a removed item back, clearing the removal record with it. */
+export async function restore(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('products')
+    .update({ is_active: true, deleted_at: null, deleted_by: null })
+    .eq('id', id)
+    .eq('is_active', false)
+  if (error) throw error
+}
+
+/**
+ * What the ledger says is on hand. item_stock is the derived balance the
+ * Stock screen reads, so removal is judged against the same number the admin
+ * is looking at rather than a second opinion.
+ */
+export async function quantityOnHand(id: string): Promise<number> {
+  const { data, error } = await supabase
+    .from('item_stock')
+    .select('quantity_on_hand')
+    .eq('item_id', id)
+    .maybeSingle()
+  if (error) throw error
+  // deno-lint-ignore no-explicit-any
+  return data ? Number((data as any).quantity_on_hand) : 0
+}
+
+/** Whether an item exists, and whether it is still in the catalogue. */
+export async function findState(
+  id: string,
+): Promise<{ name: string; isActive: boolean; stockUnit: string } | null> {
+  const { data, error } = await supabase
+    .from('products')
+    .select('name, is_active, stock_unit')
+    .eq('id', id)
+    .maybeSingle()
+  if (error) throw error
+  // deno-lint-ignore no-explicit-any
+  const row = data as any
+  return row ? { name: row.name, isActive: row.is_active, stockUnit: row.stock_unit } : null
+}
+
+/**
+ * Removed items, with what still depends on them. Stock and order counts are
+ * the reason this is a soft delete, so they are shown rather than implied.
+ */
+export async function listRemoved(): Promise<RemovedItem[]> {
+  const { data, error } = await supabase
+    .from('products')
+    .select('id, name, item_category, stock_unit, deleted_at, deleted_by, profiles:deleted_by(email)')
+    .eq('is_active', false)
+    .order('deleted_at', { ascending: false })
+  if (error) throw error
+  // deno-lint-ignore no-explicit-any
+  const rows = data as any[]
+  if (rows.length === 0) return []
+
+  const ids = rows.map((row) => row.id)
+  // item_stock hides removed items by design, so the balance is summed from
+  // the ledger directly — the quantity is still there, just not on display.
+  const [{ data: moves, error: moveError }, { data: lines, error: lineError }] = await Promise.all([
+    supabase.from('stock_movements').select('item_id, qty').in('item_id', ids),
+    supabase.from('order_items').select('product_id').in('product_id', ids),
+  ])
+  if (moveError) throw moveError
+  if (lineError) throw lineError
+
+  const onHand = new Map<string, number>()
+  // deno-lint-ignore no-explicit-any
+  for (const move of (moves ?? []) as any[]) {
+    onHand.set(move.item_id, (onHand.get(move.item_id) ?? 0) + Number(move.qty))
+  }
+  const lineCount = new Map<string, number>()
+  // deno-lint-ignore no-explicit-any
+  for (const line of (lines ?? []) as any[]) {
+    lineCount.set(line.product_id, (lineCount.get(line.product_id) ?? 0) + 1)
+  }
+
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    category: row.item_category,
+    removedAt: row.deleted_at,
+    removedBy: row.profiles?.email ?? null,
+    quantityOnHand: onHand.get(row.id) ?? 0,
+    stockUnit: row.stock_unit,
+    orderLines: lineCount.get(row.id) ?? 0,
+  }))
 }
 
 /**

@@ -3,6 +3,20 @@
 // data shaped exactly like this, so the frontend never has to reshape it.
 
 export type ProductCategory = 'spice-powder' | 'cooking-oil'
+/** An item taken out of the catalogue, and what it left behind. */
+export interface RemovedItem {
+  id: string
+  name: string
+  category: ItemCategory
+  removedAt: string
+  removedBy: string | null
+  /** Still in the ledger, hidden from Stock until the item comes back. */
+  quantityOnHand: number
+  stockUnit: string
+  /** Past orders that keep referring to it. */
+  orderLines: number
+}
+
 /** An existing item's name, for warning about duplicates as one is typed. */
 export interface ItemName {
   id: string
@@ -28,6 +42,8 @@ export interface Product {
   name: string
   category: ProductCategory
   description: string
+  /** The unit stock is counted in — what unitsPackedThisBatch is measured in. */
+  stockUnit: string
   /** The unit pack quantities are expressed in. */
   salesUnit: string
   packSizes: PackSize[]
