@@ -1,4 +1,5 @@
 import { Outlet } from 'react-router-dom'
+import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import { SideNav } from './SideNav'
 import { BottomNav } from './BottomNav'
 
@@ -15,7 +16,9 @@ export function AppShell() {
       <div className="relative z-10">
         <SideNav />
         <div className="pb-16 md:pb-0 md:pl-64">
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </div>
         <BottomNav />
       </div>

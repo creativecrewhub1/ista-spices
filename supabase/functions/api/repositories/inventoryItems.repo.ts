@@ -41,6 +41,12 @@ function mapRow(row: any, position: LedgerPosition): InventoryItem {
     description: row.description ?? '',
     stockUnit: row.stock_unit,
     salesUnit: row.sales_unit ?? null,
+    // Only a resold good is priced; a raw material is consumed, not sold.
+    packSizes: [...(row.product_pack_sizes ?? [])]
+      // deno-lint-ignore no-explicit-any
+      .sort((a: any, b: any) => Number(a.pack_qty) - Number(b.pack_qty))
+      // deno-lint-ignore no-explicit-any
+      .map((p: any) => ({ qty: Number(p.pack_qty), price: Number(p.price) })),
     quantityOnHand: position.quantityOnHand,
     lowStockThreshold: Number(row.low_stock_threshold),
     lastPurchaseCost: position.lastPurchaseCost,
@@ -78,7 +84,7 @@ export async function listActive(
   // than by restating the capability rule that produced it.
   let query = supabase
     .from('products')
-    .select('*')
+    .select('*, product_pack_sizes(pack_qty, price)')
     .eq('is_active', true)
     .in('item_category', ['raw_material', 'b2b'])
 

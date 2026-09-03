@@ -1,6 +1,57 @@
 export type ProductCategory = 'spice-powder' | 'cooking-oil'
 
 /**
+ * Whether an item can leave the catalogue, and what is holding it there.
+ * Asked of the server rather than worked out from a list row, so what the
+ * dialog shows and what the API enforces cannot drift apart.
+ */
+export interface ItemRemovalCheck {
+  canRemove: boolean
+  quantityOnHand: number
+  stockUnit: string
+  /** Orders still owed to a customer. Delivered and cancelled ones do not count. */
+  openOrders: number
+}
+
+/** One field's before and after, as recorded by the audit trigger. */
+export interface AuditChange {
+  field: string
+  from: unknown
+  to: unknown
+}
+
+/** One recorded change to an item. Written by a trigger, never by hand. */
+export interface AuditEntry {
+  id: number
+  version: number
+  action: 'created' | 'updated' | 'removed' | 'restored'
+  changedAt: string
+  changedBy: string | null
+  changes: AuditChange[]
+}
+
+/** An item taken out of the catalogue, and what it left behind. */
+export interface RemovedItem {
+  id: string
+  name: string
+  category: ItemCategory
+  removedAt: string
+  removedBy: string | null
+  /** Still in the ledger, hidden from Stock until the item comes back. */
+  quantityOnHand: number
+  stockUnit: string
+  /** Past orders that keep referring to it. */
+  orderLines: number
+}
+
+/** An existing item's name, for warning about duplicates as one is typed. */
+export interface ItemName {
+  id: string
+  name: string
+  category: ItemCategory
+}
+
+/**
  * A pack is a quantity of the item's own selling unit, so the same shape
  * describes 250 ml of oil and 250 g of powder. The label a person reads is
  * derived from this and the sales unit by formatPack — never stored.
@@ -19,6 +70,8 @@ export interface Product {
   name: string
   category: ProductCategory
   description: string
+  /** The unit stock is counted in — what unitsPackedThisBatch is measured in. */
+  stockUnit: string
   /** The unit pack quantities are expressed in. */
   salesUnit: string
   packSizes: PackSize[]
@@ -154,6 +207,8 @@ export interface InventoryItem {
   description: string
   stockUnit: string
   salesUnit: string | null
+  /** What it resells for. Empty for raw materials, which are not sold. */
+  packSizes: PackSize[]
   quantityOnHand: number
   lowStockThreshold: number
   /** Per-unit cost of the most recent consignment — today's buying price. */
