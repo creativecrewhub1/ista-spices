@@ -40,6 +40,7 @@ function mapMovementRow(row: any): StockMovement {
     stockUnit: row.products?.stock_unit ?? '',
     kind: row.kind,
     qty: Number(row.qty),
+    totalCost: row.total_cost === null ? null : Number(row.total_cost),
     unitCost: row.unit_cost === null ? null : Number(row.unit_cost),
     occurredAt: row.occurred_at,
     orderId: row.order_id,
@@ -64,15 +65,19 @@ export async function listMovements(itemId?: string, limit = 100): Promise<Stock
 }
 
 /**
- * Records stock arriving. This is the only place a purchase cost enters
- * the system — every valuation downstream is an average of these rows.
+ * Records stock arriving. This is the only place a purchase cost enters the
+ * system — every valuation downstream is an average of these rows.
+ *
+ * Only the total is written. unit_cost is a generated column, so the rate and
+ * the amount paid cannot drift apart, and rounding the rate can never corrupt
+ * what the consignment actually cost.
  */
 export async function recordReceipt(input: StockReceiptInput): Promise<void> {
   const { error } = await supabase.from('stock_movements').insert({
     item_id: input.itemId,
     kind: 'receipt',
     qty: input.qty,
-    unit_cost: input.unitCost,
+    total_cost: input.totalCost,
     occurred_at: input.occurredAt ?? new Date().toISOString(),
     note: input.note ?? null,
   })
