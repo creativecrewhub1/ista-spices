@@ -16,7 +16,7 @@ import { ProductCard } from '@/components/inventory/ProductCard'
 import { InventoryItemCard } from '@/components/inventory/InventoryItemCard'
 import { ItemFormSheet } from '@/components/inventory/ItemFormSheet'
 import { CardListSkeleton, ErrorState } from '@/components/common/QueryState'
-import { useInventoryItems, useProducts } from '@/data/queries'
+import { useInventoryItems, useItem, useProducts } from '@/data/queries'
 import { useDeleteItem, useSaveItem } from '@/data/mutations'
 import type { InventoryItem, ItemCategory, ItemInput, Product } from '@/data/types'
 import { useDebouncedValue } from '@/lib/useDebouncedValue'
@@ -29,45 +29,6 @@ const TAB_LABELS: Record<ItemCategory, string> = {
   raw_material: 'raw materials',
   b2b: 'B2B items',
   manufacturing: 'products',
-}
-
-/** Existing rows come back in list shape; the form edits one shared shape. */
-function productToInput(product: Product): ItemInput {
-  return {
-    id: product.id,
-    category: 'manufacturing',
-    name: product.name,
-    description: product.description,
-    stockUnit: 'packs',
-    salesUnit: 'packs',
-    salesToStockFactor: 1,
-    lowStockThreshold: 0,
-    imageUrl: product.imageUrl,
-    productCategory: product.category,
-    spiceLevel: product.spiceLevel,
-    packSizes: product.packSizes,
-    discountPercent: product.discountPercent,
-    batchCapacity: product.batchCapacity,
-  }
-}
-
-function inventoryItemToInput(item: InventoryItem): ItemInput {
-  return {
-    id: item.id,
-    category: item.type === 'raw_material' ? 'raw_material' : 'b2b',
-    name: item.name,
-    description: item.description,
-    stockUnit: item.stockUnit,
-    salesUnit: item.salesUnit,
-    salesToStockFactor: 1,
-    lowStockThreshold: item.lowStockThreshold,
-    imageUrl: item.imageUrl,
-    productCategory: 'spice-powder',
-    spiceLevel: null,
-    packSizes: [],
-    discountPercent: 0,
-    batchCapacity: 0,
-  }
 }
 
 export function InventoryPage() {
@@ -95,7 +56,13 @@ export function InventoryPage() {
   const deleteItem = useDeleteItem()
 
   const [formOpen, setFormOpen] = useState(false)
-  const [editing, setEditing] = useState<ItemInput | null>(null)
+  // The id only. The form is loaded from the API so nothing editable is
+  // reconstructed from a list row and then saved back as a guess.
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const { data: editing = null } = useItem(editingId)
+  // Loaded means "this item", not merely "not fetching" — the previous item's
+  // data is kept as placeholder while the next one is in flight.
+  const editLoading = Boolean(editingId) && editing?.id !== editingId
   const [deleting, setDeleting] = useState<{ id: string; name: string } | null>(null)
 
   const isLoading = productsLoading || itemsLoading
@@ -111,13 +78,13 @@ export function InventoryPage() {
   )
 
   function openAdd() {
-    setEditing(null)
+    setEditingId(null)
     saveItem.reset()
     setFormOpen(true)
   }
 
-  function openEdit(item: ItemInput) {
-    setEditing(item)
+  function openEdit(id: string) {
+    setEditingId(id)
     saveItem.reset()
     setFormOpen(true)
   }
@@ -126,7 +93,7 @@ export function InventoryPage() {
     saveItem.mutate(item, {
       onSuccess: () => {
         setFormOpen(false)
-        setEditing(null)
+        setEditingId(null)
       },
     })
   }
@@ -185,14 +152,14 @@ export function InventoryPage() {
                 <ProductCard
                   key={row.data.id}
                   product={row.data}
-                  onEdit={(p) => openEdit(productToInput(p))}
+                  onEdit={(p) => openEdit(p.id)}
                   onDelete={(p) => setDeleting({ id: p.id, name: p.name })}
                 />
               ) : (
                 <InventoryItemCard
                   key={row.data.id}
                   item={row.data}
-                  onEdit={(i) => openEdit(inventoryItemToInput(i))}
+                  onEdit={(i) => openEdit(i.id)}
                   onDelete={(i) => setDeleting({ id: i.id, name: i.name })}
                 />
               ),
@@ -202,12 +169,15 @@ export function InventoryPage() {
       </div>
 
       <ItemFormSheet
+        // Remounts per item so no select is handed a new value after mount.
+        key={editingId ?? 'new'}
         open={formOpen}
         onOpenChange={(open) => {
           setFormOpen(open)
-          if (!open) setEditing(null)
+          if (!open) setEditingId(null)
         }}
         item={editing}
+        isLoading={editLoading}
         defaultCategory={tab}
         onSave={handleSave}
         isSaving={saveItem.isPending}

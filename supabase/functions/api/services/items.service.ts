@@ -3,8 +3,16 @@ import { HttpError } from '../lib/httpError.ts'
 import type { ItemCategory, ItemInput } from '../types/domain.ts'
 
 const CATEGORIES: ItemCategory[] = ['raw_material', 'b2b', 'manufacturing']
+const SHOP_CATEGORIES = ['spice-powder', 'cooking-oil']
 
 export const ItemsService = {
+  /** The edit form loads from here, so every writable field is returned. */
+  get: async (id: string) => {
+    const item = await itemsRepo.findById(id)
+    if (!item) throw new HttpError(404, `Item ${id} not found`)
+    return item
+  },
+
   /** Creates or updates any item, whichever category the admin chose. */
   save: (input: ItemInput) => {
     if (!CATEGORIES.includes(input.category)) {
@@ -31,6 +39,9 @@ export const ItemsService = {
     }
 
     if (input.category === 'manufacturing') {
+      if (!SHOP_CATEGORIES.includes(input.productCategory)) {
+        throw new HttpError(400, 'Choose a shop category')
+      }
       if (!Number.isFinite(input.batchCapacity) || input.batchCapacity <= 0) {
         throw new HttpError(400, 'Batch capacity must be greater than zero')
       }

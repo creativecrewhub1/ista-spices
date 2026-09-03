@@ -9,6 +9,11 @@ import type { ItemInput } from '../types/domain.ts'
  */
 export const itemsRoute = new Hono()
 
+itemsRoute.get('/:id', async (c) => {
+  const item = await ItemsService.get(c.req.param('id'))
+  return c.json(item)
+})
+
 itemsRoute.post('/', async (c) => {
   const body = await c.req.json<ItemInput>()
   const id = await ItemsService.save(body)

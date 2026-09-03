@@ -1,5 +1,7 @@
 import { supabase } from '../lib/supabaseClient.ts'
-import type { ItemCategory, ItemInput } from '../types/domain.ts'
+import type { ItemCategory, ItemInput, PackSize, PackSizeLabel } from '../types/domain.ts'
+
+const ALL_PACK_SIZES: PackSizeLabel[] = ['250g', '500g', '1kg', '2kg']
 
 /**
  * The three categories an admin picks between are not three kinds of record.
@@ -90,4 +92,50 @@ export async function save(input: ItemInput): Promise<string> {
 export async function softDelete(id: string): Promise<void> {
   const { error } = await supabase.from('products').update({ is_active: false }).eq('id', id)
   if (error) throw error
+}
+
+/**
+ * One item in exactly the shape the form edits.
+ *
+ * The edit form must be loaded from this, never rebuilt from a list row:
+ * a list DTO carries what the list draws, and any editable field missing
+ * from it gets invented by the caller and then saved over the real value.
+ * Everything writable is readable here for that reason.
+ */
+export async function findById(id: string): Promise<ItemInput | null> {
+  const { data, error } = await supabase
+    .from('products')
+    .select('*, product_pack_sizes(size, price)')
+    .eq('id', id)
+    .maybeSingle()
+  if (error) throw error
+  if (!data) return null
+
+  // deno-lint-ignore no-explicit-any
+  const row = data as any
+  const priced: PackSize[] = row.product_pack_sizes.map(
+    // deno-lint-ignore no-explicit-any
+    (p: any) => ({ size: p.size, price: Number(p.price) }),
+  )
+
+  return {
+    id: row.id,
+    category: row.item_category,
+    name: row.name,
+    description: row.description ?? '',
+    stockUnit: row.stock_unit,
+    salesUnit: row.sales_unit ?? null,
+    salesToStockFactor: Number(row.sales_to_stock_factor),
+    lowStockThreshold: Number(row.low_stock_threshold),
+    imageUrl: row.image_url ?? null,
+    productCategory: row.category ?? 'spice-powder',
+    spiceLevel: row.spice_level ?? null,
+    // Sizes the product doesn't offer still need a row in the form so a
+    // price can be set on them, so absent sizes come back at zero.
+    packSizes: ALL_PACK_SIZES.map(
+      (size) => priced.find((p) => p.size === size) ?? { size, price: 0 },
+    ),
+    discountPercent: row.discount_percent ?? 0,
+    batchCapacity: row.batch_capacity ?? 30,
+  }
 }

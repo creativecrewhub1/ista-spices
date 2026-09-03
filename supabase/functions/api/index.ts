@@ -80,6 +80,10 @@ app.route('/dashboard', dashboardRoute)
 app.route('/storefront', storefrontRoute)
 
 app.onError((err, c) => {
+  // An error response is built outside the middleware chain, so the CORS
+  // header the cors() middleware would have added is not applied here. Without
+  // it the browser reports a network failure and the caller never sees why.
+  c.header('Access-Control-Allow-Origin', '*')
   if (err instanceof HttpError) {
     return c.json({ error: err.message }, err.status as 400 | 401 | 403 | 404 | 409)
   }

@@ -8,6 +8,7 @@ import type {
   DashboardKpis,
   InventoryItem,
   ItemCategoryOption,
+  ItemInput,
   Order,
   OrderStatusEvent,
   OrderStatus,
@@ -237,5 +238,19 @@ export function useItemCategories() {
     queryKey: ['item-categories'],
     queryFn: () => api.get<ItemCategoryOption[]>('/item-categories'),
     staleTime: Infinity,
+  })
+}
+
+/**
+ * One item in the shape the edit form writes. The form must load from this
+ * rather than reuse a list row: a list row carries what the list draws, and
+ * any editable field missing from it would be invented and then saved over
+ * the real value.
+ */
+export function useItem(id: string | null) {
+  return useQuery({
+    queryKey: ['item', id],
+    queryFn: () => api.get<ItemInput>(`/items/${id}`),
+    enabled: Boolean(id),
   })
 }
