@@ -33,6 +33,18 @@ export interface Product {
   imageUrl: string | null
 }
 
+
+/**
+ * A unit the shop measures in. Dimension decides whether a conversion is
+ * arithmetic (kg to g) or a business fact only the shop knows (kg to litres).
+ */
+export interface UnitOfMeasure {
+  code: string
+  name: string
+  dimension: 'weight' | 'volume' | 'count'
+  /** How many of the dimension base unit this is: 1 kg = 1000 g. */
+  baseFactor: number
+}
 /** Where an item came from: made here, or bought in for resale. */
 export type ItemOrigin = 'manufactured' | 'purchased'
 

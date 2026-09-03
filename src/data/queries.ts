@@ -17,6 +17,7 @@ import type {
   StockItem,
   StockMovement,
   TodaySummary,
+  UnitOfMeasure,
 } from './types'
 
 export function useAuthStatus() {
@@ -215,5 +216,15 @@ export function useStockMovements(itemId?: string, limit = 50) {
   return useQuery({
     queryKey: ['stock-movements', itemId ?? null, limit],
     queryFn: () => api.get<StockMovement[]>(`/stock/movements?${params.toString()}`),
+  })
+}
+
+/** The unit list the item form offers — served from the reference table so
+ *  the options shown and the values the database accepts are one list. */
+export function useUnits() {
+  return useQuery({
+    queryKey: ['units'],
+    queryFn: () => api.get<UnitOfMeasure[]>('/units'),
+    staleTime: Infinity,
   })
 }

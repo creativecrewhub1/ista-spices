@@ -27,6 +27,8 @@ import type {
   SpiceLevel,
 } from '@/data/types'
 import { formatCurrency } from '@/lib/format'
+import { cn } from '@/lib/utils'
+import { useUnits } from '@/data/queries'
 
 const ALL_PACK_SIZES: PackSizeLabel[] = ['250g', '500g', '1kg', '2kg']
 
@@ -42,8 +44,8 @@ export function emptyItem(category: ItemCategory): ItemInput {
     category,
     name: '',
     description: '',
-    stockUnit: category === 'manufacturing' ? 'packs' : 'kg',
-    salesUnit: category === 'raw_material' ? null : category === 'manufacturing' ? 'packs' : 'kg',
+    stockUnit: category === 'manufacturing' ? 'pack' : 'kg',
+    salesUnit: category === 'raw_material' ? null : category === 'manufacturing' ? 'pack' : 'kg',
     salesToStockFactor: 1,
     lowStockThreshold: 0,
     imageUrl: null,
@@ -82,6 +84,17 @@ export function ItemFormSheet({
 }: ItemFormSheetProps) {
   const [draft, setDraft] = useState<ItemInput>(item ?? emptyItem(defaultCategory))
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const { data: units = [] } = useUnits()
+
+  // A conversion between two units of the same dimension is arithmetic:
+  // 1 kg is 1000 g regardless of what is being weighed. Only a cross-
+  // dimension pair — kg to litres, kg to pieces — needs a person.
+  const stockUom = units.find((u) => u.code === draft.stockUnit)
+  const salesUom = units.find((u) => u.code === draft.salesUnit)
+  const derivedFactor =
+    stockUom && salesUom && stockUom.dimension === salesUom.dimension
+      ? salesUom.baseFactor / stockUom.baseFactor
+      : null
 
   useEffect(() => {
     setDraft(item ?? emptyItem(defaultCategory))
@@ -95,7 +108,7 @@ export function ItemFormSheet({
       ...prev,
       category,
       // Units differ by kind: packs come off a line, raw material is weighed.
-      stockUnit: prev.stockUnit || (category === 'manufacturing' ? 'packs' : 'kg'),
+      stockUnit: prev.stockUnit || (category === 'manufacturing' ? 'pack' : 'kg'),
       // Nothing sells a raw material, so it carries no selling unit.
       salesUnit: category === 'raw_material' ? null : prev.salesUnit || prev.stockUnit || 'kg',
       spiceLevel: category === 'manufacturing' ? prev.spiceLevel : null,
@@ -119,7 +132,9 @@ export function ItemFormSheet({
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    onSave(draft)
+    // Send the figure that was on screen: a same-dimension conversion is
+    // computed, not typed, so the draft's own value may be stale.
+    onSave(derivedFactor !== null ? { ...draft, salesToStockFactor: derivedFactor } : draft)
   }
 
   return (
@@ -199,20 +214,24 @@ export function ItemFormSheet({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label
-                htmlFor="item-unit"
-                className="flex items-center gap-1 text-[11px] font-bold uppercase text-slate-600"
-              >
+              <Label className="flex items-center gap-1 text-[11px] font-bold uppercase text-slate-600">
                 <Scale className="size-3 text-slate-400" /> Inward unit
               </Label>
-              <Input
-                id="item-unit"
-                required
+              <Select
                 value={draft.stockUnit}
-                onChange={(e) => setDraft({ ...draft, stockUnit: e.target.value })}
-                placeholder="kg"
-                className="rounded-2xl border-slate-200 bg-slate-50/70 px-3 py-2 text-center text-sm font-bold"
-              />
+                onValueChange={(v) => setDraft({ ...draft, stockUnit: v })}
+              >
+                <SelectTrigger className="rounded-2xl border-slate-200 bg-slate-50/70 px-3 py-2 text-sm font-bold">
+                  <SelectValue placeholder="Unit" />
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl">
+                  {units.map((u) => (
+                    <SelectItem key={u.code} value={u.code} className="rounded-xl font-semibold">
+                      {u.name} ({u.code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
               <Label
@@ -239,20 +258,24 @@ export function ItemFormSheet({
           {draft.category !== 'raw_material' ? (
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label
-                  htmlFor="item-sales-unit"
-                  className="flex items-center gap-1 text-[11px] font-bold uppercase text-slate-600"
-                >
+                <Label className="flex items-center gap-1 text-[11px] font-bold uppercase text-slate-600">
                   <Scale className="size-3 text-orange-400" /> Selling unit
                 </Label>
-                <Input
-                  id="item-sales-unit"
-                  required
+                <Select
                   value={draft.salesUnit ?? ''}
-                  onChange={(e) => setDraft({ ...draft, salesUnit: e.target.value })}
-                  placeholder="litre"
-                  className="rounded-2xl border-slate-200 bg-slate-50/70 px-3 py-2 text-center text-sm font-bold"
-                />
+                  onValueChange={(v) => setDraft({ ...draft, salesUnit: v })}
+                >
+                  <SelectTrigger className="rounded-2xl border-slate-200 bg-slate-50/70 px-3 py-2 text-sm font-bold">
+                    <SelectValue placeholder="Unit" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl">
+                    {units.map((u) => (
+                      <SelectItem key={u.code} value={u.code} className="rounded-xl font-semibold">
+                        {u.name} ({u.code})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5">
                 <Label
@@ -261,17 +284,26 @@ export function ItemFormSheet({
                 >
                   1 {draft.salesUnit || 'unit'} = ? {draft.stockUnit || 'unit'}
                 </Label>
+                {/* Within a dimension the conversion is arithmetic — 1 kg is
+                    1000 g whoever is asked — so it's computed and shown
+                    rather than typed. Crossing dimensions needs a density or
+                    a per-piece weight, which only the shop knows. */}
                 <Input
                   id="item-factor"
                   type="number"
                   min={0}
                   step="any"
                   required
-                  value={draft.salesToStockFactor}
+                  readOnly={derivedFactor !== null}
+                  disabled={derivedFactor !== null}
+                  value={derivedFactor ?? draft.salesToStockFactor}
                   onChange={(e) =>
                     setDraft({ ...draft, salesToStockFactor: Number(e.target.value) })
                   }
-                  className="rounded-2xl border-slate-200 bg-slate-50/70 px-3 py-2 text-center text-sm font-bold"
+                  className={cn(
+                    'rounded-2xl border-slate-200 px-3 py-2 text-center text-sm font-bold',
+                    derivedFactor !== null ? 'bg-slate-100 text-slate-500' : 'bg-slate-50/70',
+                  )}
                 />
               </div>
             </div>
@@ -281,8 +313,8 @@ export function ItemFormSheet({
           draft.salesUnit &&
           draft.salesUnit !== draft.stockUnit ? (
             <p className="-mt-2 text-[11px] font-medium text-slate-400">
-              Selling one {draft.salesUnit} takes {draft.salesToStockFactor} {draft.stockUnit} out
-              of stock.
+              Selling one {draft.salesUnit} takes {derivedFactor ?? draft.salesToStockFactor}{' '}
+              {draft.stockUnit} out of stock.
             </p>
           ) : null}
 
