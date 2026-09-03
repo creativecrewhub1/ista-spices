@@ -1,5 +1,5 @@
 import { Hono } from 'npm:hono@4'
-import { cors } from 'npm:hono/cors'
+import { cors } from 'npm:hono@4/cors'
 import { authRoute } from './routes/auth.route.ts'
 import { productsRoute } from './routes/products.route.ts'
 import { inventoryItemsRoute } from './routes/inventoryItems.route.ts'
