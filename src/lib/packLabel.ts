@@ -27,3 +27,22 @@ export function formatPack(qty: number, unitCode: string, units: UnitOfMeasure[]
   const best = sameDimension.find((u) => base / u.baseFactor >= 1) ?? sameDimension.at(-1) ?? unit
   return `${trim(base / best.baseFactor)} ${best.code}`
 }
+
+/**
+ * A pack size as a person reads it. The quantity is always in the item's
+ * sales unit; a packaging name, where one is set, says what that quantity is
+ * sold as — "Box · 20 pcs" rather than a bare "20 pcs".
+ */
+export function formatPackSize(
+  pack: { qty: number; packaging: string | null },
+  salesUnit: string,
+  units: UnitOfMeasure[] = [],
+): string {
+  const quantity = formatPack(pack.qty, salesUnit, units)
+  if (!pack.packaging) return quantity
+  const named = units.find((u) => u.code === pack.packaging)?.name ?? pack.packaging
+  // A single unit named by its packaging needs no restatement: "1 pcs" as a
+  // Piece is just a Piece.
+  if (pack.qty === 1 && pack.packaging === salesUnit) return named
+  return `${named} · ${quantity}`
+}

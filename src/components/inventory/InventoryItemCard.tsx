@@ -12,7 +12,7 @@ import { ItemThumbnail } from './ItemThumbnail'
 import type { InventoryItem } from '@/data/types'
 import { inventoryItemTypeConfig } from '@/lib/status'
 import { formatCurrency, formatRate } from '@/lib/format'
-import { formatPack } from '@/lib/packLabel'
+import { formatPackSize } from '@/lib/packLabel'
 import { useUnits } from '@/data/queries'
 import { cn } from '@/lib/utils'
 
@@ -82,7 +82,7 @@ export function InventoryItemCard({ item, onEdit, onDelete }: InventoryItemCardP
                   {formatCurrency(pack.price)}
                   <span className="font-sans font-semibold text-slate-400">
                     {' '}
-                    / {formatPack(pack.qty, item.salesUnit ?? item.stockUnit, units)}
+                    / {formatPackSize(pack, item.salesUnit ?? item.stockUnit, units)}
                   </span>
                 </span>
               ))}

@@ -21,7 +21,7 @@ import {
 import { AlertCircle, ImageIcon, Layers, Package, Pencil, Plus, Scale, Tag, Trash2 } from 'lucide-react'
 import type { ItemCategory, ItemInput, ProductCategory, SpiceLevel } from '@/data/types'
 import { formatCurrency } from '@/lib/format'
-import { formatPack } from '@/lib/packLabel'
+import { formatPackSize } from '@/lib/packLabel'
 import { cn } from '@/lib/utils'
 import { useItemCategories, useItemNames, useUnits } from '@/data/queries'
 import { matchNames, normaliseName } from '@/lib/nameMatch'
@@ -43,9 +43,9 @@ export function emptyItem(category: ItemCategory): ItemInput {
     // a raw material, so it carries none.
     packSizes:
       category === 'manufacturing'
-        ? [{ qty: 0.25, price: 0 }]
+        ? [{ qty: 0.25, price: 0, packaging: null }]
         : category === 'b2b'
-          ? [{ qty: 1, price: 0 }]
+          ? [{ qty: 1, price: 0, packaging: null }]
           : [],
     discountPercent: 0,
     batchCapacity: 30,
@@ -87,15 +87,31 @@ export function ItemFormSheet({
   const { data: itemNames = [] } = useItemNames()
   const [nameFocused, setNameFocused] = useState(false)
 
-  // A conversion between two units of the same dimension is arithmetic:
-  // 1 kg is 1000 g regardless of what is being weighed. Only a cross-
-  // dimension pair — kg to litres, kg to pieces — needs a person.
+  // 1 kg is 1000 g whatever is being weighed, so weight and volume convert
+  // by arithmetic. Counted units do not: every one of them carries a base
+  // factor of 1, because how many pieces are in a box is a fact about this
+  // item's packaging, not about the words "box" and "piece". Deriving it
+  // there produced 1 and locked the field, so a box of 20 could not be said.
   const stockUom = units.find((u) => u.code === draft.stockUnit)
   const salesUom = units.find((u) => u.code === draft.salesUnit)
+  const measured = stockUom?.dimension === 'weight' || stockUom?.dimension === 'volume'
   const derivedFactor =
-    stockUom && salesUom && stockUom.dimension === salesUom.dimension
+    stockUom && salesUom && measured && stockUom.dimension === salesUom.dimension
       ? salesUom.baseFactor / stockUom.baseFactor
       : null
+
+  // Asked the way a person says it — "1 box holds 20 pieces" — and stored the
+  // way despatch needs it, as the stock drawn down by one unit sold.
+  const salesPerStock =
+    draft.salesToStockFactor > 0 ? 1 / draft.salesToStockFactor : 0
+
+  // Rounded for display only. Number() drops the trailing zeros a fixed
+  // decimal leaves behind, without a regex that can eat a digit.
+  const drawnPerSale =
+    draft.salesToStockFactor > 0 ? Number(draft.salesToStockFactor.toFixed(4)) : '—'
+
+  // Only counted units name a packaging — "500 g" is already its own name.
+  const countUnits = units.filter((u) => u.dimension === 'count')
 
   // Sync the draft during render rather than from an effect. An effect runs
   // after the children have mounted, so a select would be handed its real
@@ -143,11 +159,11 @@ export function ItemFormSheet({
           ? []
           : prev.packSizes.length > 0
             ? prev.packSizes
-            : [{ qty: category === 'manufacturing' ? 0.25 : 1, price: 0 }],
+            : [{ qty: category === 'manufacturing' ? 0.25 : 1, price: 0, packaging: null }],
     }))
   }
 
-  function updatePack(index: number, patch: { qty?: number; price?: number }) {
+  function updatePack(index: number, patch: { qty?: number; price?: number; packaging?: string | null }) {
     setDraft((prev) => ({
       ...prev,
       packSizes: prev.packSizes.map((pack, i) => (i === index ? { ...pack, ...patch } : pack)),
@@ -155,7 +171,10 @@ export function ItemFormSheet({
   }
 
   function addPack() {
-    setDraft((prev) => ({ ...prev, packSizes: [...prev.packSizes, { qty: 0, price: 0 }] }))
+    setDraft((prev) => ({
+      ...prev,
+      packSizes: [...prev.packSizes, { qty: 0, price: 0, packaging: null }],
+    }))
   }
 
   function removePack(index: number) {
@@ -335,27 +354,45 @@ export function ItemFormSheet({
             </div>
           </div>
 
-          {/* Conversion factor for B2B / bought-in resold goods */}
+          {/* How much of what is bought becomes what is sold. Without it a
+              sale cannot know how much stock to draw down. */}
           {draft.category === 'b2b' && draft.salesUnit && draft.salesUnit !== draft.stockUnit ? (
             <div className="space-y-1.5">
               <Label htmlFor="item-factor" className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                {draft.stockUnit || 'unit'} per {draft.salesUnit || 'unit'}
+                How many {draft.salesUnit} in one {draft.stockUnit}?
               </Label>
-              <Input
-                id="item-factor"
-                type="number"
-                min={0}
-                step="any"
-                required
-                readOnly={derivedFactor !== null}
-                disabled={derivedFactor !== null}
-                value={derivedFactor ?? draft.salesToStockFactor}
-                onChange={(e) => setDraft({ ...draft, salesToStockFactor: Number(e.target.value) })}
-                className={cn(
-                  'rounded-2xl border-slate-200 px-3.5 py-2.5 text-center text-sm font-bold',
-                  derivedFactor !== null ? 'bg-slate-100 text-slate-500' : 'bg-slate-50/70',
-                )}
-              />
+              <div className="flex items-center gap-2">
+                <span className="shrink-0 text-sm font-bold text-slate-500">
+                  1 {draft.stockUnit} =
+                </span>
+                <Input
+                  id="item-factor"
+                  type="number"
+                  min={0}
+                  step="any"
+                  required
+                  readOnly={derivedFactor !== null}
+                  disabled={derivedFactor !== null}
+                  value={derivedFactor !== null ? 1 / derivedFactor : salesPerStock || ''}
+                  onChange={(e) => {
+                    const perStock = Number(e.target.value)
+                    setDraft({
+                      ...draft,
+                      salesToStockFactor: perStock > 0 ? 1 / perStock : 0,
+                    })
+                  }}
+                  className={cn(
+                    'rounded-2xl border-slate-200 px-3.5 py-2.5 text-center text-sm font-bold',
+                    derivedFactor !== null ? 'bg-slate-100 text-slate-500' : 'bg-slate-50/70',
+                  )}
+                />
+                <span className="shrink-0 text-sm font-bold text-slate-500">{draft.salesUnit}</span>
+              </div>
+              <p className="text-[11px] font-medium text-slate-400">
+                {derivedFactor !== null
+                  ? 'Worked out from the units themselves.'
+                  : `Selling one ${draft.salesUnit} takes ${drawnPerSale} ${draft.stockUnit} out of stock.`}
+              </p>
             </div>
           ) : null}
 
@@ -457,6 +494,29 @@ export function ItemFormSheet({
                           </span>
                         </div>
                       </div>
+                      <div className="w-28 space-y-1">
+                        <Label className="text-[11px] font-medium normal-case text-slate-400">
+                          Sold as
+                        </Label>
+                        <Select
+                          value={pack.packaging ?? 'none'}
+                          onValueChange={(v) => updatePack(index, { packaging: v === 'none' ? null : v })}
+                        >
+                          <SelectTrigger className="rounded-2xl border-slate-200 bg-slate-50/70 px-3 py-2 text-sm font-semibold">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent position="popper" sideOffset={4} className="rounded-2xl">
+                            <SelectItem value="none" className="rounded-xl font-semibold">
+                              Just the quantity
+                            </SelectItem>
+                            {countUnits.map((u) => (
+                              <SelectItem key={u.code} value={u.code} className="rounded-xl font-semibold">
+                                {u.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                       <div className="flex-1 space-y-1">
                         <Label
                           htmlFor={`pack-price-${index}`}
@@ -498,7 +558,7 @@ export function ItemFormSheet({
                   {draft.packSizes.length > 0 && draft.salesUnit
                     ? `Customers will see ${draft.packSizes
                         .filter((pack) => pack.qty > 0)
-                        .map((pack) => formatPack(pack.qty, draft.salesUnit as string, units))
+                        .map((pack) => formatPackSize(pack, draft.salesUnit as string, units))
                         .join(', ') || '—'}.`
                     : 'Add the quantities this is sold in.'}
                 </p>

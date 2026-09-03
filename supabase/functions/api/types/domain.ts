@@ -62,6 +62,12 @@ export interface ItemName {
 export interface PackSize {
   qty: number
   price: number
+  /**
+   * What to call this quantity — a piece, a pack, a box. Optional: without
+   * it the quantity speaks for itself ("250 ml"). The quantity is always in
+   * the item's sales unit, so naming it changes the label, never the maths.
+   */
+  packaging: string | null
 }
 
 export type SpiceLevel = 'mild' | 'medium' | 'hot'
