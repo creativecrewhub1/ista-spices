@@ -1,6 +1,7 @@
 import * as productsRepo from '../repositories/products.repo.ts'
 import * as ordersRepo from '../repositories/orders.repo.ts'
 import * as customersRepo from '../repositories/customers.repo.ts'
+import * as authRepo from '../repositories/auth.repo.ts'
 import { HttpError } from '../lib/httpError.ts'
 import type { CheckoutInput, UpdateProfileInput } from '../types/domain.ts'
 
@@ -83,5 +84,26 @@ export const StorefrontService = {
       throw new HttpError(400, 'Address cannot be empty')
     }
     return customersRepo.updateForUser(userId, input)
+  },
+
+  /** Everything this account holds, for a self-service data export. */
+  exportMyData: async (userId: string) => {
+    const [profile, orders] = await Promise.all([
+      customersRepo.findFullByUserId(userId),
+      StorefrontService.myOrders(userId),
+    ])
+    return { profile, orders, exportedAt: new Date().toISOString() }
+  },
+
+  /**
+   * Self-service account deletion. Personal data is scrubbed rather than
+   * the row deleted outright — past orders stay attached to a real
+   * business record. The order matters: the customer row's user_id must be
+   * cleared before the auth user can be deleted, since that FK has no
+   * cascade.
+   */
+  deleteMyAccount: async (userId: string) => {
+    await customersRepo.anonymizeForUser(userId)
+    await authRepo.deleteAuthUser(userId)
   },
 }

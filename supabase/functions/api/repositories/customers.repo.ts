@@ -137,6 +137,29 @@ export async function updateForUser(userId: string, input: {
   if (insertError) throw insertError
 }
 
+/**
+ * Scrubs a customer's personal data on account deletion, keeping the row
+ * itself (and its id) so past orders stay attached to a real business
+ * record instead of being orphaned or cascade-deleted. Clears `user_id` too
+ * — required before the caller can delete the underlying auth user, since
+ * that FK has no cascade.
+ */
+export async function anonymizeForUser(userId: string): Promise<void> {
+  const { error } = await supabase
+    .from('customers')
+    .update({
+      name: 'Deleted user',
+      phone: null,
+      address: null,
+      email: null,
+      avatar_url: null,
+      initials: 'DU',
+      user_id: null,
+    })
+    .eq('user_id', userId)
+  if (error) throw error
+}
+
 /** Creates the CRM customer record for a storefront account's first order. */
 export async function createForUser(
   userId: string,

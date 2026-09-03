@@ -27,6 +27,11 @@ export function LoginPage() {
   const [signInError, setSignInError] = useState<string | null>(null)
   const [signInLoading, setSignInLoading] = useState(false)
 
+  const [forgotMode, setForgotMode] = useState(false)
+  const [resetSent, setResetSent] = useState(false)
+  const [resetError, setResetError] = useState<string | null>(null)
+  const [resetLoading, setResetLoading] = useState(false)
+
   if (!sessionLoading && session) {
     // One login page for everyone — where you land depends on who you are,
     // not which form you happened to use. `from` is set when a protected
@@ -52,6 +57,18 @@ export function LoginPage() {
     event.preventDefault()
     if (password !== confirmPassword) return
     signUpAdmin.mutate({ email, password })
+  }
+
+  async function handleSendReset(event: FormEvent) {
+    event.preventDefault()
+    setResetError(null)
+    setResetLoading(true)
+    const { error } = await supabaseAuth.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+    setResetLoading(false)
+    if (error) setResetError(error.message)
+    else setResetSent(true)
   }
 
   return (
@@ -82,7 +99,47 @@ export function LoginPage() {
             </Tabs>
           )}
 
-          {activeMode === 'sign-in' ? (
+          {activeMode === 'sign-in' && forgotMode ? (
+            <form className="flex flex-col gap-4" onSubmit={handleSendReset}>
+              <p className="text-xs text-muted-foreground">
+                {resetSent
+                  ? "If an admin account uses that email, we've sent a reset link — check your inbox."
+                  : "Enter the admin account's email and we'll send a password reset link."}
+              </p>
+              {!resetSent && (
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="reset-email">Email</Label>
+                  <Input
+                    id="reset-email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+              )}
+              {resetError && <p className="text-sm text-destructive">{resetError}</p>}
+              {!resetSent && (
+                <Button type="submit" className="w-full gap-1.5" disabled={resetLoading}>
+                  {resetLoading && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
+                  Send reset link
+                </Button>
+              )}
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                onClick={() => {
+                  setForgotMode(false)
+                  setResetSent(false)
+                  setResetError(null)
+                }}
+              >
+                Back to sign in
+              </Button>
+            </form>
+          ) : activeMode === 'sign-in' ? (
             <form className="flex flex-col gap-4" onSubmit={handleSignIn}>
               {!adminExists && (
                 <p className="text-xs text-muted-foreground">
@@ -101,7 +158,16 @@ export function LoginPage() {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="signin-password">Password</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="signin-password">Password</Label>
+                  <button
+                    type="button"
+                    onClick={() => setForgotMode(true)}
+                    className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
                 <Input
                   id="signin-password"
                   type="password"

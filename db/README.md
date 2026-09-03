@@ -55,6 +55,15 @@ and verify the result.
 apply-and-record at the cost of the name; it also expects to own the history
 table, which already has hand-applied entries in it.
 
+## Deploying the Edge Function
+
+`supabase functions deploy api --project-ref <ref>` has, twice now (2026-09-03),
+silently deployed a version that 404s on routes that exist in the source —
+confirmed via `curl` immediately after, then fixed by running the exact same
+deploy command again with no code changes. Treat a fresh 404 on a route that
+demonstrably exists in the deployed source as "deploy didn't propagate," not
+as a code bug — redeploy once before spending time debugging the code.
+
 ## Pending
 
 `20260903010000_drop_superseded_pack_size_columns.sql` has **not** been

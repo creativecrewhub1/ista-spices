@@ -87,6 +87,13 @@ export function useUpdateMyProfile() {
   })
 }
 
+/** Permanently deletes the signed-in customer's account (blocked for the admin, server-side). */
+export function useDeleteMyAccount() {
+  return useMutation({
+    mutationFn: () => api.delete('/storefront/me'),
+  })
+}
+
 export function useUpdateOrderStatus() {
   const queryClient = useQueryClient()
 

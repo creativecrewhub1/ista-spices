@@ -601,14 +601,21 @@ begin
   if new.raw_app_meta_data->>'provider' = 'google' then
     v_name := coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', new.email);
     v_avatar := coalesce(new.raw_user_meta_data->>'avatar_url', new.raw_user_meta_data->>'picture');
-    v_customer_id := 'c-' || substr(replace(gen_random_uuid()::text, '-', ''), 1, 10);
 
-    insert into public.customers (id, user_id, name, email, avatar_url, initials)
-    values (
-      v_customer_id, new.id, v_name, new.email, v_avatar,
-      upper(left(coalesce(v_name, 'C'), 2))
-    )
-    on conflict (user_id) do nothing;
+    update public.customers
+    set user_id = new.id,
+        avatar_url = coalesce(avatar_url, v_avatar)
+    where lower(email) = lower(new.email) and user_id is null;
+
+    if not found then
+      v_customer_id := 'c-' || substr(replace(gen_random_uuid()::text, '-', ''), 1, 10);
+      insert into public.customers (id, user_id, name, email, avatar_url, initials)
+      values (
+        v_customer_id, new.id, v_name, new.email, v_avatar,
+        upper(left(coalesce(v_name, 'C'), 2))
+      )
+      on conflict (user_id) do nothing;
+    end if;
   end if;
 
   return new;

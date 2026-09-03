@@ -52,11 +52,15 @@ Requires `.env` with `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (see `.env
 
 One login page (`/login`) for everyone. Password sign-in is the single-admin path (`role='admin'`, enforced server-side — see `services/auth.service.ts`); "Continue with Google" is the customer path and can never produce an admin (`role='customer'` is the DB trigger's default for every new auth user, see `db/migrations/*_add_profiles_role_table_and_customer_user_link.sql`). After sign-in, redirect target is decided by role, not by which form was used.
 
-A Google sign-up also gets a `customers` row immediately — not just at first checkout — prefilled from whatever Google provides (name, email, photo); `phone`/`address` stay null until the customer fills them in via Profile or checkout (see `db/migrations/*_customer_signup_and_profile.sql`). This is what makes a customer visible in the admin's Customers page as soon as they log in, not only after their first order.
+A Google sign-up also gets a `customers` row immediately — not just at first checkout — prefilled from whatever Google provides (name, email, photo); `phone`/`address` stay null until the customer fills them in via Profile or checkout (see `db/migrations/*_customer_signup_and_profile.sql`). This is what makes a customer visible in the admin's Customers page as soon as they log in, not only after their first order. If a walk-in customer was already entered manually under that email, the signup links that existing row instead of creating a duplicate — see `db/migrations/*_link_existing_customer_on_google_signup.sql`.
+
+The admin can reset a forgotten password from `/login` ("Forgot password?") via Supabase's email-based recovery flow (`/reset-password` completes it) — depends on Supabase's email sending actually being deliverable for this project; nothing else in the app touches this.
+
+A customer can export everything their account holds (`GET /storefront/me/export`, wired to a "Export my data" button on `/shop/profile`) or delete their account (`DELETE /storefront/me`) at any time. Deletion anonymizes the `customers` row rather than removing it — past orders stay attached to a real business record with the personal details scrubbed — then deletes the underlying auth user (`profiles` goes with it via cascade). Blocked server-side for the admin's own account; there's no self-service way to delete the single admin here by design.
 
 ## Known gap
 
-No password-reset flow and no email deliverability configured for the admin account (it's created pre-confirmed via the Admin API). Fine for one internal admin; revisit before adding staff accounts beyond the single admin.
+No email deliverability configured for the admin account — it's created pre-confirmed via the Admin API, and the password-reset flow above depends on Supabase's own (rate-limited) email sending, which hasn't been tested past what its shared sender allows. Fine for one internal admin; revisit (custom SMTP) before adding staff accounts beyond the single admin.
 
 ## License
 

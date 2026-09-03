@@ -36,3 +36,15 @@ export async function getRole(userId: string): Promise<UserRole | null> {
   if (error) throw error
   return (data?.role as UserRole | undefined) ?? null
 }
+
+/**
+ * Deletes the auth account itself — the `profiles` row goes with it via its
+ * own ON DELETE CASCADE. Call only after the caller's `customers` row has
+ * already been anonymized and unlinked (`user_id` cleared): the FK from
+ * `customers.user_id` to `auth.users` has no cascade, so deleting a user
+ * still referenced there would fail.
+ */
+export async function deleteAuthUser(userId: string): Promise<void> {
+  const { error } = await supabase.auth.admin.deleteUser(userId)
+  if (error) throw error
+}

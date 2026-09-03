@@ -1,5 +1,6 @@
 import { Hono } from 'npm:hono@4'
 import { StorefrontService } from '../services/storefront.service.ts'
+import { HttpError } from '../lib/httpError.ts'
 import type { CheckoutInput, UpdateProfileInput } from '../types/domain.ts'
 import type { AppEnv } from '../types/context.ts'
 
@@ -36,5 +37,20 @@ storefrontRoute.get('/me', async (c) => {
 storefrontRoute.put('/me', async (c) => {
   const body = await c.req.json<UpdateProfileInput>()
   await StorefrontService.updateMyProfile(c.get('userId'), body)
+  return c.json({ ok: true })
+})
+
+/** A self-service data export — everything this account holds, as one JSON download. */
+storefrontRoute.get('/me/export', async (c) => {
+  const data = await StorefrontService.exportMyData(c.get('userId'))
+  return c.json(data)
+})
+
+/** Self-service account deletion. The admin account can't delete itself here. */
+storefrontRoute.delete('/me', async (c) => {
+  if (c.get('userRole') === 'admin') {
+    throw new HttpError(403, 'The admin account cannot be deleted here')
+  }
+  await StorefrontService.deleteMyAccount(c.get('userId'))
   return c.json({ ok: true })
 })

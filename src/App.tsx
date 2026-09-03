@@ -6,6 +6,7 @@ import { ProtectedRoute } from '@/auth/ProtectedRoute'
 import { RequireSession } from '@/auth/RequireSession'
 import { CartProvider } from '@/shop/CartContext'
 import { LoginPage } from '@/pages/LoginPage'
+import { ResetPasswordPage } from '@/pages/ResetPasswordPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { InventoryPage } from '@/pages/InventoryPage'
 import { StockPage } from '@/pages/StockPage'
@@ -37,6 +38,7 @@ export default function App() {
             <Routes>
               {/* Authentication */}
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
 
               {/* Admin Panel (Primary Work Route) */}
               <Route element={<ProtectedRoute />}>
