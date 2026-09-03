@@ -4,7 +4,6 @@ import type {
   OrderListFilters,
   OrderStatus,
   OrderStatusEvent,
-  PackSizeLabel,
 } from '../types/domain.ts'
 
 /** Every read of an order returns the same shape — one place to change it. */
@@ -18,7 +17,8 @@ function mapRow(row: any): Order {
       productId: item.product_id,
       name: item.products?.name ?? item.product_id,
       imageUrl: item.products?.image_url ?? null,
-      packSize: item.pack_size,
+      packQty: Number(item.pack_qty),
+      packUnit: item.pack_unit,
       qty: item.qty,
       price: Number(item.price),
     }),
@@ -166,13 +166,19 @@ export async function listForCustomer(customerId: string): Promise<Order[]> {
 /** Authoritative prices for a checkout — never trust a price the client sends. */
 export async function getPackPrices(
   productIds: string[],
-): Promise<{ product_id: string; size: PackSizeLabel; price: number }[]> {
+): Promise<{ product_id: string; pack_qty: number; pack_unit: string; price: number }[]> {
   const { data, error } = await supabase
     .from('product_pack_sizes')
-    .select('product_id, size, price')
+    .select('product_id, pack_qty, price, products(sales_unit)')
     .in('product_id', productIds)
   if (error) throw error
-  return data.map((row) => ({ ...row, price: Number(row.price) }))
+  // deno-lint-ignore no-explicit-any
+  return (data as any[]).map((row) => ({
+    product_id: row.product_id,
+    pack_qty: Number(row.pack_qty),
+    pack_unit: row.products?.sales_unit,
+    price: Number(row.price),
+  }))
 }
 
 export async function insertOrder(order: { id: string; customerId: string; address: string }): Promise<void> {
@@ -188,13 +194,14 @@ export async function insertOrder(order: { id: string; customerId: string; addre
 
 export async function insertOrderItems(
   orderId: string,
-  items: { productId: string; packSize: PackSizeLabel; qty: number; price: number }[],
+  items: { productId: string; packQty: number; packUnit: string; qty: number; price: number }[],
 ): Promise<void> {
   const { error } = await supabase.from('order_items').insert(
     items.map((item) => ({
       order_id: orderId,
       product_id: item.productId,
-      pack_size: item.packSize,
+      pack_qty: item.packQty,
+      pack_unit: item.packUnit,
       qty: item.qty,
       price: item.price,
     })),

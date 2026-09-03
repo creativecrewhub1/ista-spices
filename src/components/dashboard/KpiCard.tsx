@@ -7,7 +7,12 @@ interface KpiCardProps {
   label: string
   value: string
   icon: LucideIcon
+  /** What the figure covers, e.g. "This calendar month". */
+  caption?: string
   deltaPercent?: number
+  /** Names the period the delta compares against — a delta with no stated
+   *  baseline is unreadable, so callers pass this alongside deltaPercent. */
+  deltaLabel?: string
   tone?: 'primary' | 'accent' | 'success' | 'warning'
 }
 
@@ -63,7 +68,15 @@ const toneStyles: Record<NonNullable<KpiCardProps['tone']>, {
   },
 }
 
-export function KpiCard({ label, value, icon: Icon, deltaPercent, tone = 'primary' }: KpiCardProps) {
+export function KpiCard({
+  label,
+  value,
+  icon: Icon,
+  caption,
+  deltaPercent,
+  deltaLabel,
+  tone = 'primary',
+}: KpiCardProps) {
   const isPositive = (deltaPercent ?? 0) >= 0
   const style = toneStyles[tone]
 
@@ -97,11 +110,13 @@ export function KpiCard({ label, value, icon: Icon, deltaPercent, tone = 'primar
                 ) : (
                   <ArrowDownRight className="size-3.5 stroke-[3]" aria-hidden="true" />
                 )}
-                <span>{Math.abs(deltaPercent)}% vs last week</span>
+                <span>
+                  {Math.abs(deltaPercent)}%{deltaLabel ? ` ${deltaLabel}` : ''}
+                </span>
               </p>
-            ) : (
-              <p className="text-[11px] font-semibold text-slate-400">vs last month</p>
-            )}
+            ) : caption ? (
+              <p className="text-[11px] font-semibold text-slate-400">{caption}</p>
+            ) : null}
           </div>
 
           {/* Mini Sparkline Chart Wave (Matching REDISH) */}

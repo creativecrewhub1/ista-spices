@@ -5,7 +5,10 @@ import type {
   CatalogProduct,
   Customer,
   CustomerCounts,
+  DashboardKpis,
   InventoryItem,
+  ItemCategoryOption,
+  ItemInput,
   Order,
   OrderStatusEvent,
   OrderStatus,
@@ -13,7 +16,10 @@ import type {
   ProductRevenueRow,
   RevenuePoint,
   RevenueSummary,
+  StockItem,
+  StockMovement,
   TodaySummary,
+  UnitOfMeasure,
 } from './types'
 
 export function useAuthStatus() {
@@ -118,6 +124,14 @@ export function useOrderStatusCounts() {
   })
 }
 
+/** The four headline figures, aggregated in Postgres. */
+export function useDashboardKpis() {
+  return useQuery({
+    queryKey: ['dashboard-kpis'],
+    queryFn: () => api.get<DashboardKpis>('/dashboard/kpis'),
+  })
+}
+
 export function useTodaySummary() {
   return useQuery({
     queryKey: ['dashboard-today'],
@@ -184,5 +198,59 @@ export function useMyOrders() {
   return useQuery({
     queryKey: ['storefront-orders'],
     queryFn: () => api.get<Order[]>('/storefront/orders'),
+  })
+}
+
+/** Current stock position for every item — quantity, average cost, value. */
+export function useStock() {
+  return useQuery({
+    queryKey: ['stock'],
+    queryFn: () => api.get<StockItem[]>('/stock'),
+  })
+}
+
+/** Movement history. Pass an itemId to narrow it to one item. */
+export function useStockMovements(itemId?: string, limit = 50) {
+  const params = new URLSearchParams()
+  if (itemId) params.set('itemId', itemId)
+  params.set('limit', String(limit))
+
+  return useQuery({
+    queryKey: ['stock-movements', itemId ?? null, limit],
+    queryFn: () => api.get<StockMovement[]>(`/stock/movements?${params.toString()}`),
+  })
+}
+
+/** The unit list the item form offers — served from the reference table so
+ *  the options shown and the values the database accepts are one list. */
+export function useUnits() {
+  return useQuery({
+    queryKey: ['units'],
+    queryFn: () => api.get<UnitOfMeasure[]>('/units'),
+    staleTime: Infinity,
+  })
+}
+
+/** The item categories the form offers — labels live beside the table the
+ *  generated item_category column references, not in the client. */
+export function useItemCategories() {
+  return useQuery({
+    queryKey: ['item-categories'],
+    queryFn: () => api.get<ItemCategoryOption[]>('/item-categories'),
+    staleTime: Infinity,
+  })
+}
+
+/**
+ * One item in the shape the edit form writes. The form must load from this
+ * rather than reuse a list row: a list row carries what the list draws, and
+ * any editable field missing from it would be invented and then saved over
+ * the real value.
+ */
+export function useItem(id: string | null) {
+  return useQuery({
+    queryKey: ['item', id],
+    queryFn: () => api.get<ItemInput>(`/items/${id}`),
+    enabled: Boolean(id),
   })
 }

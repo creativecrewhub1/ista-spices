@@ -10,9 +10,12 @@ import { orderStatusConfig } from '@/lib/status'
 import { formatCurrency, formatDateLong } from '@/lib/format'
 import { pageEnter } from '@/lib/motion'
 import { cn } from '@/lib/utils'
+import { formatPack } from '@/lib/packLabel'
+import { useUnits } from '@/data/queries'
 
 // Reaching this page at all requires a session — see RequireSession in App.tsx.
 export function MyOrdersPage() {
+  const { data: units = [] } = useUnits()
   const { data: orders, isLoading, error } = useMyOrders()
 
   return (
@@ -55,9 +58,9 @@ export function MyOrdersPage() {
                 <Separator />
                 <div className="flex flex-col gap-1.5">
                   {order.items.map((item) => (
-                    <div key={`${item.productId}-${item.packSize}`} className="flex justify-between text-sm">
+                    <div key={`${item.productId}-${item.packQty}`} className="flex justify-between text-sm">
                       <span className="text-muted-foreground">
-                        {item.name} ({item.packSize}) &times; {item.qty}
+                        {item.name} ({formatPack(item.packQty, item.packUnit, units)}) &times; {item.qty}
                       </span>
                       <span className="tabular-nums text-foreground">{formatCurrency(item.price * item.qty)}</span>
                     </div>

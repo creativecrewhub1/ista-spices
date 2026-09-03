@@ -5,6 +5,8 @@ import type { Order } from '@/data/types'
 import { orderStatusConfig } from '@/lib/status'
 import { formatCurrency, formatTime } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { formatPack } from '@/lib/packLabel'
+import { useUnits } from '@/data/queries'
 
 interface OrderCardProps {
   order: Order
@@ -13,8 +15,11 @@ interface OrderCardProps {
 }
 
 export function OrderCard({ order, onOpen, isLate }: OrderCardProps) {
+  const { data: units = [] } = useUnits()
   const status = orderStatusConfig[order.status]
-  const itemsSummary = order.items.map((item) => `${item.qty}× ${item.name} (${item.packSize})`).join(', ')
+  const itemsSummary = order.items
+    .map((item) => `${item.qty}× ${item.name} (${formatPack(item.packQty, item.packUnit, units)})`)
+    .join(', ')
 
   return (
     <Card

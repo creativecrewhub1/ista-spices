@@ -3,6 +3,10 @@ import { cors } from 'npm:hono/cors'
 import { authRoute } from './routes/auth.route.ts'
 import { productsRoute } from './routes/products.route.ts'
 import { inventoryItemsRoute } from './routes/inventoryItems.route.ts'
+import { stockRoute } from './routes/stock.route.ts'
+import { unitsRoute } from './routes/units.route.ts'
+import { itemCategoriesRoute } from './routes/itemCategories.route.ts'
+import { itemsRoute } from './routes/items.route.ts'
 import { customersRoute } from './routes/customers.route.ts'
 import { ordersRoute } from './routes/orders.route.ts'
 import { revenueRoute } from './routes/revenue.route.ts'
@@ -45,6 +49,10 @@ app.use('*', async (c, next) => {
 const ADMIN_PREFIXES = [
   '/api/products',
   '/api/inventory-items',
+  '/api/stock',
+  '/api/units',
+  '/api/item-categories',
+  '/api/items',
   '/api/customers',
   '/api/orders',
   '/api/revenue',
@@ -61,6 +69,10 @@ app.use('*', async (c, next) => {
 app.route('/auth', authRoute)
 app.route('/products', productsRoute)
 app.route('/inventory-items', inventoryItemsRoute)
+app.route('/stock', stockRoute)
+app.route('/units', unitsRoute)
+app.route('/item-categories', itemCategoriesRoute)
+app.route('/items', itemsRoute)
 app.route('/customers', customersRoute)
 app.route('/orders', ordersRoute)
 app.route('/revenue', revenueRoute)
@@ -68,6 +80,10 @@ app.route('/dashboard', dashboardRoute)
 app.route('/storefront', storefrontRoute)
 
 app.onError((err, c) => {
+  // An error response is built outside the middleware chain, so the CORS
+  // header the cors() middleware would have added is not applied here. Without
+  // it the browser reports a network failure and the caller never sees why.
+  c.header('Access-Control-Allow-Origin', '*')
   if (err instanceof HttpError) {
     return c.json({ error: err.message }, err.status as 400 | 401 | 403 | 404 | 409)
   }

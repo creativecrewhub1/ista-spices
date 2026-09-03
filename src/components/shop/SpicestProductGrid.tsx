@@ -4,7 +4,9 @@ import { Button } from '@/components/ui/button'
 import { useCart } from '@/shop/CartContext'
 import { formatCurrency } from '@/lib/format'
 import { productImage } from '@/lib/productImage'
-import type { CatalogProduct, ProductCategory, SpiceLevel } from '@/data/types'
+import type { CatalogProduct, PackSize, ProductCategory, SpiceLevel } from '@/data/types'
+import { formatPack } from '@/lib/packLabel'
+import { useUnits } from '@/data/queries'
 
 interface SpicestProductGridProps {
   products?: CatalogProduct[]
@@ -18,13 +20,15 @@ interface DisplayProduct {
   price: number
   image: string
   unitText: string
-  packSizes: { size: '250g' | '500g' | '1kg' | '2kg'; price: number }[]
+  salesUnit: string
+  packSizes: PackSize[]
   discountPercent: number
   spiceLevel: SpiceLevel | null
 }
 
 export function SpicestProductGrid({ products }: SpicestProductGridProps) {
   const { addItem } = useCart()
+  const { data: units = [] } = useUnits()
   const [addedIds, setAddedIds] = useState<Record<string, boolean>>({})
 
   // Every field comes off the real product. A product with no pack size has
@@ -41,7 +45,8 @@ export function SpicestProductGrid({ products }: SpicestProductGridProps) {
         description: p.description,
         price: basePack.price,
         image: productImage(p.imageUrl),
-        unitText: `price per pack of ${basePack.size}`,
+        unitText: `price per pack of ${formatPack(basePack.qty, p.salesUnit, units)}`,
+        salesUnit: p.salesUnit,
         packSizes: p.packSizes,
         discountPercent: p.discountPercent,
         spiceLevel: p.spiceLevel,
@@ -54,15 +59,16 @@ export function SpicestProductGrid({ products }: SpicestProductGridProps) {
       name: product.name,
       category: product.category,
       description: product.description,
+      salesUnit: product.salesUnit,
       packSizes: product.packSizes,
       discountPercent: product.discountPercent,
       spiceLevel: product.spiceLevel,
       imageUrl: product.image
     }
 
-    // The product's own base size — hardcoding '250g' added a size some
+    // The product's own smallest pack — hardcoding a size added one some
     // products don't sell, which checkout now rejects outright.
-    addItem(catalogItem, product.packSizes[0].size, 1)
+    addItem(catalogItem, product.packSizes[0].qty, 1)
 
     setAddedIds((prev) => ({ ...prev, [product.id]: true }))
     setTimeout(() => {

@@ -1,7 +1,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/apiClient'
 import { supabaseAuth } from '@/lib/supabaseAuthClient'
-import type { CheckoutInput, InventoryItem, Order, OrderStatus, Product } from './types'
+import type {
+  CheckoutInput,
+  ItemInput,
+  Order,
+  OrderStatus,
+  StockReceiptInput,
+} from './types'
 
 /**
  * Signs up the one admin account. The "only if none exists yet" rule is
@@ -23,51 +29,39 @@ export function useSignUpAdmin() {
   })
 }
 
-export function useSaveProduct() {
+/**
+ * The single write path for stock items. Raw materials, B2B goods and
+ * manufactured products differ by the category on the payload, not by
+ * endpoint, so one mutation covers adding and editing all three.
+ */
+export function useSaveItem() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (product: Product) => api.post('/products', product),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] })
-      queryClient.invalidateQueries({ queryKey: ['revenue-by-product'] })
-    },
+    mutationFn: (item: ItemInput) => api.post('/items', item),
+    onSuccess: invalidateItemViews(queryClient),
   })
 }
 
-export function useDeleteProduct() {
+export function useDeleteItem() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (productId: string) => api.delete(`/products/${productId}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] })
-    },
+    mutationFn: (itemId: string) => api.delete(`/items/${itemId}`),
+    onSuccess: invalidateItemViews(queryClient),
   })
 }
 
-export function useSaveInventoryItem() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: (item: InventoryItem) => api.post('/inventory-items', item),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['inventory-items'] })
-    },
-  })
+/** An item change moves through every list that reads it. */
+function invalidateItemViews(queryClient: ReturnType<typeof useQueryClient>) {
+  return () => {
+    queryClient.invalidateQueries({ queryKey: ['products'] })
+    queryClient.invalidateQueries({ queryKey: ['inventory-items'] })
+    queryClient.invalidateQueries({ queryKey: ['stock'] })
+    queryClient.invalidateQueries({ queryKey: ['storefront-catalog'] })
+    queryClient.invalidateQueries({ queryKey: ['dashboard-needs-attention'] })
+  }
 }
-
-export function useDeleteInventoryItem() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: (itemId: string) => api.delete(`/inventory-items/${itemId}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['inventory-items'] })
-    },
-  })
-}
-
 /** Places a storefront order — server resolves/creates the customer record and recomputes prices from the DB. */
 export function useCheckout() {
   const queryClient = useQueryClient()
@@ -105,6 +99,35 @@ export function useUpdateOrderStatus() {
       queryClient.invalidateQueries({ queryKey: ['orders'] })
       // A status change moves an order between KPI buckets.
       queryClient.invalidateQueries({ queryKey: ['order-status-counts'] })
+    },
+  })
+}
+
+/** Stock in — the only path by which a purchase cost enters the system. */
+export function useReceiveStock() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: StockReceiptInput) => api.post('/stock/receipts', input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stock'] })
+      queryClient.invalidateQueries({ queryKey: ['stock-movements'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-needs-attention'] })
+    },
+  })
+}
+
+/** Recount or wastage. Signed quantity; a reason is required. */
+export function useAdjustStock() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: { itemId: string; qty: number; note: string }) =>
+      api.post('/stock/adjustments', input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stock'] })
+      queryClient.invalidateQueries({ queryKey: ['stock-movements'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-needs-attention'] })
     },
   })
 }
