@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Download, Loader2, Pencil } from 'lucide-react'
+import { Download, Loader2, LocateFixed, Pencil } from 'lucide-react'
 import { ShopHeader } from '@/components/shop/ShopHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -45,6 +45,8 @@ export function ProfilePage() {
   const [saved, setSaved] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [locating, setLocating] = useState(false)
+  const [locationError, setLocationError] = useState<string | null>(null)
 
   // Prefills from the saved customer record; falls back to whatever Google
   // provided at signup for a field the customer has never filled in yet.
@@ -86,6 +88,40 @@ export function ProfilePage() {
       onSuccess: (result) => setAvatarUrl(result.avatarUrl),
       onError: (err) => setAvatarError((err as Error).message),
     })
+  }
+
+  function handleUseCurrentLocation() {
+    if (!navigator.geolocation) {
+      setLocationError('Location is not supported in this browser.')
+      return
+    }
+    setLocating(true)
+    setLocationError(null)
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${coords.latitude}&lon=${coords.longitude}`,
+          )
+          if (!res.ok) throw new Error('Could not look up an address for your location.')
+          const data = await res.json()
+          if (!data.display_name) throw new Error('No address found for your location.')
+          setAddress(data.display_name)
+        } catch (err) {
+          setLocationError((err as Error).message)
+        } finally {
+          setLocating(false)
+        }
+      },
+      (err) => {
+        setLocating(false)
+        setLocationError(
+          err.code === err.PERMISSION_DENIED
+            ? 'Location permission was denied.'
+            : 'Could not get your current location.',
+        )
+      },
+    )
   }
 
   async function handleExport() {
@@ -176,13 +212,29 @@ export function ProfilePage() {
                     <Input id="profile-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="profile-address">Delivery address</Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="profile-address">Delivery address</Label>
+                      <button
+                        type="button"
+                        onClick={handleUseCurrentLocation}
+                        disabled={locating}
+                        className="flex items-center gap-1 text-xs font-medium text-primary hover:underline disabled:opacity-50"
+                      >
+                        {locating ? (
+                          <Loader2 className="size-3 animate-spin" aria-hidden="true" />
+                        ) : (
+                          <LocateFixed className="size-3" aria-hidden="true" />
+                        )}
+                        Use current location
+                      </button>
+                    </div>
                     <Textarea
                       id="profile-address"
                       rows={3}
                       value={address}
                       onChange={(e) => setAddress(e.target.value)}
                     />
+                    {locationError ? <p className="text-xs text-destructive">{locationError}</p> : null}
                   </div>
                   {updateProfile.isError ? (
                     <p className="text-sm text-destructive">{(updateProfile.error as Error).message}</p>
