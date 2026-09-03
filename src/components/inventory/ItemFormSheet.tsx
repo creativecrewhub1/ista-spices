@@ -18,12 +18,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ImageIcon, Layers, Package, Pencil, Plus, Scale, Tag, Trash2 } from 'lucide-react'
+import { AlertCircle, ImageIcon, Layers, Package, Pencil, Plus, Scale, Tag, Trash2 } from 'lucide-react'
 import type { ItemCategory, ItemInput, ProductCategory, SpiceLevel } from '@/data/types'
 import { formatCurrency } from '@/lib/format'
 import { formatPack } from '@/lib/packLabel'
 import { cn } from '@/lib/utils'
-import { useItemCategories, useUnits } from '@/data/queries'
+import { useItemCategories, useItemNames, useUnits } from '@/data/queries'
+import { normaliseName, similarity } from '@/lib/nameMatch'
+
+/** Below this two names are unrelated; at 1 they are the same name. */
+const NEAR_MATCH = 0.4
 
 export function emptyItem(category: ItemCategory): ItemInput {
   return {
@@ -77,6 +81,8 @@ export function ItemFormSheet({
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const { data: units = [] } = useUnits()
   const { data: categories = [] } = useItemCategories()
+  const { data: itemNames = [] } = useItemNames()
+  const [nameFocused, setNameFocused] = useState(false)
 
   // A conversion between two units of the same dimension is arithmetic:
   // 1 kg is 1000 g regardless of what is being weighed. Only a cross-
@@ -101,6 +107,23 @@ export function ItemFormSheet({
 
   const isEditing = Boolean(item?.id)
   const isManufacturing = draft.category === 'manufacturing'
+
+  // Suggestions rank by how alike the names look rather than by prefix, so a
+  // typo still finds what it meant. Names close enough to be the same item
+  // are the only ones that block; "Turmeric Powder" and "Turmeric Fingers"
+  // are near matches and both belong in the catalogue.
+  const typed = draft.name.trim()
+  const others = itemNames.filter((existing) => existing.id !== draft.id)
+  const duplicate = typed
+    ? others.find((existing) => normaliseName(existing.name) === normaliseName(typed)) ?? null
+    : null
+  const suggestions = typed
+    ? others
+        .map((existing) => ({ ...existing, score: similarity(existing.name, typed) }))
+        .filter((existing) => existing.score >= NEAR_MATCH && existing.id !== duplicate?.id)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5)
+    : []
 
   function handleCategoryChange(category: ItemCategory) {
     setDraft((prev) => ({
@@ -198,14 +221,56 @@ export function ItemFormSheet({
             >
               <Package className="size-3.5 text-orange-500" /> Item name
             </Label>
-            <Input
-              id="item-name"
-              required
-              value={draft.name}
-              onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-              placeholder={isManufacturing ? 'e.g. Turmeric Powder' : 'e.g. Black Peppercorns'}
-              className="rounded-2xl border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-sm font-semibold"
-            />
+            <div className="relative">
+              <Input
+                id="item-name"
+                required
+                // The browser's own history offers whatever was ever typed
+                // here, typos included. The catalogue below is the real list.
+                autoComplete="off"
+                value={draft.name}
+                onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+                onFocus={() => setNameFocused(true)}
+                onBlur={() => window.setTimeout(() => setNameFocused(false), 150)}
+                placeholder={isManufacturing ? 'e.g. Turmeric Powder' : 'e.g. Black Peppercorns'}
+                className={cn(
+                  'rounded-2xl border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-sm font-semibold',
+                  duplicate && 'border-red-300 bg-red-50/60',
+                )}
+              />
+              {nameFocused && suggestions.length > 0 ? (
+                <ul className="absolute z-20 mt-1 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
+                  {suggestions.map((existing) => (
+                    <li key={existing.id}>
+                      <button
+                        type="button"
+                        onClick={() => setDraft({ ...draft, name: existing.name })}
+                        className="flex w-full items-center justify-between gap-2 px-3.5 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-orange-50"
+                      >
+                        <span>{existing.name}</span>
+                        <span className="shrink-0 text-[10px] font-bold uppercase text-slate-400">
+                          {categories.find((o) => o.code === existing.category)?.label ?? existing.category}
+                          {existing.isActive ? '' : ' · removed'}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+            {duplicate ? (
+              <p className="flex items-start gap-1.5 text-[11px] font-bold text-red-600">
+                <AlertCircle className="mt-px size-3.5 shrink-0" />
+                {duplicate.isActive
+                  ? `"${duplicate.name}" already exists. Edit that item instead of adding it twice.`
+                  : `"${duplicate.name}" already exists but was removed. Restore it rather than adding a second one.`}
+              </p>
+            ) : suggestions.length > 0 ? (
+              <p className="text-[11px] font-medium text-slate-400">
+                Already on file: {suggestions.map((s) => s.name).join(', ')}. Add this only if it is a
+                different product.
+              </p>
+            ) : null}
           </div>
 
           <div className="space-y-1.5">
@@ -521,7 +586,9 @@ export function ItemFormSheet({
           <SheetFooter className="px-0 pt-2">
             <Button
               type="submit"
-              disabled={isSaving}
+              // The server refuses a clash too; this just saves a round trip
+              // to be told what the field already says.
+              disabled={isSaving || Boolean(duplicate)}
               className="w-full rounded-2xl bg-gradient-to-r from-orange-500 to-rose-500 py-3 text-sm font-bold text-white"
             >
               {isSaving ? 'Saving…' : isEditing ? 'Save changes' : 'Add item'}

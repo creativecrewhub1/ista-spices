@@ -6,6 +6,9 @@ const CATEGORIES: ItemCategory[] = ['raw_material', 'b2b', 'manufacturing']
 const SHOP_CATEGORIES = ['spice-powder', 'cooking-oil']
 
 export const ItemsService = {
+  /** Names on file, so the form can suggest and warn as one is typed. */
+  names: () => itemsRepo.listNames(),
+
   /** The edit form loads from here, so every writable field is returned. */
   get: async (id: string) => {
     const item = await itemsRepo.findById(id)
@@ -14,7 +17,7 @@ export const ItemsService = {
   },
 
   /** Creates or updates any item, whichever category the admin chose. */
-  save: (input: ItemInput) => {
+  save: async (input: ItemInput) => {
     if (!CATEGORIES.includes(input.category)) {
       throw new HttpError(400, `Unknown category: ${input.category}`)
     }
@@ -66,6 +69,23 @@ export const ItemsService = {
       if (new Set(input.packSizes.map((pack) => pack.qty)).size !== input.packSizes.length) {
         throw new HttpError(400, 'Pack sizes must each have a different quantity')
       }
+    }
+
+    // A unique index refuses a clash anyway, but only with a constraint
+    // error. Naming the item that already holds the name is the difference
+    // between a dead end and something the admin can act on.
+    const normalised = itemsRepo.normaliseName(input.name)
+    const clash = (await itemsRepo.listNames()).find(
+      (existing) =>
+        existing.id !== input.id && itemsRepo.normaliseName(existing.name) === normalised,
+    )
+    if (clash) {
+      throw new HttpError(
+        409,
+        clash.isActive
+          ? `"${clash.name}" already exists. Edit that item instead of adding it twice.`
+          : `"${clash.name}" already exists but was removed. Restore it rather than adding a second one.`,
+      )
     }
 
     return itemsRepo.save(input)

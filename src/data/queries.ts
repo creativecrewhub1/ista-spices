@@ -9,6 +9,7 @@ import type {
   InventoryItem,
   ItemCategoryOption,
   ItemInput,
+  ItemName,
   Order,
   OrderStatusEvent,
   OrderStatus,
@@ -223,6 +224,15 @@ export function useStockMovements(itemId?: string, limit = 50) {
 
 /** The unit list the item form offers — served from the reference table so
  *  the options shown and the values the database accepts are one list. */
+/** Names already on file, so the form can suggest as the admin types. */
+export function useItemNames() {
+  return useQuery({
+    queryKey: ['item-names'],
+    queryFn: () => api.get<ItemName[]>('/items/names'),
+    staleTime: 60_000,
+  })
+}
+
 export function useUnits() {
   return useQuery({
     queryKey: ['units'],

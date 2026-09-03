@@ -1,5 +1,13 @@
 export type ProductCategory = 'spice-powder' | 'cooking-oil'
 
+/** An existing item's name, for warning about duplicates as one is typed. */
+export interface ItemName {
+  id: string
+  name: string
+  category: ItemCategory
+  isActive: boolean
+}
+
 /**
  * A pack is a quantity of the item's own selling unit, so the same shape
  * describes 250 ml of oil and 250 g of powder. The label a person reads is

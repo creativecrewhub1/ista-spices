@@ -1,5 +1,30 @@
 import { supabase } from '../lib/supabaseClient.ts'
-import type { ItemCategory, ItemInput, PackSize } from '../types/domain.ts'
+import type { ItemCategory, ItemInput, ItemName, PackSize } from '../types/domain.ts'
+
+/**
+ * Case, padding and repeated spaces are not what makes two items different.
+ * The unique index on products applies this same rule, so the form and the
+ * database agree on what counts as the same name.
+ */
+export function normaliseName(name: string): string {
+  return name.trim().replace(/\s+/g, ' ').toLowerCase()
+}
+
+/** Every name on file, so the form can warn before the database refuses. */
+export async function listNames(): Promise<ItemName[]> {
+  const { data, error } = await supabase
+    .from('products')
+    .select('id, name, item_category, is_active')
+    .order('name')
+  if (error) throw error
+  // deno-lint-ignore no-explicit-any
+  return (data as any[]).map((row) => ({
+    id: row.id,
+    name: row.name,
+    category: row.item_category,
+    isActive: row.is_active,
+  }))
+}
 
 /**
  * The three categories an admin picks between are not three kinds of record.

@@ -9,6 +9,11 @@ import type { ItemInput } from '../types/domain.ts'
  */
 export const itemsRoute = new Hono()
 
+// Ahead of '/:id', which would otherwise swallow it.
+itemsRoute.get('/names', async (c) => {
+  return c.json(await ItemsService.names())
+})
+
 itemsRoute.get('/:id', async (c) => {
   const item = await ItemsService.get(c.req.param('id'))
   return c.json(item)
