@@ -32,6 +32,13 @@ import { useUnits } from '@/data/queries'
 
 const ALL_PACK_SIZES: PackSizeLabel[] = ['250g', '500g', '1kg', '2kg']
 
+/** Trims a derived reciprocal to something readable without implying more
+ *  precision than the conversion has. 1/0.92 shows as 1.087, not 1.0869565…
+ */
+function formatFactor(value: number): string {
+  return Number(value.toFixed(4)).toString()
+}
+
 const CATEGORY_OPTIONS: { value: ItemCategory; label: string; hint: string }[] = [
   { value: 'raw_material', label: 'Raw Material', hint: 'Bought in and consumed by production' },
   { value: 'b2b', label: 'B2B', hint: 'Bought in and resold as it is' },
@@ -95,6 +102,7 @@ export function ItemFormSheet({
     stockUom && salesUom && stockUom.dimension === salesUom.dimension
       ? salesUom.baseFactor / stockUom.baseFactor
       : null
+  const effectiveFactor = derivedFactor ?? draft.salesToStockFactor
 
   useEffect(() => {
     setDraft(item ?? emptyItem(defaultCategory))
@@ -314,13 +322,25 @@ export function ItemFormSheet({
             </div>
           ) : null}
 
+          {/* Both readings of the same figure. The field takes stock per sales
+              unit because that number is exact — a density is published as
+              0.92 kg/l, and its reciprocal repeats. The inward-first line is
+              computed from it, so the direction people think in is on screen
+              without a repeating decimal ever being stored. */}
           {draft.category !== 'raw_material' &&
           draft.salesUnit &&
-          draft.salesUnit !== draft.stockUnit ? (
-            <p className="-mt-2 text-[11px] font-medium text-slate-400">
-              Selling one {draft.salesUnit} takes {derivedFactor ?? draft.salesToStockFactor}{' '}
-              {draft.stockUnit} out of stock.
-            </p>
+          draft.salesUnit !== draft.stockUnit &&
+          effectiveFactor > 0 ? (
+            <div className="-mt-2 space-y-0.5">
+              <p className="text-[11px] font-semibold text-slate-500">
+                1 {draft.stockUnit} (inward) = {formatFactor(1 / effectiveFactor)} {draft.salesUnit}{' '}
+                (selling)
+              </p>
+              <p className="text-[11px] font-medium text-slate-400">
+                So selling one {draft.salesUnit} takes {formatFactor(effectiveFactor)}{' '}
+                {draft.stockUnit} out of stock.
+              </p>
+            </div>
           ) : null}
 
           {/* Only goods the shop makes and sells carry a storefront
