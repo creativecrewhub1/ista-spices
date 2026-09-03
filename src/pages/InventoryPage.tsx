@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Archive, Plus, Search } from 'lucide-react'
+import { Archive, Plus, Search, X } from 'lucide-react'
 import { TopBar } from '@/components/layout/TopBar'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -161,10 +161,20 @@ export function InventoryPage() {
               onFocus={() => setSearchFocused(true)}
               onBlur={() => window.setTimeout(() => setSearchFocused(false), 150)}
               placeholder="Search every category..."
-              className="pl-9"
+              className={cn('pl-9', query && 'pr-9')}
               aria-label="Search inventory"
               autoComplete="off"
             />
+            {query ? (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                aria-label="Clear search"
+                className="absolute right-2 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-slate-100 hover:text-slate-700"
+              >
+                <X className="size-4" aria-hidden="true" />
+              </button>
+            ) : null}
             {searchFocused && nameHints.length > 0 ? (
               <ul className="absolute z-20 mt-1 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
                 {nameHints.map((hint) => (
@@ -197,22 +207,10 @@ export function InventoryPage() {
           </div>
         </div>
 
-        {/* While searching the tabs are not filtering anything, so they say
-            so rather than sitting there looking selected. */}
-        {searching ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm font-medium text-muted-foreground">
-              Searching every category for "{debouncedQuery}"
-            </p>
-            <button
-              type="button"
-              onClick={() => setQuery('')}
-              className="rounded-full border border-slate-200 px-3 py-0.5 text-xs font-bold text-slate-600 hover:bg-slate-50"
-            >
-              Clear
-            </button>
-          </div>
-        ) : (
+{/* The tabs are hidden while searching rather than sitting there looking
+            selected when they are no longer filtering anything. Each result
+            card names its own category instead. */}
+        {searching ? null : (
           <Tabs value={tab} onValueChange={(v) => setTab(v as ItemCategory)}>
             <TabsList className="w-full sm:w-auto">
               <TabsTrigger value="raw_material">Raw Material</TabsTrigger>

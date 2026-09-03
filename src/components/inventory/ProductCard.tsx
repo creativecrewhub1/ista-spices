@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { ItemThumbnail } from './ItemThumbnail'
 import type { Product } from '@/data/types'
-import { categoryConfig, spiceLevelConfig, stockLevelConfig } from '@/lib/status'
+import { categoryConfig, manufacturingBadge, spiceLevelConfig, stockLevelConfig } from '@/lib/status'
 import { formatCurrency } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { formatPack } from '@/lib/packLabel'
@@ -76,6 +76,14 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
       <div className="space-y-3 p-1 flex-1 flex flex-col justify-between">
         <div>
           <div className="mb-1.5 flex flex-wrap gap-1.5">
+            {/* Which of the three categories it is, first and on every card —
+                a search spans all of them, so the tab no longer says. */}
+            <Badge
+              variant="outline"
+              className={cn('font-bold px-2.5 py-0.5 text-xs', manufacturingBadge.badgeClass)}
+            >
+              {manufacturingBadge.label}
+            </Badge>
             <Badge variant="outline" className={cn('font-bold px-2.5 py-0.5 text-xs', category.badgeClass)}>
               {category.label}
             </Badge>
