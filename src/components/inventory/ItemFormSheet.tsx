@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import {
   Sheet,
   SheetContent,
@@ -19,18 +19,11 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { AlertCircle, ImageIcon, Layers, Package, Pencil, Plus, Scale, Tag, Trash2 } from 'lucide-react'
-import type {
-  ItemCategory,
-  ItemInput,
-  PackSizeLabel,
-  ProductCategory,
-  SpiceLevel,
-} from '@/data/types'
+import type { ItemCategory, ItemInput, ProductCategory, SpiceLevel } from '@/data/types'
 import { formatCurrency } from '@/lib/format'
+import { formatPack } from '@/lib/packLabel'
 import { cn } from '@/lib/utils'
 import { useItemCategories, useUnits } from '@/data/queries'
-
-const ALL_PACK_SIZES: PackSizeLabel[] = ['250g', '500g', '1kg', '2kg']
 
 export function emptyItem(category: ItemCategory): ItemInput {
   return {
@@ -38,14 +31,15 @@ export function emptyItem(category: ItemCategory): ItemInput {
     category,
     name: '',
     description: '',
-    stockUnit: category === 'manufacturing' ? 'pack' : 'kg',
-    salesUnit: category === 'raw_material' ? null : category === 'manufacturing' ? 'pack' : 'kg',
+    stockUnit: 'kg',
+    salesUnit: category === 'raw_material' ? null : 'kg',
     salesToStockFactor: 1,
     lowStockThreshold: 0,
     imageUrl: null,
     productCategory: 'spice-powder',
     spiceLevel: null,
-    packSizes: ALL_PACK_SIZES.map((size) => ({ size, price: 0 })),
+    // One row to start from; a new product's sizes are its own.
+    packSizes: category === 'manufacturing' ? [{ qty: 0.25, price: 0 }] : [],
     discountPercent: 0,
     batchCapacity: 30,
   }
@@ -54,8 +48,10 @@ export function emptyItem(category: ItemCategory): ItemInput {
 interface ItemFormSheetProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** Null when adding. */
+  /** Null when adding, and while an existing item is still loading. */
   item: ItemInput | null
+  /** True while an item is being fetched for editing. */
+  isLoading?: boolean
   defaultCategory: ItemCategory
   onSave: (item: ItemInput) => void
   isSaving?: boolean
@@ -71,6 +67,7 @@ export function ItemFormSheet({
   open,
   onOpenChange,
   item,
+  isLoading,
   defaultCategory,
   onSave,
   isSaving,
@@ -91,9 +88,16 @@ export function ItemFormSheet({
       ? salesUom.baseFactor / stockUom.baseFactor
       : null
 
-  useEffect(() => {
+  // Sync the draft during render rather than from an effect. An effect runs
+  // after the children have mounted, so a select would be handed its real
+  // value one render late — and Radix answers a late value by clearing it,
+  // which is how the shop category silently emptied itself on every edit.
+  const source = `${open}|${item?.id ?? ''}|${defaultCategory}`
+  const [syncedFrom, setSyncedFrom] = useState(source)
+  if (syncedFrom !== source) {
+    setSyncedFrom(source)
     setDraft(item ?? emptyItem(defaultCategory))
-  }, [item, defaultCategory, open])
+  }
 
   const isEditing = Boolean(item?.id)
   const isManufacturing = draft.category === 'manufacturing'
@@ -102,19 +106,27 @@ export function ItemFormSheet({
     setDraft((prev) => ({
       ...prev,
       category,
-      // Units differ by kind: packs come off a line, raw material is weighed.
-      stockUnit: prev.stockUnit || (category === 'manufacturing' ? 'pack' : 'kg'),
+      // A pack size is a quantity of the selling unit, so weight or volume.
+      stockUnit: prev.stockUnit || 'kg',
       // Nothing sells a raw material, so it carries no selling unit.
       salesUnit: category === 'raw_material' ? null : prev.salesUnit || prev.stockUnit || 'kg',
       spiceLevel: category === 'manufacturing' ? prev.spiceLevel : null,
     }))
   }
 
-  function updatePackPrice(size: PackSizeLabel, price: number) {
+  function updatePack(index: number, patch: { qty?: number; price?: number }) {
     setDraft((prev) => ({
       ...prev,
-      packSizes: prev.packSizes.map((pack) => (pack.size === size ? { ...pack, price } : pack)),
+      packSizes: prev.packSizes.map((pack, i) => (i === index ? { ...pack, ...patch } : pack)),
     }))
+  }
+
+  function addPack() {
+    setDraft((prev) => ({ ...prev, packSizes: [...prev.packSizes, { qty: 0, price: 0 }] }))
+  }
+
+  function removePack(index: number) {
+    setDraft((prev) => ({ ...prev, packSizes: prev.packSizes.filter((_, i) => i !== index) }))
   }
 
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -151,6 +163,9 @@ export function ItemFormSheet({
           </div>
         </SheetHeader>
 
+        {isLoading ? (
+          <p className="py-10 text-center text-sm font-medium text-slate-400">Loading item…</p>
+        ) : (
         <form className="flex flex-col gap-5 py-6" onSubmit={handleSubmit}>
           {/* Category first: it decides what the rest of the form asks for. */}
           <div className="space-y-1.5">
@@ -376,31 +391,75 @@ export function ItemFormSheet({
                 <Label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-700">
                   <Layers className="size-3.5 text-orange-500" /> Pack sizes &amp; selling price
                 </Label>
-                <div className="grid grid-cols-2 gap-3">
-                  {ALL_PACK_SIZES.map((size) => {
-                    const pack = draft.packSizes.find((p) => p.size === size)
-                    return (
-                      <div key={size} className="space-y-1">
+                <div className="space-y-2">
+                  {draft.packSizes.map((pack, index) => (
+                    <div key={index} className="flex items-end gap-2">
+                      <div className="flex-1 space-y-1">
                         <Label
-                          htmlFor={`pack-${size}`}
+                          htmlFor={`pack-qty-${index}`}
                           className="text-[11px] font-medium normal-case text-slate-400"
                         >
-                          {size}
+                          Pack holds
+                        </Label>
+                        <div className="flex items-center gap-1.5">
+                          <Input
+                            id={`pack-qty-${index}`}
+                            type="number"
+                            min={0}
+                            step="any"
+                            value={pack.qty || ''}
+                            onChange={(e) => updatePack(index, { qty: Number(e.target.value) })}
+                            className="rounded-2xl border-slate-200 bg-slate-50/70 px-3 py-2 text-sm font-bold"
+                          />
+                          <span className="shrink-0 text-xs font-bold text-slate-500">
+                            {draft.salesUnit}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <Label
+                          htmlFor={`pack-price-${index}`}
+                          className="text-[11px] font-medium normal-case text-slate-400"
+                        >
+                          Price
                         </Label>
                         <Input
-                          id={`pack-${size}`}
+                          id={`pack-price-${index}`}
                           type="number"
                           min={0}
-                          value={pack?.price ?? 0}
-                          onChange={(e) => updatePackPrice(size, Number(e.target.value))}
+                          value={pack.price || ''}
+                          onChange={(e) => updatePack(index, { price: Number(e.target.value) })}
                           className="rounded-2xl border-slate-200 bg-slate-50/70 px-3 py-2 text-sm font-bold"
                         />
                       </div>
-                    )
-                  })}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Remove pack size ${index + 1}`}
+                        onClick={() => removePack(index)}
+                        className="mb-0.5 shrink-0 rounded-2xl text-slate-400 hover:text-red-600"
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
+                  ))}
                 </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addPack}
+                  className="w-full gap-1.5 rounded-2xl border-dashed font-bold"
+                >
+                  <Plus className="size-4" /> Add pack size
+                </Button>
                 <p className="text-[11px] font-medium text-slate-400">
-                  What customers pay. Leave a size at 0 to not offer it.
+                  {draft.packSizes.length > 0 && draft.salesUnit
+                    ? `Customers will see ${draft.packSizes
+                        .filter((pack) => pack.qty > 0)
+                        .map((pack) => formatPack(pack.qty, draft.salesUnit as string, units))
+                        .join(', ') || '—'}.`
+                    : 'Add the sizes this product is sold in.'}
                 </p>
               </div>
 
@@ -503,6 +562,7 @@ export function ItemFormSheet({
             </Button>
           </SheetFooter>
         </form>
+        )}
       </SheetContent>
     </Sheet>
   )

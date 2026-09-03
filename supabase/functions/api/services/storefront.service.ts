@@ -2,7 +2,7 @@ import * as productsRepo from '../repositories/products.repo.ts'
 import * as ordersRepo from '../repositories/orders.repo.ts'
 import * as customersRepo from '../repositories/customers.repo.ts'
 import { HttpError } from '../lib/httpError.ts'
-import type { CheckoutInput, PackSizeLabel } from '../types/domain.ts'
+import type { CheckoutInput } from '../types/domain.ts'
 
 export const StorefrontService = {
   listCatalog: () => productsRepo.listPublicCatalog(),
@@ -28,27 +28,33 @@ export const StorefrontService = {
       customer = { id: customerId }
     }
 
-    // Collapse repeats of the same product+size into one line: the order
-    // table holds one row per (order, product, pack size).
-    const mergedQty = new Map<string, { productId: string; packSize: PackSizeLabel; qty: number }>()
+    // Collapse repeats of the same product+pack into one line: the order
+    // table holds one row per (order, product, pack quantity).
+    const mergedQty = new Map<string, { productId: string; packQty: number; qty: number }>()
     for (const item of input.items) {
-      const key = `${item.productId}|${item.packSize}`
+      const key = `${item.productId}|${item.packQty}`
       const existing = mergedQty.get(key)
       if (existing) existing.qty += item.qty
-      else mergedQty.set(key, { productId: item.productId, packSize: item.packSize, qty: item.qty })
+      else mergedQty.set(key, { productId: item.productId, packQty: item.packQty, qty: item.qty })
     }
 
     const productIds = [...new Set(input.items.map((item) => item.productId))]
-    const prices = await ordersRepo.getPackPrices(productIds)
-    const priceFor = (productId: string, size: string) =>
-      prices.find((p) => p.product_id === productId && p.size === size)?.price
+    const packs = await ordersRepo.getPackPrices(productIds)
 
     const lineItems = [...mergedQty.values()].map((item) => {
-      const price = priceFor(item.productId, item.packSize)
-      if (price === undefined) {
-        throw new HttpError(400, `${item.productId} is not available in size ${item.packSize}`)
+      const pack = packs.find((p) => p.product_id === item.productId && p.pack_qty === item.packQty)
+      if (!pack) {
+        throw new HttpError(400, `${item.productId} is not sold in packs of ${item.packQty}`)
       }
-      return { productId: item.productId, packSize: item.packSize, qty: item.qty, price }
+      // Price and unit both come from the catalogue, never from the client,
+      // and are copied onto the line so the order stops depending on it.
+      return {
+        productId: item.productId,
+        packQty: item.packQty,
+        packUnit: pack.pack_unit,
+        qty: item.qty,
+        price: pack.price,
+      }
     })
 
     const orderId = `o-${crypto.randomUUID().slice(0, 10)}`

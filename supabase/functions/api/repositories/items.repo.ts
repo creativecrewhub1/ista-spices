@@ -1,7 +1,5 @@
 import { supabase } from '../lib/supabaseClient.ts'
-import type { ItemCategory, ItemInput, PackSize, PackSizeLabel } from '../types/domain.ts'
-
-const ALL_PACK_SIZES: PackSizeLabel[] = ['250g', '500g', '1kg', '2kg']
+import type { ItemCategory, ItemInput, PackSize } from '../types/domain.ts'
 
 /**
  * The three categories an admin picks between are not three kinds of record.
@@ -60,29 +58,27 @@ export async function save(input: ItemInput): Promise<string> {
   if (error) throw error
 
   // Pack sizes are what make an item priceable, so only sellable manufactured
-  // goods carry them. A zero price means that size isn't offered.
-  if (isManufactured && input.packSizes.length > 0) {
-    const priced = input.packSizes.filter((pack) => pack.price > 0)
-    if (priced.length > 0) {
+  // goods carry them. The submitted list is the whole truth: a quantity the
+  // admin took off the form is withdrawn from the catalogue.
+  if (isManufactured) {
+    const quantities = input.packSizes.map((pack) => pack.qty)
+
+    if (quantities.length > 0) {
       const { error: packError } = await supabase
         .from('product_pack_sizes')
         .upsert(
-          priced.map((pack) => ({ product_id: id, size: pack.size, price: pack.price })),
-          { onConflict: 'product_id,size' },
+          input.packSizes.map((pack) => ({ product_id: id, pack_qty: pack.qty, price: pack.price })),
+          { onConflict: 'product_id,pack_qty' },
         )
       if (packError) throw packError
     }
 
-    // Sizes dropped to zero are withdrawn rather than left at a stale price.
-    const withdrawn = input.packSizes.filter((pack) => pack.price <= 0).map((pack) => pack.size)
-    if (withdrawn.length > 0) {
-      const { error: delError } = await supabase
-        .from('product_pack_sizes')
-        .delete()
-        .eq('product_id', id)
-        .in('size', withdrawn)
-      if (delError) throw delError
-    }
+    // Withdrawing one leaves past orders intact — an order line records the
+    // quantity and price it sold at rather than pointing at this row.
+    let stale = supabase.from('product_pack_sizes').delete().eq('product_id', id)
+    if (quantities.length > 0) stale = stale.not('pack_qty', 'in', `(${quantities.join(',')})`)
+    const { error: delError } = await stale
+    if (delError) throw delError
   }
 
   return id
@@ -105,7 +101,7 @@ export async function softDelete(id: string): Promise<void> {
 export async function findById(id: string): Promise<ItemInput | null> {
   const { data, error } = await supabase
     .from('products')
-    .select('*, product_pack_sizes(size, price)')
+    .select('*, product_pack_sizes(pack_qty, price)')
     .eq('id', id)
     .maybeSingle()
   if (error) throw error
@@ -113,10 +109,10 @@ export async function findById(id: string): Promise<ItemInput | null> {
 
   // deno-lint-ignore no-explicit-any
   const row = data as any
-  const priced: PackSize[] = row.product_pack_sizes.map(
+  const packSizes: PackSize[] = row.product_pack_sizes
     // deno-lint-ignore no-explicit-any
-    (p: any) => ({ size: p.size, price: Number(p.price) }),
-  )
+    .map((p: any) => ({ qty: Number(p.pack_qty), price: Number(p.price) }))
+    .sort((a: PackSize, b: PackSize) => a.qty - b.qty)
 
   return {
     id: row.id,
@@ -130,11 +126,7 @@ export async function findById(id: string): Promise<ItemInput | null> {
     imageUrl: row.image_url ?? null,
     productCategory: row.category ?? 'spice-powder',
     spiceLevel: row.spice_level ?? null,
-    // Sizes the product doesn't offer still need a row in the form so a
-    // price can be set on them, so absent sizes come back at zero.
-    packSizes: ALL_PACK_SIZES.map(
-      (size) => priced.find((p) => p.size === size) ?? { size, price: 0 },
-    ),
+    packSizes,
     discountPercent: row.discount_percent ?? 0,
     batchCapacity: row.batch_capacity ?? 30,
   }

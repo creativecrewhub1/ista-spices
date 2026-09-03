@@ -1,9 +1,12 @@
 export type ProductCategory = 'spice-powder' | 'cooking-oil'
 
-export type PackSizeLabel = '250g' | '500g' | '1kg' | '2kg'
-
+/**
+ * A pack is a quantity of the item's own selling unit, so the same shape
+ * describes 250 ml of oil and 250 g of powder. The label a person reads is
+ * derived from this and the sales unit by formatPack — never stored.
+ */
 export interface PackSize {
-  size: PackSizeLabel
+  qty: number
   price: number
 }
 
@@ -16,6 +19,8 @@ export interface Product {
   name: string
   category: ProductCategory
   description: string
+  /** The unit pack quantities are expressed in. */
+  salesUnit: string
   packSizes: PackSize[]
   discountPercent: number
   spiceLevel: SpiceLevel | null
@@ -174,7 +179,9 @@ export interface OrderLineItem {
   name: string
   /** The product's real photo — never guessed from its name. */
   imageUrl: string | null
-  packSize: PackSizeLabel
+  /** What was sold, snapshotted: the catalogue may have moved on since. */
+  packQty: number
+  packUnit: string
   qty: number
   price: number
 }
@@ -287,6 +294,7 @@ export interface CatalogProduct {
   name: string
   category: ProductCategory
   description: string
+  salesUnit: string
   packSizes: PackSize[]
   discountPercent: number
   spiceLevel: SpiceLevel | null
@@ -295,7 +303,7 @@ export interface CatalogProduct {
 
 export interface CheckoutItemInput {
   productId: string
-  packSize: PackSizeLabel
+  packQty: number
   qty: number
 }
 

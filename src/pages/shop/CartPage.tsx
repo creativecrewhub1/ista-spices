@@ -8,8 +8,11 @@ import { useCart } from '@/shop/CartContext'
 import { formatCurrency } from '@/lib/format'
 import { pageEnter } from '@/lib/motion'
 import { cn } from '@/lib/utils'
+import { formatPack } from '@/lib/packLabel'
+import { useUnits } from '@/data/queries'
 
 export function CartPage() {
+  const { data: units = [] } = useUnits()
   const { items, updateQty, total } = useCart()
 
   return (
@@ -37,14 +40,14 @@ export function CartPage() {
               <ul className="flex flex-col gap-3">
                 {items.map((item) => (
                   <li
-                    key={`${item.productId}-${item.packSize}`}
+                    key={`${item.productId}-${item.packQty}`}
                     className="flex items-center gap-4 rounded-2xl bg-card p-4 shadow-sm ring-1 ring-black/5"
                   >
                     <ProductMonogram id={item.productId} name={item.productName} className="size-16" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-foreground">{item.productName}</p>
                       <p className="text-xs text-muted-foreground">
-                        {item.packSize} &middot; {formatCurrency(item.price)} each
+                        {formatPack(item.packQty, item.packUnit, units)} &middot; {formatCurrency(item.price)} each
                       </p>
                       <div className="mt-2 flex items-center gap-2">
                         <div className="inline-flex h-8 items-center rounded-md border border-border">
@@ -54,7 +57,7 @@ export function CartPage() {
                             size="icon"
                             className="size-8 rounded-none rounded-l-md hover:bg-muted"
                             aria-label="Decrease quantity"
-                            onClick={() => updateQty(item.productId, item.packSize, item.qty - 1)}
+                            onClick={() => updateQty(item.productId, item.packQty, item.qty - 1)}
                           >
                             <Minus className="size-3.5" aria-hidden="true" />
                           </Button>
@@ -67,14 +70,14 @@ export function CartPage() {
                             size="icon"
                             className="size-8 rounded-none rounded-r-md hover:bg-muted"
                             aria-label="Increase quantity"
-                            onClick={() => updateQty(item.productId, item.packSize, item.qty + 1)}
+                            onClick={() => updateQty(item.productId, item.packQty, item.qty + 1)}
                           >
                             <Plus className="size-3.5" aria-hidden="true" />
                           </Button>
                         </div>
                         <button
                           type="button"
-                          onClick={() => updateQty(item.productId, item.packSize, 0)}
+                          onClick={() => updateQty(item.productId, item.packQty, 0)}
                           aria-label={`Remove ${item.productName} from cart`}
                           className="text-muted-foreground transition-colors hover:text-foreground"
                         >

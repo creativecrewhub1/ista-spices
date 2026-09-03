@@ -13,9 +13,12 @@ import { useCheckout } from '@/data/mutations'
 import { formatCurrency } from '@/lib/format'
 import { pageEnter } from '@/lib/motion'
 import { cn } from '@/lib/utils'
+import { formatPack } from '@/lib/packLabel'
+import { useUnits } from '@/data/queries'
 
 // Reaching this page at all requires a session — see RequireSession in App.tsx.
 export function CheckoutPage() {
+  const { data: units = [] } = useUnits()
   const { items, total, clear } = useCart()
   const checkout = useCheckout()
   const navigate = useNavigate()
@@ -32,7 +35,7 @@ export function CheckoutPage() {
     event.preventDefault()
     checkout.mutate(
       {
-        items: items.map((item) => ({ productId: item.productId, packSize: item.packSize, qty: item.qty })),
+        items: items.map((item) => ({ productId: item.productId, packQty: item.packQty, qty: item.qty })),
         address,
         name,
         phone,
@@ -96,7 +99,7 @@ export function CheckoutPage() {
             <h2 className="text-sm font-medium text-foreground">Order summary</h2>
             <ul className="flex flex-col gap-3">
               {items.map((item) => (
-                <li key={`${item.productId}-${item.packSize}`} className="flex items-center gap-3">
+                <li key={`${item.productId}-${item.packQty}`} className="flex items-center gap-3">
                   <div className="relative shrink-0">
                     <ProductMonogram id={item.productId} name={item.productName} className="size-11" />
                     <span className="absolute -right-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
@@ -105,7 +108,7 @@ export function CheckoutPage() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm text-foreground">{item.productName}</p>
-                    <p className="text-xs text-muted-foreground">{item.packSize}</p>
+                    <p className="text-xs text-muted-foreground">{formatPack(item.packQty, item.packUnit, units)}</p>
                   </div>
                   <span className="shrink-0 text-sm tabular-nums text-foreground">
                     {formatCurrency(item.price * item.qty)}

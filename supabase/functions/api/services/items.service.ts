@@ -48,10 +48,23 @@ export const ItemsService = {
       if (input.discountPercent < 0 || input.discountPercent > 100) {
         throw new HttpError(400, 'Discount must be between 0 and 100')
       }
-      // Without a price on at least one size the product cannot be sold, and
-      // the storefront would list it with nothing to charge.
-      if (!input.packSizes.some((pack) => pack.price > 0)) {
-        throw new HttpError(400, 'Set a price on at least one pack size')
+      // Without a priced pack the product cannot be sold, and the storefront
+      // would list it with nothing to charge.
+      if (input.packSizes.length === 0) {
+        throw new HttpError(400, 'Add at least one pack size')
+      }
+      for (const pack of input.packSizes) {
+        if (!Number.isFinite(pack.qty) || pack.qty <= 0) {
+          throw new HttpError(400, 'Every pack size needs a quantity greater than zero')
+        }
+        if (!Number.isFinite(pack.price) || pack.price <= 0) {
+          throw new HttpError(400, 'Every pack size needs a price greater than zero')
+        }
+      }
+      // Two rows with the same quantity would collide on the catalogue's
+      // uniqueness rule, and a shopper could not tell them apart anyway.
+      if (new Set(input.packSizes.map((pack) => pack.qty)).size !== input.packSizes.length) {
+        throw new HttpError(400, 'Pack sizes must each have a different quantity')
       }
     }
 

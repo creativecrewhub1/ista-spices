@@ -14,6 +14,8 @@ import type { Product } from '@/data/types'
 import { categoryConfig, spiceLevelConfig, stockLevelConfig } from '@/lib/status'
 import { formatCurrency } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { formatPack } from '@/lib/packLabel'
+import { useUnits } from '@/data/queries'
 
 interface ProductCardProps {
   product: Product
@@ -22,6 +24,7 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
+  const { data: units = [] } = useUnits()
   const category = categoryConfig[product.category]
   const level = product.stockLevel
   const levelBadge = stockLevelConfig[level]
@@ -94,7 +97,9 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
             <span className="font-display text-xl font-black tabular-nums text-slate-900">
               {formatCurrency(discountedPrice)}
             </span>
-            <span className="text-xs font-bold text-slate-400">/ {basePack.size}</span>
+            <span className="text-xs font-bold text-slate-400">
+              / {formatPack(basePack.qty, product.salesUnit, units)}
+            </span>
             {product.discountPercent > 0 ? (
               <span className="font-mono text-xs tabular-nums text-slate-400 line-through">
                 {formatCurrency(basePack.price)}
@@ -107,10 +112,10 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
         <div className="flex flex-wrap gap-1">
           {product.packSizes.map((pack) => (
             <span
-              key={pack.size}
+              key={pack.qty}
               className="rounded-lg border border-slate-200/60 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-slate-600"
             >
-              {pack.size} &middot; {formatCurrency(pack.price)}
+              {formatPack(pack.qty, product.salesUnit, units)} &middot; {formatCurrency(pack.price)}
             </span>
           ))}
         </div>

@@ -1,8 +1,10 @@
 import { supabase } from '../lib/supabaseClient.ts'
-import type { CatalogProduct, PackSizeLabel, Product, StockLevel } from '../types/domain.ts'
+import type { CatalogProduct, Product, StockLevel } from '../types/domain.ts'
 import { positionByItem, type LedgerPosition } from './inventoryItems.repo.ts'
 
-const PACK_SIZE_ORDER: PackSizeLabel[] = ['250g', '500g', '1kg', '2kg']
+/** Smallest pack first — the order a shopper expects to read them in. */
+// deno-lint-ignore no-explicit-any
+const byQty = (a: any, b: any) => Number(a.pack_qty) - Number(b.pack_qty)
 
 /** low <= 30% of batch capacity in hand, high >= 90% (well stocked), otherwise ok. */
 export function classifyStockLevel(unitsPacked: number, batchCapacity: number): StockLevel {
@@ -21,10 +23,9 @@ export function classifyStockLevel(unitsPacked: number, batchCapacity: number): 
 function mapRow(row: any, position: LedgerPosition): Product {
   const quantityOnHand = position.quantityOnHand
   const packSizes = [...row.product_pack_sizes]
+    .sort(byQty)
     // deno-lint-ignore no-explicit-any
-    .sort((a: any, b: any) => PACK_SIZE_ORDER.indexOf(a.size) - PACK_SIZE_ORDER.indexOf(b.size))
-    // deno-lint-ignore no-explicit-any
-    .map((p: any) => ({ size: p.size, price: Number(p.price) }))
+    .map((p: any) => ({ qty: Number(p.pack_qty), price: Number(p.price) }))
 
   const batchCapacity = row.batch_capacity ?? 0
 
@@ -33,6 +34,7 @@ function mapRow(row: any, position: LedgerPosition): Product {
     name: row.name,
     category: row.category,
     description: row.description,
+    salesUnit: row.sales_unit,
     packSizes,
     discountPercent: row.discount_percent,
     spiceLevel: row.spice_level,
@@ -69,7 +71,7 @@ export async function listActive(search?: string): Promise<Product[]> {
 export async function listPublicCatalog(): Promise<CatalogProduct[]> {
   const { data, error } = await supabase
     .from('products')
-    .select('id, name, category, description, discount_percent, spice_level, image_url, product_pack_sizes(*)')
+    .select('id, name, category, description, discount_percent, spice_level, image_url, sales_unit, product_pack_sizes(*)')
     .eq('is_active', true)
     // Raw materials sit in the same table now; only sellable goods belong
     // in front of a customer.
@@ -88,11 +90,11 @@ export async function listPublicCatalog(): Promise<CatalogProduct[]> {
     name: row.name,
     category: row.category,
     description: row.description,
+    salesUnit: row.sales_unit,
     packSizes: [...row.product_pack_sizes]
+      .sort(byQty)
       // deno-lint-ignore no-explicit-any
-      .sort((a: any, b: any) => PACK_SIZE_ORDER.indexOf(a.size) - PACK_SIZE_ORDER.indexOf(b.size))
-      // deno-lint-ignore no-explicit-any
-      .map((p: any) => ({ size: p.size, price: Number(p.price) })),
+      .map((p: any) => ({ qty: Number(p.pack_qty), price: Number(p.price) })),
         discountPercent: row.discount_percent,
         spiceLevel: row.spice_level,
         imageUrl: row.image_url ?? null,
