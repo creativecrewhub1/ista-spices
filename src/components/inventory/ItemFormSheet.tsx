@@ -282,7 +282,12 @@ export function ItemFormSheet({
                   htmlFor="item-factor"
                   className="text-[11px] font-bold uppercase text-slate-600"
                 >
-                  1 {draft.salesUnit || 'unit'} = ? {draft.stockUnit || 'unit'}
+                  {/* Read inward-first, matching the order the fields appear
+                      in and the way density is conventionally written
+                      (kg per litre). Same number either way — the stored
+                      value is stock consumed per sales unit, so phrasing it
+                      this way needs no inversion. */}
+                  {draft.stockUnit || 'unit'} per {draft.salesUnit || 'unit'}
                 </Label>
                 {/* Within a dimension the conversion is arithmetic — 1 kg is
                     1000 g whoever is asked — so it's computed and shown
