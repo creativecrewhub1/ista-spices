@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { AlertCircle, ImageIcon, Layers, Package, Pencil, Plus, Scale, Tag, Trash2 } from 'lucide-react'
+import { ImageIcon, Layers, Package, Pencil, Plus, Scale, Tag, Trash2 } from 'lucide-react'
 import type { ItemCategory, ItemInput, ProductCategory, SpiceLevel } from '@/data/types'
 import { formatCurrency } from '@/lib/format'
 import { formatPack } from '@/lib/packLabel'
@@ -222,19 +222,20 @@ export function ItemFormSheet({
             />
           </div>
 
+          {/* Units: Inward Unit and Selling Unit side by side */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="flex items-center gap-1 text-[11px] font-bold uppercase text-slate-600">
-                <Scale className="size-3 text-slate-400" /> Inward unit
+              <Label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-700">
+                <Scale className="size-3.5 text-orange-500" /> Inward unit
               </Label>
               <Select
                 value={draft.stockUnit}
                 onValueChange={(v) => setDraft({ ...draft, stockUnit: v })}
               >
-                <SelectTrigger className="rounded-2xl border-slate-200 bg-slate-50/70 px-3 py-2 text-sm font-bold">
+                <SelectTrigger className="rounded-2xl border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-sm font-semibold text-slate-900">
                   <SelectValue placeholder="Unit" />
                 </SelectTrigger>
-                <SelectContent className="rounded-2xl">
+                <SelectContent position="popper" sideOffset={4} className="rounded-2xl">
                   {units.map((u) => (
                     <SelectItem key={u.code} value={u.code} className="rounded-xl font-semibold">
                       {u.name} ({u.code})
@@ -243,86 +244,51 @@ export function ItemFormSheet({
                 </SelectContent>
               </Select>
             </div>
+
             <div className="space-y-1.5">
-              <Label
-                htmlFor="item-threshold"
-                className="flex items-center gap-1 text-[11px] font-bold uppercase text-slate-600"
-              >
-                <AlertCircle className="size-3 text-rose-400" /> Min alert
+              <Label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-700">
+                <Scale className="size-3.5 text-orange-500" /> Selling unit
               </Label>
-              <Input
-                id="item-threshold"
-                type="number"
-                min={0}
-                value={draft.lowStockThreshold}
-                onChange={(e) => setDraft({ ...draft, lowStockThreshold: Number(e.target.value) })}
-                className="rounded-2xl border-slate-200 bg-slate-50/70 px-3 py-2 text-center text-sm font-bold"
-              />
+              <Select
+                value={draft.salesUnit ?? (draft.category === 'raw_material' ? '' : draft.stockUnit)}
+                onValueChange={(v) => setDraft({ ...draft, salesUnit: v })}
+                disabled={draft.category === 'raw_material'}
+              >
+                <SelectTrigger className="rounded-2xl border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-sm font-semibold text-slate-900 disabled:opacity-50">
+                  <SelectValue placeholder={draft.category === 'raw_material' ? 'N/A (Raw)' : 'Unit'} />
+                </SelectTrigger>
+                <SelectContent position="popper" sideOffset={4} className="rounded-2xl">
+                  {units.map((u) => (
+                    <SelectItem key={u.code} value={u.code} className="rounded-xl font-semibold">
+                      {u.name} ({u.code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
-          {/* Stock is counted in the unit it arrives in, but sold in whatever
-              unit customers buy — oil comes in by weight and leaves by volume.
-              Raw materials skip this: nothing sells them.
-
-              How the two convert depends on the category. Bought-in goods have
-              a fixed conversion the shop already knows, so it is asked for.
-              A manufactured item's is a yield — so many kilograms in, so many
-              litres out — which is only known once a batch has actually been
-              run, so it is not asked for here. */}
-          {draft.category !== 'raw_material' ? (
-            <div className={cn('grid gap-3', isManufacturing ? 'grid-cols-1' : 'grid-cols-2')}>
-              <div className="space-y-1.5">
-                <Label className="flex items-center gap-1 text-[11px] font-bold uppercase text-slate-600">
-                  <Scale className="size-3 text-orange-400" /> Selling unit
-                </Label>
-                <Select
-                  value={draft.salesUnit ?? ''}
-                  onValueChange={(v) => setDraft({ ...draft, salesUnit: v })}
-                >
-                  <SelectTrigger className="rounded-2xl border-slate-200 bg-slate-50/70 px-3 py-2 text-sm font-bold">
-                    <SelectValue placeholder="Unit" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-2xl">
-                    {units.map((u) => (
-                      <SelectItem key={u.code} value={u.code} className="rounded-xl font-semibold">
-                        {u.name} ({u.code})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {/* Bought-in goods only: a fixed conversion the shop knows,
-                  such as the density of an oil it resells. */}
-              {!isManufacturing ? (
-                <div className="space-y-1.5">
-                  <Label
-                    htmlFor="item-factor"
-                    className="text-[11px] font-bold uppercase text-slate-600"
-                  >
-                    {draft.stockUnit || 'unit'} per {draft.salesUnit || 'unit'}
-                  </Label>
-                  {/* Within a dimension the conversion is arithmetic — 1 kg is
-                      1000 g whoever is asked — so it's computed, not typed. */}
-                  <Input
-                    id="item-factor"
-                    type="number"
-                    min={0}
-                    step="any"
-                    required
-                    readOnly={derivedFactor !== null}
-                    disabled={derivedFactor !== null}
-                    value={derivedFactor ?? draft.salesToStockFactor}
-                    onChange={(e) =>
-                      setDraft({ ...draft, salesToStockFactor: Number(e.target.value) })
-                    }
-                    className={cn(
-                      'rounded-2xl border-slate-200 px-3 py-2 text-center text-sm font-bold',
-                      derivedFactor !== null ? 'bg-slate-100 text-slate-500' : 'bg-slate-50/70',
-                    )}
-                  />
-                </div>
-              ) : null}
+          {/* Conversion factor for B2B / bought-in resold goods */}
+          {draft.category === 'b2b' && draft.salesUnit && draft.salesUnit !== draft.stockUnit ? (
+            <div className="space-y-1.5">
+              <Label htmlFor="item-factor" className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                {draft.stockUnit || 'unit'} per {draft.salesUnit || 'unit'}
+              </Label>
+              <Input
+                id="item-factor"
+                type="number"
+                min={0}
+                step="any"
+                required
+                readOnly={derivedFactor !== null}
+                disabled={derivedFactor !== null}
+                value={derivedFactor ?? draft.salesToStockFactor}
+                onChange={(e) => setDraft({ ...draft, salesToStockFactor: Number(e.target.value) })}
+                className={cn(
+                  'rounded-2xl border-slate-200 px-3.5 py-2.5 text-center text-sm font-bold',
+                  derivedFactor !== null ? 'bg-slate-100 text-slate-500' : 'bg-slate-50/70',
+                )}
+              />
             </div>
           ) : null}
 
