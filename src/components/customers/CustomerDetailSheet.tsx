@@ -49,6 +49,7 @@ export function CustomerDetailSheet({ customer, orders, onOpenChange }: Customer
   const avgOrderValue = Math.round(customer.totalSpend / Math.max(1, totalOrdersCount))
 
   const handleCopyPhone = () => {
+    if (!customer.phone) return
     navigator.clipboard.writeText(customer.phone)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
@@ -94,8 +95,9 @@ export function CustomerDetailSheet({ customer, orders, onOpenChange }: Customer
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => window.open(`tel:${customer.phone}`)}
-                  className="rounded-xl border-slate-200 bg-slate-50 hover:bg-orange-50 hover:border-orange-300 text-slate-700 text-xs font-bold gap-1.5 py-1 px-3 h-8 active:scale-95 transition-all"
+                  disabled={!customer.phone}
+                  onClick={() => customer.phone && window.open(`tel:${customer.phone}`)}
+                  className="rounded-xl border-slate-200 bg-slate-50 hover:bg-orange-50 hover:border-orange-300 text-slate-700 text-xs font-bold gap-1.5 py-1 px-3 h-8 active:scale-95 transition-all disabled:opacity-40"
                 >
                   <Phone className="size-3.5 text-orange-500" />
                   <span>Call Customer</span>
@@ -104,8 +106,9 @@ export function CustomerDetailSheet({ customer, orders, onOpenChange }: Customer
                 <Button
                   variant="outline"
                   size="sm"
+                  disabled={!customer.phone}
                   onClick={handleCopyPhone}
-                  className="rounded-xl border-slate-200 bg-slate-50 hover:bg-orange-50 hover:border-orange-300 text-slate-700 text-xs font-semibold gap-1.5 py-1 px-3 h-8 active:scale-95 transition-all"
+                  className="rounded-xl border-slate-200 bg-slate-50 hover:bg-orange-50 hover:border-orange-300 text-slate-700 text-xs font-semibold gap-1.5 py-1 px-3 h-8 active:scale-95 transition-all disabled:opacity-40"
                 >
                   <Copy className="size-3.5 text-slate-500" />
                   <span>{copied ? 'Copied!' : 'Copy Phone'}</span>
@@ -161,7 +164,11 @@ export function CustomerDetailSheet({ customer, orders, onOpenChange }: Customer
                     <span className="text-slate-500 font-medium flex items-center gap-1">
                       <Phone className="size-3 text-slate-400" /> Phone:
                     </span>
-                    <span className="font-mono font-bold text-slate-900">{customer.phone}</span>
+                    <span
+                      className={cn('font-mono', customer.phone ? 'font-bold text-slate-900' : 'text-slate-400')}
+                    >
+                      {customer.phone ?? 'Not on file'}
+                    </span>
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -182,7 +189,14 @@ export function CustomerDetailSheet({ customer, orders, onOpenChange }: Customer
                     <span className="text-slate-500 font-medium block mb-1 flex items-center gap-1">
                       <MapPin className="size-3 text-slate-400" /> Delivery Address:
                     </span>
-                    <p className="font-semibold text-slate-800 leading-relaxed">{customer.address}</p>
+                    <p
+                      className={cn(
+                        'leading-relaxed',
+                        customer.address ? 'font-semibold text-slate-800' : 'text-slate-400',
+                      )}
+                    >
+                      {customer.address ?? 'Not on file'}
+                    </p>
                   </div>
                 </div>
               </div>

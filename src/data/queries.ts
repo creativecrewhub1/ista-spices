@@ -201,6 +201,14 @@ export function useMyOrders() {
   })
 }
 
+/** The signed-in customer's own profile — null until a customers row exists for them. */
+export function useMyProfile() {
+  return useQuery({
+    queryKey: ['me'],
+    queryFn: () => api.get<Customer | null>('/storefront/me'),
+  })
+}
+
 /** Current stock position for every item — quantity, average cost, value. */
 export function useStock() {
   return useQuery({

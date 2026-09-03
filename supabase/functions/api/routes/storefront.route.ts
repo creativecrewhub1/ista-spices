@@ -1,6 +1,6 @@
 import { Hono } from 'npm:hono@4'
 import { StorefrontService } from '../services/storefront.service.ts'
-import type { CheckoutInput } from '../types/domain.ts'
+import type { CheckoutInput, UpdateProfileInput } from '../types/domain.ts'
 import type { AppEnv } from '../types/context.ts'
 
 export const storefrontRoute = new Hono<AppEnv>()
@@ -26,4 +26,15 @@ storefrontRoute.get('/orders', async (c) => {
   const userId = c.get('userId')
   const orders = await StorefrontService.myOrders(userId)
   return c.json(orders)
+})
+
+storefrontRoute.get('/me', async (c) => {
+  const profile = await StorefrontService.myProfile(c.get('userId'))
+  return c.json(profile)
+})
+
+storefrontRoute.put('/me', async (c) => {
+  const body = await c.req.json<UpdateProfileInput>()
+  await StorefrontService.updateMyProfile(c.get('userId'), body)
+  return c.json({ ok: true })
 })

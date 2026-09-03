@@ -46,11 +46,13 @@ Requires `.env` with `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (see `.env
 - **Orders** — status tracking, ETA, order detail with a visual fulfillment tracker
 - **Revenue** — weekly/monthly charts, product-wise revenue with sort & CSV export
 - **Customers** — segments, lifetime value, order history
-- **Customer storefront** (`/shop`) — a marketing homepage with a featured-products teaser, a full browsable catalog with category/search filtering (`/shop/all`), cart, and checkout. Public browsing; checkout and order history require sign-in.
+- **Customer storefront** (`/shop`) — a marketing homepage with a featured-products teaser, a full browsable catalog with category/search filtering (`/shop/all`), cart, and checkout. Public browsing; checkout, order history, and the account menu (`/shop/profile`) require sign-in.
 
 ## Authentication
 
 One login page (`/login`) for everyone. Password sign-in is the single-admin path (`role='admin'`, enforced server-side — see `services/auth.service.ts`); "Continue with Google" is the customer path and can never produce an admin (`role='customer'` is the DB trigger's default for every new auth user, see `db/migrations/*_add_profiles_role_table_and_customer_user_link.sql`). After sign-in, redirect target is decided by role, not by which form was used.
+
+A Google sign-up also gets a `customers` row immediately — not just at first checkout — prefilled from whatever Google provides (name, email, photo); `phone`/`address` stay null until the customer fills them in via Profile or checkout (see `db/migrations/*_customer_signup_and_profile.sql`). This is what makes a customer visible in the admin's Customers page as soon as they log in, not only after their first order.
 
 ## Known gap
 

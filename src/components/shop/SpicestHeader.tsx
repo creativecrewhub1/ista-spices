@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Search, ShoppingBag, ChevronDown, LayoutDashboard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { AccountMenu } from './AccountMenu'
 import { useCart } from '@/shop/CartContext'
 import { useAuth } from '@/auth/AuthProvider'
 import {
@@ -13,7 +14,7 @@ import {
 
 export function SpicestHeader() {
   const { count } = useCart()
-  const { session, role, signOut } = useAuth()
+  const { session, role } = useAuth()
   const navigate = useNavigate()
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -143,14 +144,7 @@ export function SpicestHeader() {
                   Admin
                 </Button>
               ) : null}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => signOut()}
-                className="rounded-full text-xs font-medium text-gray-600 hover:bg-orange-50"
-              >
-                Sign Out
-              </Button>
+              <AccountMenu />
             </div>
           ) : (
             <div className="flex items-center space-x-2">

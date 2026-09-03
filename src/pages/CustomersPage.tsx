@@ -38,7 +38,8 @@ const FILTER_TABS: { label: string; value: FilterValue }[] = [
 ]
 
 // Extract city/locality from full address for location display
-function getCityFromAddress(address: string): string {
+function getCityFromAddress(address: string | null): string {
+  if (!address) return 'Not on file'
   const parts = address.split(',')
   if (parts.length >= 2) return `${parts[parts.length - 2].trim()}, ${parts[parts.length - 1].trim()}`
   return address
@@ -189,7 +190,7 @@ export function CustomersPage() {
                                 {customer.name}
                               </span>
                               <span className="text-[11px] font-mono text-slate-500 flex items-center gap-1">
-                                <Phone className="size-3 text-slate-400" /> {customer.phone}
+                                <Phone className="size-3 text-slate-400" /> {customer.phone ?? 'Not on file'}
                               </span>
                             </div>
                           </div>
@@ -279,7 +280,7 @@ export function CustomersPage() {
                               <td className="py-4 px-6 font-mono font-semibold text-slate-700 group-hover:text-slate-900 transition-colors">
                                 <div className="flex items-center gap-1.5">
                                   <Phone className="size-3 text-slate-400 group-hover:text-orange-500 transition-colors shrink-0" />
-                                  <span>{customer.phone}</span>
+                                  <span>{customer.phone ?? 'Not on file'}</span>
                                 </div>
                               </td>
 
@@ -390,7 +391,7 @@ export function CustomersPage() {
                               {isSelected && <ChevronRight className="size-3.5 text-white shrink-0" />}
                             </div>
                             <p className={cn('text-[11px] font-mono truncate', isSelected ? 'text-white/80' : 'text-slate-500')}>
-                              {c.phone}
+                              {c.phone ?? 'Not on file'}
                             </p>
                           </div>
                         </div>
@@ -444,7 +445,7 @@ export function CustomersPage() {
                           {/* Contact Sub-details */}
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 font-semibold pt-0.5">
                             <span className="flex items-center gap-1 font-mono">
-                              <Phone className="size-3 text-orange-500" /> {selectedCustomer.phone}
+                              <Phone className="size-3 text-orange-500" /> {selectedCustomer.phone ?? 'Not on file'}
                             </span>
                             <span className="flex items-center gap-1">
                               <MapPin className="size-3 text-orange-500" /> {getCityFromAddress(selectedCustomer.address)}

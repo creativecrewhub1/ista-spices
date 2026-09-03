@@ -7,6 +7,7 @@ import type {
   Order,
   OrderStatus,
   StockReceiptInput,
+  UpdateProfileInput,
 } from './types'
 
 /**
@@ -70,6 +71,18 @@ export function useCheckout() {
     mutationFn: (input: CheckoutInput) => api.post<{ orderId: string }>('/storefront/orders', input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['storefront-orders'] })
+    },
+  })
+}
+
+/** Saves the signed-in customer's own profile edits. */
+export function useUpdateMyProfile() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: UpdateProfileInput) => api.put('/storefront/me', input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['me'] })
     },
   })
 }

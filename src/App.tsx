@@ -17,6 +17,7 @@ import { ShopAllPage } from '@/pages/shop/ShopAllPage'
 import { CartPage } from '@/pages/shop/CartPage'
 import { CheckoutPage } from '@/pages/shop/CheckoutPage'
 import { MyOrdersPage } from '@/pages/shop/MyOrdersPage'
+import { ProfilePage } from '@/pages/shop/ProfilePage'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -56,6 +57,7 @@ export default function App() {
               <Route element={<RequireSession />}>
                 <Route path="/shop/checkout" element={<CheckoutPage />} />
                 <Route path="/shop/orders" element={<MyOrdersPage />} />
+                <Route path="/shop/profile" element={<ProfilePage />} />
               </Route>
             </Routes>
           </CartProvider>

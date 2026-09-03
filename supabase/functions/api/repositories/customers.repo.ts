@@ -6,10 +6,10 @@ function mapRow(row: any): Customer {
   return {
     id: row.id,
     name: row.name,
-    phone: row.phone,
+    phone: row.phone ?? null,
     email: row.email ?? null,
     initials: row.initials,
-    address: row.address,
+    address: row.address ?? null,
     joinedAt: row.joined_at,
     planStatus: row.plan_status,
     segment: row.segment,
@@ -19,6 +19,9 @@ function mapRow(row: any): Customer {
     // day they joined", which is what defaulting to joined_at implied.
     lastOrderAt: row.last_order_at ?? null,
     isActive: row.is_active ?? false,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    avatarUrl: row.avatar_url ?? null,
   }
 }
 
@@ -70,19 +73,76 @@ export async function findByUserId(userId: string): Promise<{ id: string } | nul
   return data
 }
 
-/** Creates the CRM customer record for a storefront account's first order. */
-export async function createForUser(
-  userId: string,
-  input: { name: string; phone: string; address: string; email?: string },
-): Promise<string> {
-  const id = `c-${crypto.randomUUID().slice(0, 10)}`
-  const initials = input.name
+/** The full profile a customer views/edits on their own account page. */
+export async function findFullByUserId(userId: string): Promise<Customer | null> {
+  const { data, error } = await supabase
+    .from('customers_with_stats')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (error) throw error
+  return data ? mapRow(data) : null
+}
+
+function initialsFrom(name: string): string {
+  return name
     .split(' ')
     .filter(Boolean)
     .map((part) => part[0])
     .slice(0, 2)
     .join('')
     .toUpperCase()
+}
+
+/**
+ * A customer editing their own name/phone/address/avatar. Only provided
+ * fields change. Upserts rather than assuming a row exists — a customer who
+ * signed in with Google before the signup trigger started creating one has
+ * only a `profiles` row, and a plain UPDATE against zero matching rows would
+ * succeed silently while saving nothing.
+ */
+export async function updateForUser(userId: string, input: {
+  name?: string
+  phone?: string
+  address?: string
+  avatarUrl?: string
+}): Promise<void> {
+  // deno-lint-ignore no-explicit-any
+  const patch: Record<string, any> = {}
+  if (input.name !== undefined) patch.name = input.name
+  if (input.phone !== undefined) patch.phone = input.phone
+  if (input.address !== undefined) patch.address = input.address
+  if (input.avatarUrl !== undefined) patch.avatar_url = input.avatarUrl
+  // Renaming yourself doesn't change your initials automatically — the admin
+  // side never does this either, so it stays a deliberate, separate choice.
+
+  const { data, error } = await supabase
+    .from('customers')
+    .update(patch)
+    .eq('user_id', userId)
+    .select('id')
+  if (error) throw error
+  if (data.length > 0) return
+
+  const name = input.name ?? 'Customer'
+  const { error: insertError } = await supabase.from('customers').insert({
+    id: `c-${crypto.randomUUID().slice(0, 10)}`,
+    user_id: userId,
+    name,
+    phone: input.phone ?? null,
+    address: input.address ?? null,
+    avatar_url: input.avatarUrl ?? null,
+    initials: initialsFrom(name),
+  })
+  if (insertError) throw insertError
+}
+
+/** Creates the CRM customer record for a storefront account's first order. */
+export async function createForUser(
+  userId: string,
+  input: { name: string; phone: string; address: string; email?: string },
+): Promise<string> {
+  const id = `c-${crypto.randomUUID().slice(0, 10)}`
 
   const { error } = await supabase.from('customers').insert({
     id,
@@ -91,7 +151,7 @@ export async function createForUser(
     phone: input.phone,
     address: input.address,
     email: input.email ?? null,
-    initials,
+    initials: initialsFrom(input.name),
   })
   if (error) throw error
   return id

@@ -30,16 +30,17 @@ create type stock_movement_kind as enum ('receipt', 'sale', 'consumption', 'prod
 create table customers (
   id text not null,
   name text not null,
-  phone text not null,
+  phone text,
   initials text not null,
-  address text not null,
+  address text,
   joined_at date default CURRENT_DATE not null,
   plan_status plan_status default 'none'::plan_status not null,
   segment customer_segment default 'new'::customer_segment not null,
   created_at timestamp with time zone default now() not null,
   user_id uuid,
   email text,
-  updated_at timestamp with time zone default now() not null
+  updated_at timestamp with time zone default now() not null,
+  avatar_url text
 );
 
 create table inventory_items (
@@ -320,7 +321,10 @@ create view customers_with_stats as  SELECT c.id,
     COALESCE(count(o.id) FILTER (WHERE o.status <> 'cancelled'::order_status), 0::bigint) AS total_orders,
     COALESCE(sum(ot.total) FILTER (WHERE o.status <> 'cancelled'::order_status), 0::numeric)::numeric(10,2) AS total_spend,
     max(o.placed_at) AS last_order_at,
-    max(o.placed_at) >= (now() - '90 days'::interval) AS is_active
+    max(o.placed_at) >= (now() - '90 days'::interval) AS is_active,
+    c.updated_at,
+    c.avatar_url,
+    c.user_id
    FROM customers c
      LEFT JOIN orders o ON o.customer_id = c.id
      LEFT JOIN orders_with_total ot ON ot.id = o.id
@@ -585,10 +589,28 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
  SECURITY DEFINER
  SET search_path TO 'public'
 AS $function$
+declare
+  v_name text;
+  v_avatar text;
+  v_customer_id text;
 begin
   insert into public.profiles (id, email, role)
   values (new.id, new.email, 'customer')
   on conflict (id) do nothing;
+
+  if new.raw_app_meta_data->>'provider' = 'google' then
+    v_name := coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', new.email);
+    v_avatar := coalesce(new.raw_user_meta_data->>'avatar_url', new.raw_user_meta_data->>'picture');
+    v_customer_id := 'c-' || substr(replace(gen_random_uuid()::text, '-', ''), 1, 10);
+
+    insert into public.customers (id, user_id, name, email, avatar_url, initials)
+    values (
+      v_customer_id, new.id, v_name, new.email, v_avatar,
+      upper(left(coalesce(v_name, 'C'), 2))
+    )
+    on conflict (user_id) do nothing;
+  end if;
+
   return new;
 end;
 $function$

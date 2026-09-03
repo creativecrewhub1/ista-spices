@@ -211,10 +211,12 @@ export type PlanStatus = 'active' | 'paused' | 'none'
 export interface Customer {
   id: string
   name: string
-  phone: string
+  /** Null until the customer provides one — Google signup doesn't supply it. */
+  phone: string | null
   email: string | null
   initials: string
-  address: string
+  /** Null until the customer provides one — Google signup doesn't supply it. */
+  address: string | null
   joinedAt: string
   planStatus: PlanStatus
   segment: CustomerSegment
@@ -224,6 +226,18 @@ export interface Customer {
   lastOrderAt: string | null
   /** Ordered within the last 90 days — computed server-side. */
   isActive: boolean
+  createdAt: string
+  updatedAt: string
+  /** Google's photo at signup, or a URL the customer pasted in on their profile. */
+  avatarUrl: string | null
+}
+
+/** Fields a customer can edit on their own profile — all optional, only provided fields change. */
+export interface UpdateProfileInput {
+  name?: string
+  phone?: string
+  address?: string
+  avatarUrl?: string
 }
 
 export interface CustomerCounts {
