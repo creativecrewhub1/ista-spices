@@ -60,37 +60,7 @@ export async function listActive(search?: string): Promise<Product[]> {
   return data.map((row) => mapRow(row, positions.get(row.id) ?? { quantityOnHand: 0, lastPurchaseCost: null, lastPurchasedAt: null }))
 }
 
-export async function upsert(product: Product): Promise<void> {
-  const { error: productError } = await supabase.from('products').upsert({
-    id: product.id,
-    name: product.name,
-    category: product.category,
-    description: product.description,
-    discount_percent: product.discountPercent,
-    spice_level: product.spiceLevel,
-    batch_capacity: product.batchCapacity,
-    units_packed_this_batch: product.unitsPackedThisBatch,
-    is_active: product.isActive,
-    image_url: product.imageUrl,
-  })
-  if (productError) throw productError
 
-  const { error: packSizeError } = await supabase.from('product_pack_sizes').upsert(
-    product.packSizes.map((pack) => ({
-      product_id: product.id,
-      size: pack.size,
-      price: pack.price,
-    })),
-    { onConflict: 'product_id,size' },
-  )
-  if (packSizeError) throw packSizeError
-}
-
-/** Soft delete only — order_items reference products, so a hard DELETE would violate the FK. */
-export async function softDelete(id: string): Promise<void> {
-  const { error } = await supabase.from('products').update({ is_active: false }).eq('id', id)
-  if (error) throw error
-}
 
 /**
  * Public storefront read — active products only, and only the fields a

@@ -72,7 +72,7 @@ export function InventoryItemCard({ item, onEdit, onDelete }: InventoryItemCardP
             <span className="text-[11px] font-semibold text-slate-400">Last purchased</span>
             <span className="font-mono text-xs font-bold tabular-nums text-slate-700">
               {formatCurrency(item.lastPurchaseCost)}
-              <span className="font-sans font-semibold text-slate-400"> / {item.unit}</span>
+              <span className="font-sans font-semibold text-slate-400"> / {item.stockUnit}</span>
             </span>
           </div>
         ) : null}
@@ -83,7 +83,7 @@ export function InventoryItemCard({ item, onEdit, onDelete }: InventoryItemCardP
             <span className="font-display text-xl font-black tabular-nums text-slate-900">
               {item.quantityOnHand}
             </span>
-            <span className="text-xs font-bold text-slate-500 uppercase">{item.unit}</span>
+            <span className="text-xs font-bold text-slate-500 uppercase">{item.stockUnit}</span>
           </div>
 
           {isLow ? (

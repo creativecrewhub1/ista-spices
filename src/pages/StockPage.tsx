@@ -224,7 +224,7 @@ export function StockPage() {
                       </td>
                       <td className="px-4 py-3 text-slate-500">{originLabel(item)}</td>
                       <td className="px-4 py-3 text-right font-mono tabular-nums text-slate-900">
-                        {item.quantityOnHand} <span className="text-slate-400">{item.unit}</span>
+                        {item.quantityOnHand} <span className="text-slate-400">{item.stockUnit}</span>
                       </td>
                       <td className="px-4 py-3 text-right font-mono font-bold tabular-nums text-slate-900">
                         {item.stockValue !== null ? formatCurrency(item.stockValue) : '—'}
@@ -235,7 +235,7 @@ export function StockPage() {
                     {isOpen ? (
                       <tr className="bg-slate-50/60">
                         <td colSpan={4} className="p-0">
-                          <ItemMovements itemId={item.itemId} unit={item.unit} />
+                          <ItemMovements itemId={item.itemId} unit={item.stockUnit} />
                         </td>
                       </tr>
                     ) : null}
@@ -281,7 +281,7 @@ export function StockPage() {
                       )}
                     >
                       {m.qty > 0 ? '+' : ''}
-                      {m.qty} {m.unit}
+                      {m.qty} {m.stockUnit}
                     </span>
                     <span className="hidden w-28 text-right font-mono text-[11px] text-slate-400 sm:block">
                       {m.unitCost !== null ? `@ ${formatCurrency(m.unitCost)}` : ''}
@@ -346,7 +346,7 @@ export function StockPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="stock-qty" className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                  Quantity{selectedItem ? ` (${selectedItem.unit})` : ''}
+                  Quantity{selectedItem ? ` (${selectedItem.stockUnit})` : ''}
                 </Label>
                 <Input
                   id="stock-qty"

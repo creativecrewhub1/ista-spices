@@ -31,6 +31,34 @@ export interface Product {
   imageUrl: string | null
 }
 
+/**
+ * The category an admin picks when adding stock. Maps onto origin and the
+ * two capability flags server-side — one translation, one place.
+ */
+export type ItemCategory = 'raw_material' | 'b2b' | 'manufacturing'
+
+/** Everything the one Add/Edit form can submit, whatever the category. */
+export interface ItemInput {
+  id: string
+  category: ItemCategory
+  name: string
+  description: string
+  /** The unit stock is bought and counted in — what the ledger holds. */
+  stockUnit: string
+  /** The unit it is sold in. Null when nothing sells it. */
+  salesUnit: string | null
+  /** Stock units consumed by one sales unit: 1 litre of oil = 0.92 kg. */
+  salesToStockFactor: number
+  lowStockThreshold: number
+  imageUrl: string | null
+  /** Manufacturing only — ignored for bought-in stock. */
+  productCategory: ProductCategory
+  spiceLevel: SpiceLevel | null
+  packSizes: PackSize[]
+  discountPercent: number
+  batchCapacity: number
+}
+
 /** Where an item came from: made here, or bought in for resale. */
 export type ItemOrigin = 'manufactured' | 'purchased'
 
@@ -48,7 +76,9 @@ export interface StockItem {
   origin: ItemOrigin
   isSellable: boolean
   isConsumable: boolean
-  unit: string
+  stockUnit: string
+  salesUnit: string | null
+  salesToStockFactor: number
   quantityOnHand: number
   lowStockThreshold: number
   /** Weighted average of what receipts cost. Null when nothing has been
@@ -68,7 +98,7 @@ export interface StockMovement {
   id: string
   itemId: string
   itemName: string
-  unit: string
+  stockUnit: string
   kind: StockMovementKind
   /** Signed: positive brought stock in, negative took it out. */
   qty: number
@@ -98,7 +128,8 @@ export interface InventoryItem {
   type: InventoryItemType
   name: string
   description: string
-  unit: string
+  stockUnit: string
+  salesUnit: string | null
   quantityOnHand: number
   lowStockThreshold: number
   /** Per-unit cost of the most recent consignment — today's buying price. */

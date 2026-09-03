@@ -3,10 +3,9 @@ import { api } from '@/lib/apiClient'
 import { supabaseAuth } from '@/lib/supabaseAuthClient'
 import type {
   CheckoutInput,
-  InventoryItem,
+  ItemInput,
   Order,
   OrderStatus,
-  Product,
   StockReceiptInput,
 } from './types'
 
@@ -30,51 +29,39 @@ export function useSignUpAdmin() {
   })
 }
 
-export function useSaveProduct() {
+/**
+ * The single write path for stock items. Raw materials, B2B goods and
+ * manufactured products differ by the category on the payload, not by
+ * endpoint, so one mutation covers adding and editing all three.
+ */
+export function useSaveItem() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (product: Product) => api.post('/products', product),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] })
-      queryClient.invalidateQueries({ queryKey: ['revenue-by-product'] })
-    },
+    mutationFn: (item: ItemInput) => api.post('/items', item),
+    onSuccess: invalidateItemViews(queryClient),
   })
 }
 
-export function useDeleteProduct() {
+export function useDeleteItem() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (productId: string) => api.delete(`/products/${productId}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] })
-    },
+    mutationFn: (itemId: string) => api.delete(`/items/${itemId}`),
+    onSuccess: invalidateItemViews(queryClient),
   })
 }
 
-export function useSaveInventoryItem() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: (item: InventoryItem) => api.post('/inventory-items', item),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['inventory-items'] })
-    },
-  })
+/** An item change moves through every list that reads it. */
+function invalidateItemViews(queryClient: ReturnType<typeof useQueryClient>) {
+  return () => {
+    queryClient.invalidateQueries({ queryKey: ['products'] })
+    queryClient.invalidateQueries({ queryKey: ['inventory-items'] })
+    queryClient.invalidateQueries({ queryKey: ['stock'] })
+    queryClient.invalidateQueries({ queryKey: ['storefront-catalog'] })
+    queryClient.invalidateQueries({ queryKey: ['dashboard-needs-attention'] })
+  }
 }
-
-export function useDeleteInventoryItem() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: (itemId: string) => api.delete(`/inventory-items/${itemId}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['inventory-items'] })
-    },
-  })
-}
-
 /** Places a storefront order — server resolves/creates the customer record and recomputes prices from the DB. */
 export function useCheckout() {
   const queryClient = useQueryClient()

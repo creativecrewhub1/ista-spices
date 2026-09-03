@@ -9,7 +9,9 @@ function mapStockRow(row: any): StockItem {
     origin: row.origin,
     isSellable: row.is_sellable,
     isConsumable: row.is_consumable,
-    unit: row.unit,
+    stockUnit: row.stock_unit,
+    salesUnit: row.sales_unit ?? null,
+    salesToStockFactor: Number(row.sales_to_stock_factor),
     quantityOnHand: Number(row.quantity_on_hand),
     lowStockThreshold: Number(row.low_stock_threshold),
     // Null means "never purchased, so cost unknown" — distinct from ₹0.
@@ -35,7 +37,7 @@ function mapMovementRow(row: any): StockMovement {
     id: String(row.id),
     itemId: row.item_id,
     itemName: row.products?.name ?? row.item_id,
-    unit: row.products?.unit ?? '',
+    stockUnit: row.products?.stock_unit ?? '',
     kind: row.kind,
     qty: Number(row.qty),
     unitCost: row.unit_cost === null ? null : Number(row.unit_cost),
@@ -50,7 +52,7 @@ function mapMovementRow(row: any): StockMovement {
 export async function listMovements(itemId?: string, limit = 100): Promise<StockMovement[]> {
   let query = supabase
     .from('stock_movements')
-    .select('*, products(name, unit)')
+    .select('*, products(name, stock_unit)')
     .order('occurred_at', { ascending: false })
     .limit(limit)
 
