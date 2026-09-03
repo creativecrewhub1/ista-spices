@@ -30,3 +30,42 @@ export function similarity(a: string, b: string): number {
   for (const gram of left) if (right.has(gram)) shared++
   return shared / (left.size + right.size - shared)
 }
+
+/**
+ * Only used when nothing on file contains what was typed, to catch a
+ * misspelling. Set high on purpose: at 0.4 "Black Peppercorns" scored 0.44
+ * against "Black Pepper Powder 1" and was offered as a match for it.
+ */
+const TYPO_MATCH = 0.6
+
+/**
+ * Names that answer what has been typed, best first.
+ *
+ * Ordinary autocomplete carries almost all of it: anything containing the
+ * text, whichever matches earliest. Similarity only steps in when nothing
+ * contains it, so a misspelling still finds its item without every
+ * near-relation crowding in behind it.
+ */
+export function matchNames<T extends { name: string }>(
+  items: T[],
+  typed: string,
+  limit = 6,
+): T[] {
+  const wanted = normaliseName(typed)
+  if (wanted.length < 2) return []
+
+  const contains = items
+    .map((item) => ({ item, at: normaliseName(item.name).indexOf(wanted) }))
+    .filter((match) => match.at >= 0)
+    .sort((a, b) => a.at - b.at || a.item.name.length - b.item.name.length)
+    .map((match) => match.item)
+
+  if (contains.length > 0) return contains.slice(0, limit)
+
+  return items
+    .map((item) => ({ item, score: similarity(item.name, typed) }))
+    .filter((match) => match.score >= TYPO_MATCH)
+    .sort((a, b) => b.score - a.score)
+    .map((match) => match.item)
+    .slice(0, limit)
+}

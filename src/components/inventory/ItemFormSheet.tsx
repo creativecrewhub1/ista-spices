@@ -24,14 +24,7 @@ import { formatCurrency } from '@/lib/format'
 import { formatPack } from '@/lib/packLabel'
 import { cn } from '@/lib/utils'
 import { useItemCategories, useItemNames, useUnits } from '@/data/queries'
-import { normaliseName, similarity } from '@/lib/nameMatch'
-
-/**
- * Only used when nothing on file contains what was typed, to catch a
- * misspelling. Set high on purpose: at 0.4 "Black Peppercorns" scored 0.44
- * against "Black Pepper Powder 1" and was offered as a match for it.
- */
-const TYPO_MATCH = 0.6
+import { matchNames, normaliseName } from '@/lib/nameMatch'
 
 export function emptyItem(category: ItemCategory): ItemInput {
   return {
@@ -132,28 +125,9 @@ export function ItemFormSheet({
     ? others.find((existing) => normaliseName(existing.name) === wanted) ?? null
     : null
 
-  // Ordinary autocomplete carries almost all of this: names that contain what
-  // has been typed, whichever matches earliest first.
-  const contains = others
-    .map((existing) => ({ existing, at: normaliseName(existing.name).indexOf(wanted) }))
-    .filter((match) => match.at >= 0)
-    .sort((a, b) => a.at - b.at || a.existing.name.length - b.existing.name.length)
-    .map((match) => match.existing)
-
-  // Similarity only steps in when nothing contains the text, so a misspelling
-  // still finds its item without every near-relation crowding in behind it.
-  const misspelt =
-    contains.length > 0
-      ? []
-      : others
-          .map((existing) => ({ existing, score: similarity(existing.name, typed) }))
-          .filter((match) => match.score >= TYPO_MATCH)
-          .sort((a, b) => b.score - a.score)
-          .map((match) => match.existing)
-
   // An exact match is spelled out under the field already, so the list would
   // only be showing the items it is not.
-  const suggestions = duplicate || wanted.length < 2 ? [] : [...contains, ...misspelt].slice(0, 5)
+  const suggestions = duplicate ? [] : matchNames(others, typed, 5)
 
   function handleCategoryChange(category: ItemCategory) {
     setDraft((prev) => ({
