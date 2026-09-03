@@ -46,10 +46,15 @@ Requires `.env` with `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (see `.env
 - **Orders** — status tracking, ETA, order detail with a visual fulfillment tracker
 - **Revenue** — weekly/monthly charts, product-wise revenue with sort & CSV export
 - **Customers** — segments, lifetime value, order history
+- **Customer storefront** (`/shop`) — a marketing homepage with a featured-products teaser, a full browsable catalog with category/search filtering (`/shop/all`), cart, and checkout. Public browsing; checkout and order history require sign-in.
+
+## Authentication
+
+One login page (`/login`) for everyone. Password sign-in is the single-admin path (`role='admin'`, enforced server-side — see `services/auth.service.ts`); "Continue with Google" is the customer path and can never produce an admin (`role='customer'` is the DB trigger's default for every new auth user, see `db/migrations/*_add_profiles_role_table_and_customer_user_link.sql`). After sign-in, redirect target is decided by role, not by which form was used.
 
 ## Known gap
 
-Single-admin auth only — no per-user roles or permissions, no password-reset flow, and no email deliverability configured (accounts are created pre-confirmed via the Admin API). Fine for one internal admin; revisit before adding more staff accounts.
+No password-reset flow and no email deliverability configured for the admin account (it's created pre-confirmed via the Admin API). Fine for one internal admin; revisit before adding staff accounts beyond the single admin.
 
 ## License
 

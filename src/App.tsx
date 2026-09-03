@@ -13,6 +13,7 @@ import { OrdersPage } from '@/pages/OrdersPage'
 import { RevenuePage } from '@/pages/RevenuePage'
 import { CustomersPage } from '@/pages/CustomersPage'
 import { CatalogPage } from '@/pages/shop/CatalogPage'
+import { ShopAllPage } from '@/pages/shop/ShopAllPage'
 import { CartPage } from '@/pages/shop/CartPage'
 import { CheckoutPage } from '@/pages/shop/CheckoutPage'
 import { MyOrdersPage } from '@/pages/shop/MyOrdersPage'
@@ -50,6 +51,7 @@ export default function App() {
 
               {/* Customer Storefront */}
               <Route path="/shop" element={<CatalogPage />} />
+              <Route path="/shop/all" element={<ShopAllPage />} />
               <Route path="/shop/cart" element={<CartPage />} />
               <Route element={<RequireSession />}>
                 <Route path="/shop/checkout" element={<CheckoutPage />} />

@@ -29,10 +29,17 @@ app.use(
   }),
 )
 
-// Reachable with no session at all: pre-login admin bootstrap checks, and
-// public storefront browsing (a customer can look at products before
-// signing in — login is only required to check out).
-const PUBLIC_PATHS = new Set(['/api/auth/status', '/api/auth/signup', '/api/storefront/products'])
+// Reachable with no session at all: pre-login admin bootstrap checks, public
+// storefront browsing (a customer can look at products before signing in —
+// login is only required to check out), and pure reference data (unit
+// conversions) that customer-facing pages need to render pack labels for
+// anyone, not just admins.
+const PUBLIC_PATHS = new Set([
+  '/api/auth/status',
+  '/api/auth/signup',
+  '/api/storefront/products',
+  '/api/units',
+])
 
 // Everything else needs a real signed-in user — the gateway's verify_jwt
 // only checks "is this some valid Supabase JWT", which the anon key itself
@@ -50,7 +57,6 @@ const ADMIN_PREFIXES = [
   '/api/products',
   '/api/inventory-items',
   '/api/stock',
-  '/api/units',
   '/api/item-categories',
   '/api/items',
   '/api/customers',

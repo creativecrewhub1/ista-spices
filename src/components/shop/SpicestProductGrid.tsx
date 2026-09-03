@@ -1,162 +1,54 @@
-import { useState } from 'react'
-import { Check, ShoppingBag } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { useCart } from '@/shop/CartContext'
-import { formatCurrency } from '@/lib/format'
-import { productImage } from '@/lib/productImage'
-import type { CatalogProduct, PackSize, ProductCategory, SpiceLevel } from '@/data/types'
-import { formatPack } from '@/lib/packLabel'
-import { useUnits } from '@/data/queries'
+import { Link } from 'react-router-dom'
+import { ArrowRight } from 'lucide-react'
+import { SpicestProductCard } from './SpicestProductCard'
+import type { CatalogProduct } from '@/data/types'
 
 interface SpicestProductGridProps {
   products?: CatalogProduct[]
 }
 
-interface DisplayProduct {
-  id: string
-  name: string
-  category: ProductCategory
-  description: string
-  price: number
-  image: string
-  unitText: string
-  salesUnit: string
-  packSizes: PackSize[]
-  discountPercent: number
-  spiceLevel: SpiceLevel | null
-}
+const FEATURED_COUNT = 4
 
+/** Homepage teaser — the first few sellable products, with a link to the full shop for the rest. */
 export function SpicestProductGrid({ products }: SpicestProductGridProps) {
-  const { addItem } = useCart()
-  const { data: units = [] } = useUnits()
-  const [addedIds, setAddedIds] = useState<Record<string, boolean>>({})
-
-  // Every field comes off the real product. A product with no pack size has
-  // no sellable price, so it is left out rather than shown at a made-up one.
-  const itemsToDisplay: DisplayProduct[] = (products ?? [])
-    .filter((p) => p.packSizes.length > 0)
-    .slice(0, 4)
-    .map((p) => {
-      const basePack = p.packSizes[0]
-      return {
-        id: p.id,
-        name: p.name,
-        category: p.category,
-        description: p.description,
-        price: basePack.price,
-        image: productImage(p.imageUrl),
-        unitText: `price per pack of ${formatPack(basePack.qty, p.salesUnit, units)}`,
-        salesUnit: p.salesUnit,
-        packSizes: p.packSizes,
-        discountPercent: p.discountPercent,
-        spiceLevel: p.spiceLevel,
-      }
-    })
-
-  const handleAddToCart = (product: DisplayProduct) => {
-    const catalogItem: CatalogProduct = {
-      id: product.id,
-      name: product.name,
-      category: product.category,
-      description: product.description,
-      salesUnit: product.salesUnit,
-      packSizes: product.packSizes,
-      discountPercent: product.discountPercent,
-      spiceLevel: product.spiceLevel,
-      imageUrl: product.image
-    }
-
-    // The product's own smallest pack — hardcoding a size added one some
-    // products don't sell, which checkout now rejects outright.
-    addItem(catalogItem, product.packSizes[0].qty, 1)
-
-    setAddedIds((prev) => ({ ...prev, [product.id]: true }))
-    setTimeout(() => {
-      setAddedIds((prev) => ({ ...prev, [product.id]: false }))
-    }, 1200)
-  }
+  const featured = (products ?? []).filter((p) => p.packSizes.length > 0).slice(0, FEATURED_COUNT)
 
   return (
-    <section className="relative py-16 bg-[#FAF8F5] overflow-hidden" id="products">
-      
-      {/* Floating Star Anise Background Element (Matching 3rd reference image) */}
-      <div className="absolute left-2 sm:left-8 top-16 w-16 sm:w-24 opacity-85 pointer-events-none animate-pulse duration-3000">
-        <img src="/images/spicest/star_anise_float.png" alt="" className="w-full h-auto drop-shadow-md" />
+    <section className="relative overflow-hidden bg-[#FAF8F5] py-16" id="products">
+      <div className="pointer-events-none absolute left-2 top-16 w-16 opacity-85 duration-3000 animate-pulse sm:left-8 sm:w-24">
+        <img src="/images/spicest/star_anise_float.png" alt="" className="h-auto w-full drop-shadow-md" />
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
-        
-        {/* Section Heading */}
-        <div className="text-center max-w-2xl mx-auto space-y-3 mb-12 sm:mb-16">
-          <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-gray-900">
+      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto mb-12 max-w-2xl space-y-3 text-center sm:mb-16">
+          <h2 className="font-display text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
             Our Best product
           </h2>
-          <p className="text-gray-500 text-xs sm:text-sm leading-relaxed">
+          <p className="text-xs leading-relaxed text-gray-500 sm:text-sm">
             Through our love for spices we have been producing and blending spices for you since 1998
           </p>
         </div>
 
-        {itemsToDisplay.length === 0 ? (
+        {featured.length === 0 ? (
           <p className="text-center text-sm text-gray-400">No products are available right now.</p>
         ) : (
-        /* 4 Cards Product Grid */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-          {itemsToDisplay.map((item) => {
-            const isAdded = addedIds[item.id]
-            return (
-              <div
-                key={item.id}
-                className="group relative flex flex-col justify-between rounded-2xl bg-white p-6 shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 text-center"
+          <>
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-8 lg:grid-cols-4">
+              {featured.map((product) => (
+                <SpicestProductCard key={product.id} product={product} />
+              ))}
+            </div>
+            <div className="mt-10 text-center">
+              <Link
+                to="/shop/all"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#E85D19] hover:text-[#d24e0f]"
               >
-                {/* Product Image Bowl */}
-                <div className="h-44 sm:h-48 w-full flex items-center justify-center p-2 mb-4">
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300 drop-shadow-md"
-                  />
-                </div>
-
-                {/* Info & Pricing */}
-                <div className="space-y-2 flex-1 flex flex-col justify-end">
-                  <h3 className="font-display text-lg font-bold text-gray-900">
-                    {item.name}
-                  </h3>
-                  <p className="text-xs text-gray-400">
-                    {item.unitText}
-                  </p>
-                  <p className="text-base sm:text-lg font-extrabold text-gray-900 py-1">
-                    {formatCurrency(item.price)}
-                  </p>
-                </div>
-
-                {/* Add to Cart Button */}
-                <div className="pt-4">
-                  <Button
-                    onClick={() => handleAddToCart(item)}
-                    className={`w-full rounded-full py-2.5 text-xs sm:text-sm font-semibold transition-all duration-300 ${
-                      isAdded
-                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                        : 'bg-[#E85D19] hover:bg-[#d24e0f] text-white shadow-sm hover:shadow-md'
-                    }`}
-                  >
-                    {isAdded ? (
-                      <span className="flex items-center justify-center gap-1.5">
-                        <Check className="size-4" /> Added to Cart
-                      </span>
-                    ) : (
-                      <span className="flex items-center justify-center gap-1.5">
-                        <ShoppingBag className="size-4" /> Add to cart
-                      </span>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            )
-          })}
-        </div>
+                View all products
+                <ArrowRight className="size-4" aria-hidden="true" />
+              </Link>
+            </div>
+          </>
         )}
-
       </div>
     </section>
   )
