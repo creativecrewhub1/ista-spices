@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabaseClient.ts'
 import type {
+  AuditEntry,
   ItemCategory,
   ItemInput,
   ItemName,
@@ -72,15 +73,18 @@ function generateId(category: ItemCategory): string {
   return `${ID_PREFIX[category]}-${crypto.randomUUID().replace(/-/g, '').slice(0, 10)}`
 }
 
-export async function save(input: ItemInput): Promise<string> {
+export async function save(input: ItemInput, userId: string | null): Promise<string> {
   const caps = CAPABILITIES[input.category]
+  const creating = !input.id
   const id = input.id || generateId(input.category)
   const isManufactured = input.category === 'manufacturing'
 
   const { error } = await supabase.from('products').upsert({
     id,
-    name: input.name,
-    description: input.description,
+    // Trimmed on the way in. A trailing space is invisible in the form but
+    // makes the name a different string to everything that compares it.
+    name: input.name.trim(),
+    description: input.description.trim(),
     stock_unit: input.stockUnit,
     sales_unit: caps.isSellable ? input.salesUnit : null,
     sales_to_stock_factor: input.salesToStockFactor,
@@ -98,6 +102,11 @@ export async function save(input: ItemInput): Promise<string> {
     spice_level: isManufactured ? input.spiceLevel : null,
     batch_capacity: isManufactured ? input.batchCapacity : null,
     discount_percent: isManufactured ? input.discountPercent : 0,
+
+    // The audit trigger reads these off the row, so every change carries the
+    // person who made it. created_by is written once and never overwritten.
+    ...(creating ? { created_by: userId } : {}),
+    updated_by: userId,
   })
   if (error) throw error
 
@@ -136,17 +145,22 @@ export async function save(input: ItemInput): Promise<string> {
 export async function softDelete(id: string, userId: string | null): Promise<void> {
   const { error } = await supabase
     .from('products')
-    .update({ is_active: false, deleted_at: new Date().toISOString(), deleted_by: userId })
+    .update({
+      is_active: false,
+      deleted_at: new Date().toISOString(),
+      deleted_by: userId,
+      updated_by: userId,
+    })
     .eq('id', id)
     .eq('is_active', true)
   if (error) throw error
 }
 
 /** Puts a removed item back, clearing the removal record with it. */
-export async function restore(id: string): Promise<void> {
+export async function restore(id: string, userId: string | null): Promise<void> {
   const { error } = await supabase
     .from('products')
-    .update({ is_active: true, deleted_at: null, deleted_by: null })
+    .update({ is_active: true, deleted_at: null, deleted_by: null, updated_by: userId })
     .eq('id', id)
     .eq('is_active', false)
   if (error) throw error
@@ -166,6 +180,36 @@ export async function quantityOnHand(id: string): Promise<number> {
   if (error) throw error
   // deno-lint-ignore no-explicit-any
   return data ? Number((data as any).quantity_on_hand) : 0
+}
+
+/**
+ * Everything that has happened to an item, newest first. The rows are
+ * written by database triggers, so this is the whole story regardless of
+ * which code path made the change.
+ */
+export async function listAudit(id: string): Promise<AuditEntry[]> {
+  const { data, error } = await supabase
+    .from('item_audit_log')
+    .select('id, version, action, changed_at, changed_by, changes, profiles:changed_by(email)')
+    .eq('item_id', id)
+    .order('id', { ascending: false })
+  if (error) throw error
+  // deno-lint-ignore no-explicit-any
+  return (data as any[]).map((row) => ({
+    id: row.id,
+    version: row.version,
+    action: row.action,
+    changedAt: row.changed_at,
+    changedBy: row.profiles?.email ?? null,
+    // Stored as {field: {from, to}}; a list is easier to render in order.
+    changes: Object.entries(row.changes ?? {}).map(([field, value]) => ({
+      field,
+      // deno-lint-ignore no-explicit-any
+      from: (value as any)?.from ?? null,
+      // deno-lint-ignore no-explicit-any
+      to: (value as any)?.to ?? null,
+    })),
+  }))
 }
 
 /** Order lines for this item that the shop has not finished with. */

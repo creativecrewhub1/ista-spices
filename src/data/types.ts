@@ -13,6 +13,23 @@ export interface ItemRemovalCheck {
   openOrders: number
 }
 
+/** One field's before and after, as recorded by the audit trigger. */
+export interface AuditChange {
+  field: string
+  from: unknown
+  to: unknown
+}
+
+/** One recorded change to an item. Written by a trigger, never by hand. */
+export interface AuditEntry {
+  id: number
+  version: number
+  action: 'created' | 'updated' | 'removed' | 'restored'
+  changedAt: string
+  changedBy: string | null
+  changes: AuditChange[]
+}
+
 /** An item taken out of the catalogue, and what it left behind. */
 export interface RemovedItem {
   id: string

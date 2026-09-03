@@ -15,6 +15,10 @@ itemsRoute.get('/names', async (c) => {
   return c.json(await ItemsService.names())
 })
 
+itemsRoute.get('/:id/audit', async (c) => {
+  return c.json(await ItemsService.audit(c.req.param('id')))
+})
+
 itemsRoute.get('/:id/removal-check', async (c) => {
   return c.json(await ItemsService.removalCheck(c.req.param('id')))
 })
@@ -24,7 +28,7 @@ itemsRoute.get('/removed', async (c) => {
 })
 
 itemsRoute.post('/:id/restore', async (c) => {
-  await ItemsService.restore(c.req.param('id'))
+  await ItemsService.restore(c.req.param('id'), c.get('userId') ?? null)
   return c.json({ ok: true })
 })
 
@@ -35,7 +39,7 @@ itemsRoute.get('/:id', async (c) => {
 
 itemsRoute.post('/', async (c) => {
   const body = await c.req.json<ItemInput>()
-  const id = await ItemsService.save(body)
+  const id = await ItemsService.save(body, c.get('userId') ?? null)
   return c.json({ ok: true, id })
 })
 

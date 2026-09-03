@@ -16,8 +16,15 @@ export const ItemsService = {
     return item
   },
 
+  /** Everything that has happened to an item, newest first. */
+  audit: async (id: string) => {
+    const state = await itemsRepo.findState(id)
+    if (!state) throw new HttpError(404, `Item ${id} not found`)
+    return itemsRepo.listAudit(id)
+  },
+
   /** Creates or updates any item, whichever category the admin chose. */
-  save: async (input: ItemInput) => {
+  save: async (input: ItemInput, userId: string | null) => {
     if (!CATEGORIES.includes(input.category)) {
       throw new HttpError(400, `Unknown category: ${input.category}`)
     }
@@ -86,7 +93,7 @@ export const ItemsService = {
       )
     }
 
-    return itemsRepo.save(input)
+    return itemsRepo.save(input, userId)
   },
 
   /**
@@ -147,7 +154,7 @@ export const ItemsService = {
   },
 
   /** Puts one back. */
-  restore: async (id: string) => {
+  restore: async (id: string, userId: string | null) => {
     const state = await itemsRepo.findState(id)
     if (!state) throw new HttpError(404, `Item ${id} not found`)
     if (state.isActive) throw new HttpError(409, `"${state.name}" is already in the catalogue`)
@@ -166,6 +173,6 @@ export const ItemsService = {
       )
     }
 
-    await itemsRepo.restore(id)
+    await itemsRepo.restore(id, userId)
   },
 }

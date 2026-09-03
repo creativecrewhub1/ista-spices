@@ -70,6 +70,7 @@ function invalidateItemViews(queryClient: ReturnType<typeof useQueryClient>) {
     // removed, and misses one just added.
     queryClient.invalidateQueries({ queryKey: ['item-names'] })
     queryClient.invalidateQueries({ queryKey: ['items-removed'] })
+    queryClient.invalidateQueries({ queryKey: ['item-audit'] })
     queryClient.invalidateQueries({ queryKey: ['stock'] })
     queryClient.invalidateQueries({ queryKey: ['storefront-catalog'] })
     queryClient.invalidateQueries({ queryKey: ['dashboard-needs-attention'] })

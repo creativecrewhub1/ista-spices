@@ -9,6 +9,7 @@ import type {
   InventoryItem,
   ItemCategoryOption,
   ItemInput,
+  AuditEntry,
   ItemName,
   ItemRemovalCheck,
   RemovedItem,
@@ -226,6 +227,15 @@ export function useStockMovements(itemId?: string, limit = 50) {
 
 /** The unit list the item form offers — served from the reference table so
  *  the options shown and the values the database accepts are one list. */
+/** Everything that has happened to an item, newest first. */
+export function useItemAudit(itemId: string | null) {
+  return useQuery({
+    queryKey: ['item-audit', itemId],
+    queryFn: () => api.get<AuditEntry[]>(`/items/${itemId}/audit`),
+    enabled: Boolean(itemId),
+  })
+}
+
 /** What is keeping an item in the catalogue, asked when removal is offered. */
 export function useRemovalCheck(itemId: string | null) {
   return useQuery({
