@@ -5,7 +5,6 @@ export interface ItemName {
   id: string
   name: string
   category: ItemCategory
-  isActive: boolean
 }
 
 /**

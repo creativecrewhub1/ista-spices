@@ -10,11 +10,19 @@ export function normaliseName(name: string): string {
   return name.trim().replace(/\s+/g, ' ').toLowerCase()
 }
 
-/** Every name on file, so the form can warn before the database refuses. */
+/**
+ * Names in the catalogue, so the form can warn before the database refuses.
+ *
+ * Active only, which is the same set the unique index covers. A removed item
+ * is not in the catalogue and cannot be restored from anywhere in the app, so
+ * offering its name as a suggestion — or refusing a new item because of it —
+ * would be a dead end.
+ */
 export async function listNames(): Promise<ItemName[]> {
   const { data, error } = await supabase
     .from('products')
-    .select('id, name, item_category, is_active')
+    .select('id, name, item_category')
+    .eq('is_active', true)
     .order('name')
   if (error) throw error
   // deno-lint-ignore no-explicit-any
@@ -22,7 +30,6 @@ export async function listNames(): Promise<ItemName[]> {
     id: row.id,
     name: row.name,
     category: row.item_category,
-    isActive: row.is_active,
   }))
 }
 

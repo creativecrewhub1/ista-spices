@@ -82,9 +82,7 @@ export const ItemsService = {
     if (clash) {
       throw new HttpError(
         409,
-        clash.isActive
-          ? `"${clash.name}" already exists. Edit that item instead of adding it twice.`
-          : `"${clash.name}" already exists but was removed. Restore it rather than adding a second one.`,
+        `"${clash.name}" already exists. Edit that item instead of adding it twice.`,
       )
     }
 

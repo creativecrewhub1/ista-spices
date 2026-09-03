@@ -250,7 +250,6 @@ export function ItemFormSheet({
                         <span>{existing.name}</span>
                         <span className="shrink-0 text-[10px] font-bold uppercase text-slate-400">
                           {categories.find((o) => o.code === existing.category)?.label ?? existing.category}
-                          {existing.isActive ? '' : ' · removed'}
                         </span>
                       </button>
                     </li>
@@ -261,9 +260,7 @@ export function ItemFormSheet({
             {duplicate ? (
               <p className="flex items-start gap-1.5 text-[11px] font-bold text-red-600">
                 <AlertCircle className="mt-px size-3.5 shrink-0" />
-                {duplicate.isActive
-                  ? `"${duplicate.name}" already exists. Edit that item instead of adding it twice.`
-                  : `"${duplicate.name}" already exists but was removed. Restore it rather than adding a second one.`}
+                {`"${duplicate.name}" already exists. Edit that item instead of adding it twice.`}
               </p>
             ) : suggestions.length > 0 ? (
               <p className="text-[11px] font-medium text-slate-400">
