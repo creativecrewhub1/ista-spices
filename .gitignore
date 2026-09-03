@@ -74,3 +74,18 @@ desktop.ini
 # Deno lockfile — only ever produced by running a one-off script in
 # supabase/functions; the edge function build does not use it.
 deno.lock
+
+# Merge and patch leftovers
+*.orig
+*.rej
+*~
+
+# Editor local history / workspace state
+.history/
+*.code-workspace
+
+# Credentials that must never be committed
+*.pem
+*.key
+*.p12
+service-account*.json

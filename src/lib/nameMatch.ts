@@ -16,13 +16,13 @@ function trigrams(value: string): Set<string> {
 }
 
 /**
- * How alike two names look, 0 to 1. This is the same trigram measure
+ * How alike two names look, 0 to 1. Used only by matchNames below. This is the same trigram measure
  * Postgres uses, so a typo scores high while genuinely different products
  * score low — "Turmeric Powder" against "Turmeric Fingers" is a partial
  * match, not a duplicate, which is exactly the distinction to surface
  * rather than enforce.
  */
-export function similarity(a: string, b: string): number {
+function similarity(a: string, b: string): number {
   const left = trigrams(normaliseName(a))
   const right = trigrams(normaliseName(b))
   if (left.size === 0 || right.size === 0) return 0
