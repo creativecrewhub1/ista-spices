@@ -1,6 +1,6 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Download, Loader2 } from 'lucide-react'
+import { Camera, Download, Loader2 } from 'lucide-react'
 import { ShopHeader } from '@/components/shop/ShopHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,10 +19,13 @@ import {
 import { ErrorState, LoadingState } from '@/components/common/QueryState'
 import { useAuth } from '@/auth/AuthProvider'
 import { useMyProfile } from '@/data/queries'
-import { useUpdateMyProfile, useDeleteMyAccount } from '@/data/mutations'
+import { useUpdateMyProfile, useDeleteMyAccount, useUploadAvatar } from '@/data/mutations'
 import { api } from '@/lib/apiClient'
 import { pageEnter } from '@/lib/motion'
 import { cn } from '@/lib/utils'
+
+const MAX_AVATAR_BYTES = 3 * 1024 * 1024
+const ALLOWED_AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 
 // Reaching this page at all requires a session — see RequireSession in App.tsx.
 export function ProfilePage() {
@@ -30,12 +33,15 @@ export function ProfilePage() {
   const { data: profile, isLoading, error } = useMyProfile()
   const updateProfile = useUpdateMyProfile()
   const deleteAccount = useDeleteMyAccount()
+  const uploadAvatar = useUploadAvatar()
   const navigate = useNavigate()
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
+  const [avatarError, setAvatarError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -54,7 +60,32 @@ export function ProfilePage() {
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
     setSaved(false)
-    updateProfile.mutate({ name, phone, address, avatarUrl }, { onSuccess: () => setSaved(true) })
+    updateProfile.mutate({ name, phone, address }, { onSuccess: () => setSaved(true) })
+  }
+
+  function handleAvatarClick() {
+    fileInputRef.current?.click()
+  }
+
+  function handleAvatarChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = '' // lets picking the same file again still fire this
+    if (!file) return
+
+    setAvatarError(null)
+    if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
+      setAvatarError('Photo must be a JPEG, PNG, WebP, or GIF image.')
+      return
+    }
+    if (file.size > MAX_AVATAR_BYTES) {
+      setAvatarError('Photo must be under 3MB.')
+      return
+    }
+
+    uploadAvatar.mutate(file, {
+      onSuccess: (result) => setAvatarUrl(result.avatarUrl),
+      onError: (err) => setAvatarError((err as Error).message),
+    })
   }
 
   async function handleExport() {
@@ -96,13 +127,38 @@ export function ProfilePage() {
           <div className="flex flex-col gap-6">
             <Card>
               <CardHeader className="flex-row items-center gap-4">
-                <Avatar className="size-16">
-                  <AvatarImage src={avatarUrl || undefined} alt={name} />
-                  <AvatarFallback className="bg-primary/15 text-lg font-semibold text-primary">
-                    {(name || user?.email || 'U').slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <CardTitle className="text-base">{name || user?.email}</CardTitle>
+                <div className="relative shrink-0">
+                  <Avatar className="size-16">
+                    <AvatarImage src={avatarUrl || undefined} alt={name} />
+                    <AvatarFallback className="bg-primary/15 text-lg font-semibold text-primary">
+                      {(name || user?.email || 'U').slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <button
+                    type="button"
+                    onClick={handleAvatarClick}
+                    disabled={uploadAvatar.isPending}
+                    aria-label="Change profile photo"
+                    className="absolute -bottom-1 -right-1 flex size-6 items-center justify-center rounded-full border-2 border-card bg-primary text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50"
+                  >
+                    {uploadAvatar.isPending ? (
+                      <Loader2 className="size-3 animate-spin" aria-hidden="true" />
+                    ) : (
+                      <Camera className="size-3" aria-hidden="true" />
+                    )}
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    onChange={handleAvatarChange}
+                    className="hidden"
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <CardTitle className="text-base">{name || user?.email}</CardTitle>
+                  {avatarError ? <p className="mt-1 text-xs text-destructive">{avatarError}</p> : null}
+                </div>
               </CardHeader>
               <CardContent>
                 <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
@@ -125,16 +181,6 @@ export function ProfilePage() {
                       rows={3}
                       value={address}
                       onChange={(e) => setAddress(e.target.value)}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="profile-avatar">Photo URL</Label>
-                    <Input
-                      id="profile-avatar"
-                      type="url"
-                      placeholder="https://…"
-                      value={avatarUrl}
-                      onChange={(e) => setAvatarUrl(e.target.value)}
                     />
                   </div>
                   {updateProfile.isError ? (

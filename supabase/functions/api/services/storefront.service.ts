@@ -106,4 +106,18 @@ export const StorefrontService = {
     await customersRepo.anonymizeForUser(userId)
     await authRepo.deleteAuthUser(userId)
   },
+
+  uploadAvatar: async (userId: string, file: File | null) => {
+    if (!file) throw new HttpError(400, 'No photo was uploaded')
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      throw new HttpError(400, 'Photo must be a JPEG, PNG, WebP, or GIF image')
+    }
+    const MAX_BYTES = 3 * 1024 * 1024
+    if (file.size > MAX_BYTES) {
+      throw new HttpError(400, 'Photo must be under 3MB')
+    }
+    const avatarUrl = await customersRepo.uploadAvatar(userId, file)
+    return { avatarUrl }
+  },
 }

@@ -54,3 +54,11 @@ storefrontRoute.delete('/me', async (c) => {
   await StorefrontService.deleteMyAccount(c.get('userId'))
   return c.json({ ok: true })
 })
+
+/** Uploads a profile photo — multipart/form-data with a single "file" field. */
+storefrontRoute.post('/me/avatar', async (c) => {
+  const formData = await c.req.formData()
+  const file = formData.get('file')
+  const result = await StorefrontService.uploadAvatar(c.get('userId'), file instanceof File ? file : null)
+  return c.json(result)
+})

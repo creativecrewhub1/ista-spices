@@ -160,6 +160,28 @@ export async function anonymizeForUser(userId: string): Promise<void> {
   if (error) throw error
 }
 
+/**
+ * Uploads a customer's chosen photo to the `avatars` bucket and links it as
+ * their avatar. Always written to the same path (the user's own id, no
+ * extension) with `upsert: true`, so a re-upload replaces the old file in
+ * place rather than leaving orphaned objects behind — the served
+ * Content-Type comes from the stored object's own metadata, not the path.
+ */
+export async function uploadAvatar(userId: string, file: File): Promise<string> {
+  const bytes = await file.arrayBuffer()
+  const { error: uploadError } = await supabase.storage
+    .from('avatars')
+    .upload(userId, bytes, { contentType: file.type, upsert: true })
+  if (uploadError) throw uploadError
+
+  const { data } = supabase.storage.from('avatars').getPublicUrl(userId)
+  // Appends a cache-busting param so the browser doesn't keep showing the
+  // previous photo it already cached at this exact same URL.
+  const url = `${data.publicUrl}?v=${Date.now()}`
+  await updateForUser(userId, { avatarUrl: url })
+  return url
+}
+
 /** Creates the CRM customer record for a storefront account's first order. */
 export async function createForUser(
   userId: string,

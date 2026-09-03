@@ -75,6 +75,22 @@ export function useCheckout() {
   })
 }
 
+/** Uploads a new profile photo — replaces the previous one in place. */
+export function useUploadAvatar() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (file: File) => {
+      const formData = new FormData()
+      formData.append('file', file)
+      return api.upload<{ avatarUrl: string }>('/storefront/me/avatar', formData)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['me'] })
+    },
+  })
+}
+
 /** Saves the signed-in customer's own profile edits. */
 export function useUpdateMyProfile() {
   const queryClient = useQueryClient()
