@@ -48,6 +48,29 @@ export const ItemsService = {
       throw new HttpError(400, 'Low-stock alert cannot be negative')
     }
 
+    // Anything sold needs a price, whether the shop made it or bought it in.
+    // Without one the storefront would list it with nothing to charge.
+    if (input.category !== 'raw_material') {
+      if (input.packSizes.length === 0) {
+        throw new HttpError(400, 'Add at least one selling price')
+      }
+      for (const pack of input.packSizes) {
+        if (!Number.isFinite(pack.qty) || pack.qty <= 0) {
+          throw new HttpError(400, 'Every selling price needs a quantity greater than zero')
+        }
+        if (!Number.isFinite(pack.price) || pack.price <= 0) {
+          throw new HttpError(400, 'Every selling price needs an amount greater than zero')
+        }
+      }
+      // Two rows with the same quantity would collide on the catalogue's
+      // uniqueness rule, and a shopper could not tell them apart anyway.
+      if (new Set(input.packSizes.map((pack) => pack.qty)).size !== input.packSizes.length) {
+        throw new HttpError(400, 'Each selling price must be for a different quantity')
+      }
+    }
+
+    // Shop classification, batch size and discounting only describe something
+    // the shop makes; a resold good has none of them.
     if (input.category === 'manufacturing') {
       if (!SHOP_CATEGORIES.includes(input.productCategory)) {
         throw new HttpError(400, 'Choose a shop category')
@@ -57,24 +80,6 @@ export const ItemsService = {
       }
       if (input.discountPercent < 0 || input.discountPercent > 100) {
         throw new HttpError(400, 'Discount must be between 0 and 100')
-      }
-      // Without a priced pack the product cannot be sold, and the storefront
-      // would list it with nothing to charge.
-      if (input.packSizes.length === 0) {
-        throw new HttpError(400, 'Add at least one pack size')
-      }
-      for (const pack of input.packSizes) {
-        if (!Number.isFinite(pack.qty) || pack.qty <= 0) {
-          throw new HttpError(400, 'Every pack size needs a quantity greater than zero')
-        }
-        if (!Number.isFinite(pack.price) || pack.price <= 0) {
-          throw new HttpError(400, 'Every pack size needs a price greater than zero')
-        }
-      }
-      // Two rows with the same quantity would collide on the catalogue's
-      // uniqueness rule, and a shopper could not tell them apart anyway.
-      if (new Set(input.packSizes.map((pack) => pack.qty)).size !== input.packSizes.length) {
-        throw new HttpError(400, 'Pack sizes must each have a different quantity')
       }
     }
 

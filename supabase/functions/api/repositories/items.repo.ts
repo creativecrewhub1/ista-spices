@@ -110,10 +110,11 @@ export async function save(input: ItemInput, userId: string | null): Promise<str
   })
   if (error) throw error
 
-  // Pack sizes are what make an item priceable, so only sellable manufactured
-  // goods carry them. The submitted list is the whole truth: a quantity the
-  // admin took off the form is withdrawn from the catalogue.
-  if (isManufactured) {
+  // Pack sizes are what make an item priceable, so anything sellable carries
+  // them — a resold B2B good just as much as one the shop makes. The
+  // submitted list is the whole truth: a quantity the admin took off the form
+  // is withdrawn from the catalogue.
+  if (caps.isSellable) {
     const quantities = input.packSizes.map((pack) => pack.qty)
 
     if (quantities.length > 0) {

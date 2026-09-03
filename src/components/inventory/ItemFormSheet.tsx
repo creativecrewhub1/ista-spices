@@ -46,8 +46,14 @@ export function emptyItem(category: ItemCategory): ItemInput {
     imageUrl: null,
     productCategory: 'spice-powder',
     spiceLevel: null,
-    // One row to start from; a new product's sizes are its own.
-    packSizes: category === 'manufacturing' ? [{ qty: 0.25, price: 0 }] : [],
+    // One row to start from; a new item's prices are its own. Nothing sells
+    // a raw material, so it carries none.
+    packSizes:
+      category === 'manufacturing'
+        ? [{ qty: 0.25, price: 0 }]
+        : category === 'b2b'
+          ? [{ qty: 1, price: 0 }]
+          : [],
     discountPercent: 0,
     batchCapacity: 30,
   }
@@ -111,6 +117,9 @@ export function ItemFormSheet({
 
   const isEditing = Boolean(item?.id)
   const isManufacturing = draft.category === 'manufacturing'
+  // Manufactured goods and bought-in B2B goods are both sold, so both are
+  // priced. A raw material is consumed by production and never sold.
+  const isSellable = draft.category !== 'raw_material'
 
   // Suggestions rank by how alike the names look rather than by prefix, so a
   // typo still finds what it meant. Names close enough to be the same item
@@ -155,6 +164,12 @@ export function ItemFormSheet({
       // Nothing sells a raw material, so it carries no selling unit.
       salesUnit: category === 'raw_material' ? null : prev.salesUnit || prev.stockUnit || 'kg',
       spiceLevel: category === 'manufacturing' ? prev.spiceLevel : null,
+      packSizes:
+        category === 'raw_material'
+          ? []
+          : prev.packSizes.length > 0
+            ? prev.packSizes
+            : [{ qty: category === 'manufacturing' ? 0.25 : 1, price: 0 }],
     }))
   }
 
@@ -430,11 +445,19 @@ export function ItemFormSheet({
                   </Select>
                 </div>
               </div>
+            </>
+          ) : null}
 
-              <div className="space-y-2">
-                <Label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-700">
-                  <Layers className="size-3.5 text-orange-500" /> Pack sizes &amp; selling price
-                </Label>
+          {/* A price is what makes an item sellable. A B2B good is resold as
+              it was bought, so it is priced the same way — one quantity of
+              its selling unit, one amount — and everything downstream reads
+              it without a special case. */}
+          {isSellable ? (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-700">
+                <Layers className="size-3.5 text-orange-500" />{' '}
+                {isManufacturing ? 'Pack sizes & selling price' : 'Selling price'}
+              </Label>
                 <div className="space-y-2">
                   {draft.packSizes.map((pack, index) => (
                     <div key={index} className="flex items-end gap-2">
@@ -503,10 +526,13 @@ export function ItemFormSheet({
                         .filter((pack) => pack.qty > 0)
                         .map((pack) => formatPack(pack.qty, draft.salesUnit as string, units))
                         .join(', ') || '—'}.`
-                    : 'Add the sizes this product is sold in.'}
+                    : 'Add the quantities this is sold in.'}
                 </p>
-              </div>
+            </div>
+          ) : null}
 
+          {isManufacturing ? (
+            <>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="item-discount" className="text-[11px] font-bold uppercase text-slate-600">

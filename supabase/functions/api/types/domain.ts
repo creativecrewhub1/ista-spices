@@ -209,6 +209,8 @@ export interface InventoryItem {
   description: string
   stockUnit: string
   salesUnit: string | null
+  /** What it resells for. Empty for raw materials, which are not sold. */
+  packSizes: PackSize[]
   quantityOnHand: number
   lowStockThreshold: number
   /** Per-unit cost of the most recent consignment — today's buying price. */
