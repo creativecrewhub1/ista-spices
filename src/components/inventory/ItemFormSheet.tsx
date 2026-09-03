@@ -262,11 +262,6 @@ export function ItemFormSheet({
                 <AlertCircle className="mt-px size-3.5 shrink-0" />
                 {`"${duplicate.name}" already exists. Edit that item instead of adding it twice.`}
               </p>
-            ) : suggestions.length > 0 ? (
-              <p className="text-[11px] font-medium text-slate-400">
-                Already on file: {suggestions.map((s) => s.name).join(', ')}. Add this only if it is a
-                different product.
-              </p>
             ) : null}
           </div>
 
