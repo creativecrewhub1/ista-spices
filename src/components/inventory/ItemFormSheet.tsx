@@ -32,13 +32,6 @@ import { useUnits } from '@/data/queries'
 
 const ALL_PACK_SIZES: PackSizeLabel[] = ['250g', '500g', '1kg', '2kg']
 
-/** Trims a derived reciprocal to something readable without implying more
- *  precision than the conversion has. 1/0.92 shows as 1.087, not 1.0869565…
- */
-function formatFactor(value: number): string {
-  return Number(value.toFixed(4)).toString()
-}
-
 const CATEGORY_OPTIONS: { value: ItemCategory; label: string; hint: string }[] = [
   { value: 'raw_material', label: 'Raw Material', hint: 'Bought in and consumed by production' },
   { value: 'b2b', label: 'B2B', hint: 'Bought in and resold as it is' },
@@ -102,7 +95,6 @@ export function ItemFormSheet({
     stockUom && salesUom && stockUom.dimension === salesUom.dimension
       ? salesUom.baseFactor / stockUom.baseFactor
       : null
-  const effectiveFactor = derivedFactor ?? draft.salesToStockFactor
 
   useEffect(() => {
     setDraft(item ?? emptyItem(defaultCategory))
@@ -261,10 +253,15 @@ export function ItemFormSheet({
 
           {/* Stock is counted in the unit it arrives in, but sold in whatever
               unit customers buy — oil comes in by weight and leaves by volume.
-              The conversion is what lets a sale deduct the right amount.
-              Raw materials skip this: nothing sells them. */}
+              Raw materials skip this: nothing sells them.
+
+              How the two convert depends on the category. Bought-in goods have
+              a fixed conversion the shop already knows, so it is asked for.
+              A manufactured item's is a yield — so many kilograms in, so many
+              litres out — which is only known once a batch has actually been
+              run, so it is not asked for here. */}
           {draft.category !== 'raw_material' ? (
-            <div className="grid grid-cols-2 gap-3">
+            <div className={cn('grid gap-3', isManufacturing ? 'grid-cols-1' : 'grid-cols-2')}>
               <div className="space-y-1.5">
                 <Label className="flex items-center gap-1 text-[11px] font-bold uppercase text-slate-600">
                   <Scale className="size-3 text-orange-400" /> Selling unit
@@ -285,62 +282,45 @@ export function ItemFormSheet({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5">
-                <Label
-                  htmlFor="item-factor"
-                  className="text-[11px] font-bold uppercase text-slate-600"
-                >
-                  {/* Read inward-first, matching the order the fields appear
-                      in and the way density is conventionally written
-                      (kg per litre). Same number either way — the stored
-                      value is stock consumed per sales unit, so phrasing it
-                      this way needs no inversion. */}
-                  {draft.stockUnit || 'unit'} per {draft.salesUnit || 'unit'}
-                </Label>
-                {/* Within a dimension the conversion is arithmetic — 1 kg is
-                    1000 g whoever is asked — so it's computed and shown
-                    rather than typed. Crossing dimensions needs a density or
-                    a per-piece weight, which only the shop knows. */}
-                <Input
-                  id="item-factor"
-                  type="number"
-                  min={0}
-                  step="any"
-                  required
-                  readOnly={derivedFactor !== null}
-                  disabled={derivedFactor !== null}
-                  value={derivedFactor ?? draft.salesToStockFactor}
-                  onChange={(e) =>
-                    setDraft({ ...draft, salesToStockFactor: Number(e.target.value) })
-                  }
-                  className={cn(
-                    'rounded-2xl border-slate-200 px-3 py-2 text-center text-sm font-bold',
-                    derivedFactor !== null ? 'bg-slate-100 text-slate-500' : 'bg-slate-50/70',
-                  )}
-                />
-              </div>
+              {/* Bought-in goods only: a fixed conversion the shop knows,
+                  such as the density of an oil it resells. */}
+              {!isManufacturing ? (
+                <div className="space-y-1.5">
+                  <Label
+                    htmlFor="item-factor"
+                    className="text-[11px] font-bold uppercase text-slate-600"
+                  >
+                    {draft.stockUnit || 'unit'} per {draft.salesUnit || 'unit'}
+                  </Label>
+                  {/* Within a dimension the conversion is arithmetic — 1 kg is
+                      1000 g whoever is asked — so it's computed, not typed. */}
+                  <Input
+                    id="item-factor"
+                    type="number"
+                    min={0}
+                    step="any"
+                    required
+                    readOnly={derivedFactor !== null}
+                    disabled={derivedFactor !== null}
+                    value={derivedFactor ?? draft.salesToStockFactor}
+                    onChange={(e) =>
+                      setDraft({ ...draft, salesToStockFactor: Number(e.target.value) })
+                    }
+                    className={cn(
+                      'rounded-2xl border-slate-200 px-3 py-2 text-center text-sm font-bold',
+                      derivedFactor !== null ? 'bg-slate-100 text-slate-500' : 'bg-slate-50/70',
+                    )}
+                  />
+                </div>
+              ) : null}
             </div>
           ) : null}
 
-          {/* Both readings of the same figure. The field takes stock per sales
-              unit because that number is exact — a density is published as
-              0.92 kg/l, and its reciprocal repeats. The inward-first line is
-              computed from it, so the direction people think in is on screen
-              without a repeating decimal ever being stored. */}
-          {draft.category !== 'raw_material' &&
-          draft.salesUnit &&
-          draft.salesUnit !== draft.stockUnit &&
-          effectiveFactor > 0 ? (
-            <div className="-mt-2 space-y-0.5">
-              <p className="text-[11px] font-semibold text-slate-500">
-                1 {draft.stockUnit} (inward) = {formatFactor(1 / effectiveFactor)} {draft.salesUnit}{' '}
-                (selling)
-              </p>
-              <p className="text-[11px] font-medium text-slate-400">
-                So selling one {draft.salesUnit} takes {formatFactor(effectiveFactor)}{' '}
-                {draft.stockUnit} out of stock.
-              </p>
-            </div>
+          {isManufacturing && draft.salesUnit && draft.salesUnit !== draft.stockUnit ? (
+            <p className="-mt-2 text-[11px] font-medium text-slate-400">
+              How many {draft.salesUnit} come out of each {draft.stockUnit} is measured from
+              production, not set here.
+            </p>
           ) : null}
 
           {/* Only goods the shop makes and sells carry a storefront
