@@ -20,6 +20,8 @@ import { orderStatusConfig } from '@/lib/status'
 import { formatCurrency, formatDateLong, formatTime } from '@/lib/format'
 import { productImage } from '@/lib/productImage'
 import { cn } from '@/lib/utils'
+import { formatPack } from '@/lib/packLabel'
+import { useUnits } from '@/data/queries'
 
 const trackingSteps: OrderStatus[] = ['pending', 'processing', 'packed', 'shipped', 'delivered']
 
@@ -30,6 +32,7 @@ interface OrderDetailSheetProps {
 }
 
 export function OrderDetailSheet({ order, onOpenChange, onStatusChange }: OrderDetailSheetProps) {
+  const { data: units = [] } = useUnits()
   const [copied, setCopied] = useState(false)
 
   if (!order) return null
@@ -190,7 +193,7 @@ export function OrderDetailSheet({ order, onOpenChange, onStatusChange }: OrderD
               <div className="space-y-2.5">
                 {order.items.map((item) => (
                   <div
-                    key={`${item.productId}-${item.packSize}`}
+                    key={`${item.productId}-${item.packQty}`}
                     className="flex items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50/50 p-3 hover:bg-slate-50 hover:border-orange-200 hover:shadow-2xs transition-all duration-200"
                   >
                     {/* Photo Thumbnail */}
@@ -204,7 +207,7 @@ export function OrderDetailSheet({ order, onOpenChange, onStatusChange }: OrderD
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-bold text-slate-900 truncate">{item.name}</p>
                       <p className="text-[11px] text-slate-500 font-semibold">
-                        <span className="text-orange-600 font-bold">{item.qty} ×</span> {formatCurrency(item.price)} ({item.packSize})
+                        <span className="text-orange-600 font-bold">{item.qty} ×</span> {formatCurrency(item.price)} ({formatPack(item.packQty, item.packUnit, units)})
                       </p>
                     </div>
 

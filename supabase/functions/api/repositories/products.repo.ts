@@ -1,7 +1,10 @@
 import { supabase } from '../lib/supabaseClient.ts'
-import type { CatalogProduct, PackSizeLabel, Product, StockLevel } from '../types/domain.ts'
+import type { CatalogProduct, Product, StockLevel } from '../types/domain.ts'
+import { positionByItem, type LedgerPosition } from './inventoryItems.repo.ts'
 
-const PACK_SIZE_ORDER: PackSizeLabel[] = ['250g', '500g', '1kg', '2kg']
+/** Smallest pack first — the order a shopper expects to read them in. */
+// deno-lint-ignore no-explicit-any
+const byQty = (a: any, b: any) => Number(a.pack_qty) - Number(b.pack_qty)
 
 /** low <= 30% of batch capacity in hand, high >= 90% (well stocked), otherwise ok. */
 export function classifyStockLevel(unitsPacked: number, batchCapacity: number): StockLevel {
@@ -11,70 +14,55 @@ export function classifyStockLevel(unitsPacked: number, batchCapacity: number): 
   return 'ok'
 }
 
+/**
+ * Units in hand come from the movement ledger, never from a column — the
+ * same balance the Stock screen shows. `units_packed_this_batch` survives
+ * only as the pre-ledger seed and is no longer read.
+ */
 // deno-lint-ignore no-explicit-any
-function mapRow(row: any): Product {
+function mapRow(row: any, position: LedgerPosition): Product {
+  const quantityOnHand = position.quantityOnHand
   const packSizes = [...row.product_pack_sizes]
+    .sort(byQty)
     // deno-lint-ignore no-explicit-any
-    .sort((a: any, b: any) => PACK_SIZE_ORDER.indexOf(a.size) - PACK_SIZE_ORDER.indexOf(b.size))
-    // deno-lint-ignore no-explicit-any
-    .map((p: any) => ({ size: p.size, price: Number(p.price) }))
+    .map((p: any) => ({ qty: Number(p.pack_qty), price: Number(p.price) }))
+
+  const batchCapacity = row.batch_capacity ?? 0
 
   return {
     id: row.id,
     name: row.name,
     category: row.category,
     description: row.description,
+    salesUnit: row.sales_unit,
     packSizes,
     discountPercent: row.discount_percent,
     spiceLevel: row.spice_level,
-    batchCapacity: row.batch_capacity,
-    unitsPackedThisBatch: row.units_packed_this_batch,
-    stockLevel: classifyStockLevel(row.units_packed_this_batch, row.batch_capacity),
+    batchCapacity,
+    unitsPackedThisBatch: quantityOnHand,
+    stockLevel: batchCapacity > 0 ? classifyStockLevel(quantityOnHand, batchCapacity) : 'ok',
+    lastPurchaseCost: position.lastPurchaseCost,
+    lastPurchasedAt: position.lastPurchasedAt,
     isActive: row.is_active,
     imageUrl: row.image_url ?? null,
   }
 }
 
+/** Goods the shop makes — the Manufacturing tab and the storefront catalogue. */
 export async function listActive(search?: string): Promise<Product[]> {
-  let query = supabase.from('products').select('*, product_pack_sizes(*)').eq('is_active', true)
+  let query = supabase
+    .from('products')
+    .select('*, product_pack_sizes(*)')
+    .eq('is_active', true)
+    .eq('item_category', 'manufacturing')
   if (search) query = query.ilike('name', `%${search}%`)
 
-  const { data, error } = await query.order('name')
+  const [{ data, error }, positions] = await Promise.all([query.order('name'), positionByItem()])
   if (error) throw error
-  return data.map(mapRow)
+  return data.map((row) => mapRow(row, positions.get(row.id) ?? { quantityOnHand: 0, lastPurchaseCost: null, lastPurchasedAt: null }))
 }
 
-export async function upsert(product: Product): Promise<void> {
-  const { error: productError } = await supabase.from('products').upsert({
-    id: product.id,
-    name: product.name,
-    category: product.category,
-    description: product.description,
-    discount_percent: product.discountPercent,
-    spice_level: product.spiceLevel,
-    batch_capacity: product.batchCapacity,
-    units_packed_this_batch: product.unitsPackedThisBatch,
-    is_active: product.isActive,
-    image_url: product.imageUrl,
-  })
-  if (productError) throw productError
 
-  const { error: packSizeError } = await supabase.from('product_pack_sizes').upsert(
-    product.packSizes.map((pack) => ({
-      product_id: product.id,
-      size: pack.size,
-      price: pack.price,
-    })),
-    { onConflict: 'product_id,size' },
-  )
-  if (packSizeError) throw packSizeError
-}
-
-/** Soft delete only — order_items reference products, so a hard DELETE would violate the FK. */
-export async function softDelete(id: string): Promise<void> {
-  const { error } = await supabase.from('products').update({ is_active: false }).eq('id', id)
-  if (error) throw error
-}
 
 /**
  * Public storefront read — active products only, and only the fields a
@@ -83,24 +71,33 @@ export async function softDelete(id: string): Promise<void> {
 export async function listPublicCatalog(): Promise<CatalogProduct[]> {
   const { data, error } = await supabase
     .from('products')
-    .select('id, name, category, description, discount_percent, spice_level, image_url, product_pack_sizes(*)')
+    .select('id, name, category, description, discount_percent, spice_level, image_url, sales_unit, product_pack_sizes(*)')
     .eq('is_active', true)
+    // Raw materials sit in the same table now; only sellable goods belong
+    // in front of a customer.
+    .eq('is_sellable', true)
     .order('name')
   if (error) throw error
 
-  // deno-lint-ignore no-explicit-any
-  return data.map((row: any) => ({
+  return (
+    data
+      // An item with no pack size has no price, so it cannot be bought.
+      // deno-lint-ignore no-explicit-any
+      .filter((row: any) => row.product_pack_sizes.length > 0)
+      // deno-lint-ignore no-explicit-any
+      .map((row: any) => ({
     id: row.id,
     name: row.name,
     category: row.category,
     description: row.description,
+    salesUnit: row.sales_unit,
     packSizes: [...row.product_pack_sizes]
+      .sort(byQty)
       // deno-lint-ignore no-explicit-any
-      .sort((a: any, b: any) => PACK_SIZE_ORDER.indexOf(a.size) - PACK_SIZE_ORDER.indexOf(b.size))
-      // deno-lint-ignore no-explicit-any
-      .map((p: any) => ({ size: p.size, price: Number(p.price) })),
-    discountPercent: row.discount_percent,
-    spiceLevel: row.spice_level,
-    imageUrl: row.image_url ?? null,
-  }))
+      .map((p: any) => ({ qty: Number(p.pack_qty), price: Number(p.price) })),
+        discountPercent: row.discount_percent,
+        spiceLevel: row.spice_level,
+        imageUrl: row.image_url ?? null,
+      }))
+  )
 }

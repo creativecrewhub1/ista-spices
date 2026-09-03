@@ -1,36 +1,19 @@
 import * as productsRepo from '../repositories/products.repo.ts'
 import * as ordersRepo from '../repositories/orders.repo.ts'
-import type { AttentionItem, NeedsAttentionResponse, Order, TodaySummary } from '../types/domain.ts'
-
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10)
-}
+import * as dashboardRepo from '../repositories/dashboard.repo.ts'
+import type {
+  AttentionItem,
+  DashboardKpis,
+  NeedsAttentionResponse,
+  Order,
+  TodaySummary,
+} from '../types/domain.ts'
 
 export const DashboardService = {
-  async today(): Promise<TodaySummary> {
-    const orders = await ordersRepo.list()
-    const today = todayIso()
-    const todaysOrders = orders.filter((o) => o.placedAt.startsWith(today))
-    const activeToday = todaysOrders.filter((o) => o.status !== 'cancelled')
+  /** Headline figures, aggregated by Postgres — see the dashboard_kpis view. */
+  kpis: (): Promise<DashboardKpis> => dashboardRepo.getKpis(),
 
-    const statusCounts = {
-      pending: todaysOrders.filter((o) => o.status === 'pending').length,
-      processing: todaysOrders.filter((o) => o.status === 'processing').length,
-      packed: todaysOrders.filter((o) => o.status === 'packed').length,
-      delivered: todaysOrders.filter((o) => o.status === 'delivered').length,
-    }
-
-    const avgOrderValue = activeToday.length
-      ? activeToday.reduce((sum, o) => sum + o.total, 0) / activeToday.length
-      : 0
-
-    return {
-      totalOrders: todaysOrders.length,
-      statusCounts,
-      pendingCount: statusCounts.pending,
-      avgOrderValue,
-    }
-  },
+  today: (): Promise<TodaySummary> => dashboardRepo.getToday(),
 
   async needsAttention(): Promise<NeedsAttentionResponse> {
     const [products, orders] = await Promise.all([productsRepo.listActive(), ordersRepo.list()])

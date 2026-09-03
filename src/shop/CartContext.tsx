@@ -1,18 +1,20 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
-import type { CatalogProduct, PackSizeLabel } from '@/data/types'
+import type { CatalogProduct } from '@/data/types'
 
 export interface CartItem {
   productId: string
   productName: string
-  packSize: PackSizeLabel
+  /** Quantity of the product's selling unit in one pack, with that unit. */
+  packQty: number
+  packUnit: string
   price: number
   qty: number
 }
 
 interface CartContextValue {
   items: CartItem[]
-  addItem: (product: CatalogProduct, packSize: PackSizeLabel, qty: number) => void
-  updateQty: (productId: string, packSize: PackSizeLabel, qty: number) => void
+  addItem: (product: CatalogProduct, packQty: number, qty: number) => void
+  updateQty: (productId: string, packQty: number, qty: number) => void
   clear: () => void
   total: number
   count: number
@@ -40,22 +42,32 @@ export function CartProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
   }, [items])
 
-  function addItem(product: CatalogProduct, packSize: PackSizeLabel, qty: number) {
-    const price = product.packSizes.find((p) => p.size === packSize)?.price ?? 0
+  function addItem(product: CatalogProduct, packQty: number, qty: number) {
+    const price = product.packSizes.find((p) => p.qty === packQty)?.price ?? 0
     setItems((prev) => {
-      const existing = prev.find((i) => i.productId === product.id && i.packSize === packSize)
+      const existing = prev.find((i) => i.productId === product.id && i.packQty === packQty)
       if (existing) {
         return prev.map((i) => (i === existing ? { ...i, qty: i.qty + qty } : i))
       }
-      return [...prev, { productId: product.id, productName: product.name, packSize, price, qty }]
+      return [
+        ...prev,
+        {
+          productId: product.id,
+          productName: product.name,
+          packQty,
+          packUnit: product.salesUnit,
+          price,
+          qty,
+        },
+      ]
     })
   }
 
-  function updateQty(productId: string, packSize: PackSizeLabel, qty: number) {
+  function updateQty(productId: string, packQty: number, qty: number) {
     setItems((prev) =>
       qty <= 0
-        ? prev.filter((i) => !(i.productId === productId && i.packSize === packSize))
-        : prev.map((i) => (i.productId === productId && i.packSize === packSize ? { ...i, qty } : i)),
+        ? prev.filter((i) => !(i.productId === productId && i.packQty === packQty))
+        : prev.map((i) => (i.productId === productId && i.packQty === packQty ? { ...i, qty } : i)),
     )
   }
 
