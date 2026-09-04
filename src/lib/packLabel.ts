@@ -38,11 +38,16 @@ export function formatPackSize(
   salesUnit: string,
   units: UnitOfMeasure[] = [],
 ): string {
+  const unit = units.find((u) => u.code === salesUnit)
   const quantity = formatPack(pack.qty, salesUnit, units)
-  if (!pack.packaging) return quantity
+
+  // A counted unit already names itself, so one of it needs no packaging:
+  // "1 pcs" is a Piece. A measured one does not — "250 g" is its own name.
+  if (!pack.packaging) {
+    return unit?.dimension === 'count' && pack.qty === 1 ? unit.name : quantity
+  }
+
   const named = units.find((u) => u.code === pack.packaging)?.name ?? pack.packaging
-  // A single unit named by its packaging needs no restatement: "1 pcs" as a
-  // Piece is just a Piece.
   if (pack.qty === 1 && pack.packaging === salesUnit) return named
   return `${named} · ${quantity}`
 }

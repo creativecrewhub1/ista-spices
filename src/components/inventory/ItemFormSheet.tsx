@@ -507,7 +507,9 @@ export function ItemFormSheet({
                           </SelectTrigger>
                           <SelectContent position="popper" sideOffset={4} className="rounded-2xl">
                             <SelectItem value="none" className="rounded-xl font-semibold">
-                              Just the quantity
+                              {salesUom?.dimension === 'count' && pack.qty === 1
+                                ? salesUom.name
+                                : 'Just the quantity'}
                             </SelectItem>
                             {countUnits.map((u) => (
                               <SelectItem key={u.code} value={u.code} className="rounded-xl font-semibold">
