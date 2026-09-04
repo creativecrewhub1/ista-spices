@@ -121,7 +121,12 @@ export async function save(input: ItemInput, userId: string | null): Promise<str
       const { error: packError } = await supabase
         .from('product_pack_sizes')
         .upsert(
-          input.packSizes.map((pack) => ({ product_id: id, pack_qty: pack.qty, price: pack.price })),
+          input.packSizes.map((pack) => ({
+            product_id: id,
+            pack_qty: pack.qty,
+            price: pack.price,
+            packaging: pack.packaging || null,
+          })),
           { onConflict: 'product_id,pack_qty' },
         )
       if (packError) throw packError
@@ -298,7 +303,7 @@ export async function listRemoved(): Promise<RemovedItem[]> {
 export async function findById(id: string): Promise<ItemInput | null> {
   const { data, error } = await supabase
     .from('products')
-    .select('*, product_pack_sizes(pack_qty, price)')
+    .select('*, product_pack_sizes(pack_qty, price, packaging)')
     .eq('id', id)
     .maybeSingle()
   if (error) throw error
@@ -308,7 +313,11 @@ export async function findById(id: string): Promise<ItemInput | null> {
   const row = data as any
   const packSizes: PackSize[] = row.product_pack_sizes
     // deno-lint-ignore no-explicit-any
-    .map((p: any) => ({ qty: Number(p.pack_qty), price: Number(p.price) }))
+    .map((p: any) => ({
+      qty: Number(p.pack_qty),
+      price: Number(p.price),
+      packaging: p.packaging ?? null,
+    }))
     .sort((a: PackSize, b: PackSize) => a.qty - b.qty)
 
   return {

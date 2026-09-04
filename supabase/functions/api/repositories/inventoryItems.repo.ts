@@ -46,7 +46,7 @@ function mapRow(row: any, position: LedgerPosition): InventoryItem {
       // deno-lint-ignore no-explicit-any
       .sort((a: any, b: any) => Number(a.pack_qty) - Number(b.pack_qty))
       // deno-lint-ignore no-explicit-any
-      .map((p: any) => ({ qty: Number(p.pack_qty), price: Number(p.price) })),
+      .map((p: any) => ({ qty: Number(p.pack_qty), price: Number(p.price), packaging: p.packaging ?? null })),
     quantityOnHand: position.quantityOnHand,
     lowStockThreshold: Number(row.low_stock_threshold),
     lastPurchaseCost: position.lastPurchaseCost,
@@ -84,7 +84,7 @@ export async function listActive(
   // than by restating the capability rule that produced it.
   let query = supabase
     .from('products')
-    .select('*, product_pack_sizes(pack_qty, price)')
+    .select('*, product_pack_sizes(pack_qty, price, packaging)')
     .eq('is_active', true)
     .in('item_category', ['raw_material', 'b2b'])
 

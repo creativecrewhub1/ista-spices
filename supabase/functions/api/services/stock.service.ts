@@ -13,8 +13,8 @@ export const StockService = {
     if (!Number.isFinite(input.qty) || input.qty <= 0) {
       throw new HttpError(400, 'Quantity must be greater than zero')
     }
-    if (!Number.isFinite(input.unitCost) || input.unitCost < 0) {
-      throw new HttpError(400, 'Purchase cost cannot be negative')
+    if (!Number.isFinite(input.totalCost) || input.totalCost < 0) {
+      throw new HttpError(400, 'Total cost cannot be negative')
     }
     return stockRepo.recordReceipt(input)
   },
