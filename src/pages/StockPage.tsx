@@ -25,7 +25,7 @@ import { ItemMovements } from '@/components/stock/ItemMovements'
 import { useStock, useStockMovements } from '@/data/queries'
 import { useReceiveStock } from '@/data/mutations'
 import type { StockItem } from '@/data/types'
-import { formatCurrency, formatDateLong } from '@/lib/format'
+import { formatCurrency, formatRate, formatDateLong } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { pageEnter } from '@/lib/motion'
 
@@ -52,7 +52,7 @@ export function StockPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [itemId, setItemId] = useState('')
   const [qty, setQty] = useState('')
-  const [unitCost, setUnitCost] = useState('')
+  const [totalCost, setTotalCost] = useState('')
   const [note, setNote] = useState('')
 
   const filtered = useMemo(
@@ -73,10 +73,17 @@ export function StockPage() {
 
   const selectedItem = (stock ?? []).find((s) => s.itemId === itemId)
 
+  // What the admin is about to record, worked out the same way the database
+  // will. Preview only — the total is what gets sent.
+  const perUnit =
+    Number(qty) > 0 && totalCost !== '' && Number.isFinite(Number(totalCost))
+      ? Number(totalCost) / Number(qty)
+      : null
+
   function resetForm() {
     setItemId('')
     setQty('')
-    setUnitCost('')
+    setTotalCost('')
     setNote('')
   }
 
@@ -86,7 +93,7 @@ export function StockPage() {
       {
         itemId,
         qty: Number(qty),
-        unitCost: Number(unitCost),
+        totalCost: Number(totalCost),
         note: note.trim() || undefined,
       },
       {
@@ -365,7 +372,7 @@ export function StockPage() {
                   htmlFor="stock-cost"
                   className="text-xs font-bold uppercase tracking-wider text-slate-700"
                 >
-                  Purchase cost / unit
+                  Total cost paid
                 </Label>
                 <Input
                   id="stock-cost"
@@ -373,23 +380,30 @@ export function StockPage() {
                   min="0"
                   step="any"
                   required
-                  value={unitCost}
-                  onChange={(e) => setUnitCost(e.target.value)}
+                  value={totalCost}
+                  onChange={(e) => setTotalCost(e.target.value)}
                   placeholder="0"
                   className="rounded-2xl border-slate-200 bg-slate-50/70 font-bold"
                 />
                 {/* Conflating this with the sale price would invert every margin. */}
-                <p className="text-[11px] font-medium text-slate-400">What you paid, not the selling price.</p>
+                <p className="text-[11px] font-medium text-slate-400">
+                  The whole consignment, as invoiced — not the selling price.
+                </p>
               </div>
             </div>
 
-            {qty && unitCost ? (
+            {/* Shown, never sent. The database derives the rate from the total,
+                so a figure typed here could only disagree with it. */}
+            {perUnit !== null ? (
               <div className="rounded-2xl border border-orange-100 bg-orange-50/50 px-4 py-3">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  Total cost
+                  Works out at
                 </span>
                 <span className="ml-2 font-mono text-lg font-black tabular-nums text-slate-900">
-                  {formatCurrency(Number(qty) * Number(unitCost))}
+                  {formatRate(perUnit)}
+                </span>
+                <span className="text-xs font-semibold text-slate-400">
+                  {' '}per {selectedItem?.stockUnit ?? 'unit'}
                 </span>
               </div>
             ) : null}

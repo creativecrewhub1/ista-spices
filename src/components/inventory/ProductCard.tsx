@@ -14,7 +14,7 @@ import type { Product } from '@/data/types'
 import { categoryConfig, manufacturingBadge, spiceLevelConfig, stockLevelConfig } from '@/lib/status'
 import { formatCurrency } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import { formatPack } from '@/lib/packLabel'
+import { formatPackSize } from '@/lib/packLabel'
 import { useUnits } from '@/data/queries'
 
 interface ProductCardProps {
@@ -109,7 +109,7 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
               {formatCurrency(discountedPrice)}
             </span>
             <span className="text-xs font-bold text-slate-400">
-              / {formatPack(basePack.qty, product.salesUnit, units)}
+              / {formatPackSize(basePack, product.salesUnit, units)}
             </span>
             {product.discountPercent > 0 ? (
               <span className="font-mono text-xs tabular-nums text-slate-400 line-through">
@@ -126,7 +126,7 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
               key={pack.qty}
               className="rounded-lg border border-slate-200/60 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-slate-600"
             >
-              {formatPack(pack.qty, product.salesUnit, units)} &middot; {formatCurrency(pack.price)}
+              {formatPackSize(pack, product.salesUnit, units)} &middot; {formatCurrency(pack.price)}
             </span>
           ))}
         </div>
