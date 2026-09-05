@@ -83,9 +83,11 @@ export interface Product {
   packSizes: PackSize[]
   discountPercent: number
   spiceLevel: SpiceLevel | null
-  batchCapacity: number
+  /** At or below this, the item counts as running low. */
+  lowStockThreshold: number
+  /** How much is on hand, in stockUnit. */
   unitsPackedThisBatch: number
-  /** low/ok/high classification, computed server-side from unitsPackedThisBatch vs batchCapacity. */
+  /** low/ok/high, computed server-side against lowStockThreshold. */
   stockLevel: StockLevel
   /** Per-unit cost of the most recent lot, bought or made. */
   lastPurchaseCost: number | null
@@ -123,7 +125,6 @@ export interface ItemInput {
   spiceLevel: SpiceLevel | null
   packSizes: PackSize[]
   discountPercent: number
-  batchCapacity: number
 }
 
 
@@ -472,7 +473,8 @@ export type AttentionItem =
       linkTo: '/inventory'
       productName: string
       unitsInHand: number
-      batchCapacity: number
+      /** What unitsInHand is measured in. */
+      stockUnit: string
     }
   | {
       id: string

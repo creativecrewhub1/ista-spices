@@ -48,7 +48,7 @@ export function emptyItem(category: ItemCategory): ItemInput {
           ? [{ qty: 1, price: 0, packaging: null }]
           : [],
     discountPercent: 0,
-    batchCapacity: 30,
+
   }
 }
 
@@ -581,34 +581,19 @@ export function ItemFormSheet({
 
           {isManufacturing ? (
             <>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="item-discount" className="text-[11px] font-bold uppercase text-slate-600">
-                    Discount %
-                  </Label>
-                  <Input
-                    id="item-discount"
-                    type="number"
-                    min={0}
-                    max={100}
-                    value={draft.discountPercent}
-                    onChange={(e) => setDraft({ ...draft, discountPercent: Number(e.target.value) })}
-                    className="rounded-2xl border-slate-200 bg-slate-50/70 px-3 py-2 text-center text-sm font-bold"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="item-capacity" className="text-[11px] font-bold uppercase text-slate-600">
-                    Batch capacity
-                  </Label>
-                  <Input
-                    id="item-capacity"
-                    type="number"
-                    min={1}
-                    value={draft.batchCapacity}
-                    onChange={(e) => setDraft({ ...draft, batchCapacity: Number(e.target.value) })}
-                    className="rounded-2xl border-slate-200 bg-slate-50/70 px-3 py-2 text-center text-sm font-bold"
-                  />
-                </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="item-discount" className="text-[11px] font-bold uppercase text-slate-600">
+                  Discount %
+                </Label>
+                <Input
+                  id="item-discount"
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={draft.discountPercent}
+                  onChange={(e) => setDraft({ ...draft, discountPercent: Number(e.target.value) })}
+                  className="rounded-2xl border-slate-200 bg-slate-50/70 px-3 py-2 text-center text-sm font-bold"
+                />
               </div>
             </>
           ) : null}

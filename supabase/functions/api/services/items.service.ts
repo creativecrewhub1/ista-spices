@@ -75,9 +75,6 @@ export const ItemsService = {
       if (!SHOP_CATEGORIES.includes(input.productCategory)) {
         throw new HttpError(400, 'Choose a shop category')
       }
-      if (!Number.isFinite(input.batchCapacity) || input.batchCapacity <= 0) {
-        throw new HttpError(400, 'Batch capacity must be greater than zero')
-      }
       if (input.discountPercent < 0 || input.discountPercent > 100) {
         throw new HttpError(400, 'Discount must be between 0 and 100')
       }

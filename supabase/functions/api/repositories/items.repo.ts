@@ -100,7 +100,6 @@ export async function save(input: ItemInput, userId: string | null): Promise<str
     // stock would violate the table's own constraints, and rightly so.
     category: isManufactured ? input.productCategory : null,
     spice_level: isManufactured ? input.spiceLevel : null,
-    batch_capacity: isManufactured ? input.batchCapacity : null,
     discount_percent: isManufactured ? input.discountPercent : 0,
 
     // The audit trigger reads these off the row, so every change carries the
@@ -334,6 +333,5 @@ export async function findById(id: string): Promise<ItemInput | null> {
     spiceLevel: row.spice_level ?? null,
     packSizes,
     discountPercent: row.discount_percent ?? 0,
-    batchCapacity: row.batch_capacity ?? 30,
   }
 }

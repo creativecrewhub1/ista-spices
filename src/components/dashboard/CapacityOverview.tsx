@@ -27,9 +27,13 @@ export function CapacityOverview() {
     )
   }
 
-  const items = [...(products ?? [])].sort(
-    (a, b) => a.unitsPackedThisBatch / a.batchCapacity - b.unitsPackedThisBatch / b.batchCapacity,
-  )
+  // "Well stocked" is three times the low mark, the same line the badge uses.
+  const headroom = (item: { unitsPackedThisBatch: number; lowStockThreshold: number }) =>
+    item.lowStockThreshold > 0
+      ? item.unitsPackedThisBatch / (item.lowStockThreshold * 3)
+      : Number.POSITIVE_INFINITY
+
+  const items = [...(products ?? [])].sort((a, b) => headroom(a) - headroom(b))
 
   return (
     <SectionCard
@@ -48,7 +52,7 @@ export function CapacityOverview() {
         <div className="space-y-3.5 pb-2">
           {items.map((item) => {
             const levelBadge = stockLevelConfig[item.stockLevel]
-            const percent = Math.min(100, Math.round((item.unitsPackedThisBatch / item.batchCapacity) * 100))
+            const percent = Math.min(100, Math.round(headroom(item) * 100))
             const isLowStock = item.stockLevel === 'low'
             const imgUrl = productImage(item.imageUrl)
 
@@ -82,7 +86,8 @@ export function CapacityOverview() {
                       </div>
 
                       <p className="text-[11px] font-semibold text-slate-500 font-mono">
-                        <span className="font-bold text-slate-900">{item.unitsPackedThisBatch}</span> / {item.batchCapacity} Units Packed
+                        <span className="font-bold text-slate-900">{item.unitsPackedThisBatch}</span> {item.stockUnit} in stock
+                        {item.lowStockThreshold > 0 ? ` · low at ${item.lowStockThreshold}` : ''}
                       </p>
                     </div>
                   </div>

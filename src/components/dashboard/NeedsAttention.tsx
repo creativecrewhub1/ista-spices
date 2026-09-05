@@ -39,7 +39,7 @@ export function NeedsAttention() {
               : `${item.productName} is running low on stock`
             const meta = isLate
               ? `Expected by ${formatTime(item.eta)}`
-              : `${item.unitsInHand}/${item.batchCapacity} units in hand`
+              : `${item.unitsInHand} ${item.stockUnit} left`
 
             return (
               <li key={item.id}>
