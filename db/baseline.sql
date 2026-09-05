@@ -8,7 +8,7 @@
 -- Last refreshed 2026-09-05. Everything after this file lives in
 -- db/migrations, one file per change.
 
-create type customer_segment as enum ('new', 'regular', 'vip');
+create type customer_segment as enum ('new', 'regular');
 
 create type inventory_item_type as enum ('raw_material', 'b2b');
 
@@ -342,13 +342,13 @@ alter table stock_batch_allocations add constraint stock_batch_allocations_pkey 
 
 alter table stock_movements add constraint stock_movements_qty_non_zero CHECK ((qty <> (0)::numeric));
 
-alter table stock_movements add constraint stock_movements_receipt_has_cost CHECK (((kind <> 'receipt'::stock_movement_kind) OR (total_cost IS NOT NULL)));
+alter table stock_movements add constraint stock_movements_total_cost_non_negative CHECK (((total_cost IS NULL) OR (total_cost >= (0)::numeric)));
 
 alter table stock_movements add constraint stock_movements_pkey PRIMARY KEY (id);
 
 alter table stock_movements add constraint stock_movements_direction CHECK ((((kind = ANY (ARRAY['receipt'::stock_movement_kind, 'production'::stock_movement_kind])) AND (qty > (0)::numeric)) OR ((kind = ANY (ARRAY['sale'::stock_movement_kind, 'consumption'::stock_movement_kind])) AND (qty < (0)::numeric)) OR (kind = 'adjustment'::stock_movement_kind)));
 
-alter table stock_movements add constraint stock_movements_total_cost_non_negative CHECK (((total_cost IS NULL) OR (total_cost >= (0)::numeric)));
+alter table stock_movements add constraint stock_movements_receipt_has_cost CHECK (((kind <> 'receipt'::stock_movement_kind) OR (total_cost IS NOT NULL)));
 
 alter table stock_movements add constraint stock_movements_order_id_fkey FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL;
 
@@ -360,11 +360,11 @@ alter table units_of_measure add constraint units_of_measure_base_factor_check C
 
 alter table units_of_measure add constraint units_of_measure_dimension_check CHECK ((dimension = ANY (ARRAY['weight'::text, 'volume'::text, 'count'::text])));
 
-CREATE INDEX customers_user_id_idx ON public.customers USING btree (user_id);
-
 CREATE INDEX customers_phone_trgm_idx ON public.customers USING gin (phone gin_trgm_ops);
 
 CREATE UNIQUE INDEX customers_email_unique_idx ON public.customers USING btree (lower(email)) WHERE (email IS NOT NULL);
+
+CREATE INDEX customers_user_id_idx ON public.customers USING btree (user_id);
 
 CREATE INDEX customers_name_trgm_idx ON public.customers USING gin (name gin_trgm_ops);
 
@@ -374,17 +374,17 @@ CREATE INDEX inventory_items_type_active_idx ON public.inventory_items USING btr
 
 CREATE INDEX item_audit_log_item_time_idx ON public.item_audit_log USING btree (item_id, changed_at DESC, id DESC);
 
-CREATE INDEX order_items_order_id_idx ON public.order_items USING btree (order_id);
-
 CREATE INDEX order_items_product_id_idx ON public.order_items USING btree (product_id);
 
+CREATE INDEX order_items_order_id_idx ON public.order_items USING btree (order_id);
+
 CREATE INDEX order_status_events_order_id_idx ON public.order_status_events USING btree (order_id, changed_at);
+
+CREATE INDEX orders_placed_at_idx ON public.orders USING btree (placed_at);
 
 CREATE INDEX orders_id_trgm_idx ON public.orders USING gin (id gin_trgm_ops);
 
 CREATE INDEX orders_customer_id_idx ON public.orders USING btree (customer_id);
-
-CREATE INDEX orders_placed_at_idx ON public.orders USING btree (placed_at);
 
 CREATE INDEX orders_status_placed_at_idx ON public.orders USING btree (status, placed_at DESC);
 
@@ -423,7 +423,6 @@ create view customers_with_stats as  SELECT c.id,
     COALESCE(count(o.id) FILTER (WHERE o.status <> 'cancelled'::order_status), 0::bigint) AS total_orders,
     COALESCE(sum(ot.total) FILTER (WHERE o.status <> 'cancelled'::order_status), 0::numeric)::numeric(10,2) AS total_spend,
     max(o.placed_at) AS last_order_at,
-    max(o.placed_at) >= (now() - '90 days'::interval) AS is_active,
     c.updated_at,
     c.avatar_url,
     c.user_id
@@ -1142,6 +1141,8 @@ CREATE TRIGGER customers_set_updated_at BEFORE UPDATE ON public.customers FOR EA
 
 CREATE TRIGGER inventory_items_set_updated_at BEFORE UPDATE ON public.inventory_items FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
+CREATE TRIGGER orders_despatch_stock_update AFTER UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION despatch_order_stock();
+
 CREATE TRIGGER orders_set_updated_at BEFORE UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 CREATE TRIGGER orders_log_status_insert AFTER INSERT ON public.orders FOR EACH ROW EXECUTE FUNCTION log_order_status_change();
@@ -1150,17 +1151,15 @@ CREATE TRIGGER orders_log_status_update AFTER UPDATE ON public.orders FOR EACH R
 
 CREATE TRIGGER orders_despatch_stock_insert AFTER INSERT ON public.orders FOR EACH ROW EXECUTE FUNCTION despatch_order_stock();
 
-CREATE TRIGGER orders_despatch_stock_update AFTER UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION despatch_order_stock();
-
 CREATE TRIGGER pack_sizes_audit_after AFTER INSERT OR DELETE OR UPDATE ON public.product_pack_sizes FOR EACH ROW EXECUTE FUNCTION pack_sizes_audit();
 
 CREATE TRIGGER production_runs_post AFTER UPDATE ON public.production_runs FOR EACH ROW EXECUTE FUNCTION post_production_run();
 
+CREATE TRIGGER products_set_updated_at BEFORE UPDATE ON public.products FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
 CREATE TRIGGER products_touch_before BEFORE UPDATE ON public.products FOR EACH ROW EXECUTE FUNCTION products_touch();
 
 CREATE TRIGGER products_audit_after AFTER INSERT OR UPDATE ON public.products FOR EACH ROW EXECUTE FUNCTION products_audit();
-
-CREATE TRIGGER products_set_updated_at BEFORE UPDATE ON public.products FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 CREATE TRIGGER stock_movements_assign_batch_no BEFORE INSERT ON public.stock_movements FOR EACH ROW EXECUTE FUNCTION assign_batch_no();
 

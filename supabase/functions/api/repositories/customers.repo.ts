@@ -18,7 +18,6 @@ function mapRow(row: any): Customer {
     // Null when they have never ordered — not the same as "ordered on the
     // day they joined", which is what defaulting to joined_at implied.
     lastOrderAt: row.last_order_at ?? null,
-    isActive: row.is_active ?? false,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     avatarUrl: row.avatar_url ?? null,
@@ -27,9 +26,7 @@ function mapRow(row: any): Customer {
 
 export interface CustomerFilters {
   search?: string
-  /** 'active' | 'inactive', or a CustomerSegment. */
   segment?: string
-  activity?: string
 }
 
 export async function listWithStats(filters: CustomerFilters = {}): Promise<Customer[]> {
@@ -40,8 +37,6 @@ export async function listWithStats(filters: CustomerFilters = {}): Promise<Cust
     query = query.or(`name.ilike.${term},phone.ilike.${term},email.ilike.${term},id.ilike.${term}`)
   }
   if (filters.segment) query = query.eq('segment', filters.segment)
-  if (filters.activity === 'active') query = query.eq('is_active', true)
-  if (filters.activity === 'inactive') query = query.or('is_active.is.false,is_active.is.null')
 
   const { data, error } = await query.order('name')
   if (error) throw error
@@ -50,18 +45,15 @@ export async function listWithStats(filters: CustomerFilters = {}): Promise<Cust
 
 /** Whole-book tallies, so the KPI tiles stay stable while the list is filtered. */
 export async function counts(): Promise<CustomerCounts> {
-  const { data, error } = await supabase.from('customers_with_stats').select('segment, is_active')
+  const { data, error } = await supabase.from('customers_with_stats').select('segment')
   if (error) throw error
 
-  const empty: CustomerCounts = { total: 0, active: 0, inactive: 0, new: 0, regular: 0, vip: 0 }
+  const empty: CustomerCounts = { total: 0, new: 0, regular: 0 }
   // deno-lint-ignore no-explicit-any
   return (data as any[]).reduce((acc, row) => {
     acc.total += 1
-    if (row.is_active) acc.active += 1
-    else acc.inactive += 1
     if (row.segment === 'new') acc.new += 1
     if (row.segment === 'regular') acc.regular += 1
-    if (row.segment === 'vip') acc.vip += 1
     return acc
   }, empty)
 }

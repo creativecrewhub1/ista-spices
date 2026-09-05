@@ -343,7 +343,7 @@ export interface Order {
   address: string
 }
 
-export type CustomerSegment = 'new' | 'regular' | 'vip'
+export type CustomerSegment = 'new' | 'regular'
 export type PlanStatus = 'active' | 'paused' | 'none'
 
 export interface Customer {
@@ -362,8 +362,6 @@ export interface Customer {
   totalSpend: number
   /** Null when they have never ordered. */
   lastOrderAt: string | null
-  /** Ordered within the last 90 days — computed server-side. */
-  isActive: boolean
   createdAt: string
   updatedAt: string
   /** Google's photo at signup, or a URL the customer pasted in on their profile. */
@@ -380,11 +378,8 @@ export interface UpdateProfileInput {
 
 export interface CustomerCounts {
   total: number
-  active: number
-  inactive: number
   new: number
   regular: number
-  vip: number
 }
 
 /** One recorded status transition, written by a DB trigger on every change. */

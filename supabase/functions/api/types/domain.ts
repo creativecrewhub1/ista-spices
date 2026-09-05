@@ -360,7 +360,7 @@ export interface OrderListFilters {
   search?: string
 }
 
-export type CustomerSegment = 'new' | 'regular' | 'vip'
+export type CustomerSegment = 'new' | 'regular'
 export type PlanStatus = 'active' | 'paused' | 'none'
 
 export interface Customer {
@@ -378,8 +378,6 @@ export interface Customer {
   totalOrders: number
   totalSpend: number
   lastOrderAt: string | null
-  /** Ordered within the last 90 days — computed in customers_with_stats. */
-  isActive: boolean
   createdAt: string
   updatedAt: string
   /** Google's photo at signup, or a URL the customer pasted in on their profile. */
@@ -396,11 +394,8 @@ export interface UpdateProfileInput {
 
 export interface CustomerCounts {
   total: number
-  active: number
-  inactive: number
   new: number
   regular: number
-  vip: number
 }
 
 export interface RevenuePoint {

@@ -70,7 +70,6 @@ export const spiceLevelConfig: Record<SpiceLevel, { label: string; dotClass: str
 export const segmentConfig: Record<CustomerSegment, { label: string; badgeClass: string }> = {
   new: { label: 'New', badgeClass: 'bg-accent/15 text-accent border-accent/30' },
   regular: { label: 'Regular', badgeClass: 'bg-muted text-muted-foreground border-border' },
-  vip: { label: 'VIP', badgeClass: 'bg-primary/15 text-primary border-primary/30' },
 }
 
 // Pure display mapping only — the low/ok/high classification itself is computed

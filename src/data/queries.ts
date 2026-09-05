@@ -64,15 +64,14 @@ export function useInventoryItems(
   })
 }
 
-export function useCustomers(filters: { search?: string; segment?: string; activity?: string } = {}) {
+export function useCustomers(filters: { search?: string; segment?: string } = {}) {
   const params = new URLSearchParams()
   if (filters.search) params.set('q', filters.search)
   if (filters.segment) params.set('segment', filters.segment)
-  if (filters.activity) params.set('activity', filters.activity)
   const queryString = params.toString()
 
   return useQuery({
-    queryKey: ['customers', filters.search ?? null, filters.segment ?? null, filters.activity ?? null],
+    queryKey: ['customers', filters.search ?? null, filters.segment ?? null],
     queryFn: () => api.get<Customer[]>(`/customers${queryString ? `?${queryString}` : ''}`),
     placeholderData: (previous) => previous,
   })

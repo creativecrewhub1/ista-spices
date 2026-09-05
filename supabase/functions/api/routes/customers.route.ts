@@ -7,7 +7,6 @@ customersRoute.get('/', async (c) => {
   const customers = await CustomersService.list({
     search: c.req.query('q'),
     segment: c.req.query('segment'),
-    activity: c.req.query('activity'),
   })
   return c.json(customers)
 })
