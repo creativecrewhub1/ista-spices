@@ -316,7 +316,13 @@ export function ItemFormSheet({
               </Label>
               <Select
                 value={draft.stockUnit}
-                onValueChange={(v) => setDraft({ ...draft, stockUnit: v })}
+                onValueChange={(v) =>
+                  setDraft({
+                    ...draft,
+                    stockUnit: v,
+                    salesToStockFactor: v === draft.salesUnit ? 1 : draft.salesToStockFactor,
+                  })
+                }
               >
                 <SelectTrigger className="rounded-2xl border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-sm font-semibold text-slate-900">
                   <SelectValue placeholder="Unit" />
@@ -337,7 +343,13 @@ export function ItemFormSheet({
               </Label>
               <Select
                 value={draft.salesUnit ?? (draft.category === 'raw_material' ? '' : draft.stockUnit)}
-                onValueChange={(v) => setDraft({ ...draft, salesUnit: v })}
+                onValueChange={(v) =>
+                  setDraft({
+                    ...draft,
+                    salesUnit: v,
+                    salesToStockFactor: v === draft.stockUnit ? 1 : draft.salesToStockFactor,
+                  })
+                }
                 disabled={draft.category === 'raw_material'}
               >
                 <SelectTrigger className="rounded-2xl border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-sm font-semibold text-slate-900 disabled:opacity-50">

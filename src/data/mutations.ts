@@ -64,18 +64,25 @@ export function useDeleteItem() {
 
 /** An item change moves through every list that reads it. */
 function invalidateItemViews(queryClient: ReturnType<typeof useQueryClient>) {
-  return () => {
-    queryClient.invalidateQueries({ queryKey: ['products'] })
-    queryClient.invalidateQueries({ queryKey: ['inventory-items'] })
+  return () =>
+    Promise.all([
+    // The edit form reads this one. Without it a save is written, the sheet
+    // closes, and reopening serves the copy from before the save — the item
+    // looks unchanged while the database holds the new value.
+    queryClient.invalidateQueries({ queryKey: ['item'] }),
+    // What is blocking removal moves with the item and with its stock.
+    queryClient.invalidateQueries({ queryKey: ['item-removal-check'] }),
+    queryClient.invalidateQueries({ queryKey: ['products'] }),
+    queryClient.invalidateQueries({ queryKey: ['inventory-items'] }),
     // Without this the add form keeps suggesting an item that has just been
     // removed, and misses one just added.
-    queryClient.invalidateQueries({ queryKey: ['item-names'] })
-    queryClient.invalidateQueries({ queryKey: ['items-removed'] })
-    queryClient.invalidateQueries({ queryKey: ['item-audit'] })
-    queryClient.invalidateQueries({ queryKey: ['stock'] })
-    queryClient.invalidateQueries({ queryKey: ['storefront-catalog'] })
-    queryClient.invalidateQueries({ queryKey: ['dashboard-needs-attention'] })
-  }
+    queryClient.invalidateQueries({ queryKey: ['item-names'] }),
+    queryClient.invalidateQueries({ queryKey: ['items-removed'] }),
+    queryClient.invalidateQueries({ queryKey: ['item-audit'] }),
+    queryClient.invalidateQueries({ queryKey: ['stock'] }),
+    queryClient.invalidateQueries({ queryKey: ['storefront-catalog'] }),
+    queryClient.invalidateQueries({ queryKey: ['dashboard-needs-attention'] }),
+    ])
 }
 /** Places a storefront order — server resolves/creates the customer record and recomputes prices from the DB. */
 export function useCheckout() {
@@ -160,9 +167,14 @@ export function useReceiveStock() {
   return useMutation({
     mutationFn: (input: StockReceiptInput) => api.post('/stock/receipts', input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['stock'] })
-      queryClient.invalidateQueries({ queryKey: ['stock-movements'] })
-      queryClient.invalidateQueries({ queryKey: ['dashboard-needs-attention'] })
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['stock'] }),
+        queryClient.invalidateQueries({ queryKey: ['stock-movements'] }),
+        queryClient.invalidateQueries({ queryKey: ['item-removal-check'] }),
+        queryClient.invalidateQueries({ queryKey: ['products'] }),
+        queryClient.invalidateQueries({ queryKey: ['inventory-items'] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard-needs-attention'] }),
+      ])
     },
   })
 }

@@ -300,5 +300,7 @@ export function useItem(id: string | null) {
     queryKey: ['item', id],
     queryFn: () => api.get<ItemInput>(`/items/${id}`),
     enabled: Boolean(id),
+    refetchOnMount: 'always',
+    staleTime: 0,
   })
 }
