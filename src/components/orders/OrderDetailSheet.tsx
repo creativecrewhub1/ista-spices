@@ -57,7 +57,7 @@ export function OrderDetailSheet({ order, onOpenChange, onStatusChange }: OrderD
 
   return (
     <Sheet open={Boolean(order)} onOpenChange={onOpenChange}>
-      <SheetContent className="overflow-y-auto w-full sm:max-w-md p-6 bg-white border-l border-slate-200/80 shadow-2xl transition-all duration-300 ease-out">
+      <SheetContent className="overflow-y-auto w-full sm:max-w-xl md:max-w-2xl p-6 bg-white border-l border-slate-200/80 shadow-2xl transition-all duration-300 ease-out">
         
         {/* Animated Sheet Content Container */}
         <div className="motion-safe:animate-in motion-safe:fade-in-50 motion-safe:zoom-in-95 duration-300 ease-out">

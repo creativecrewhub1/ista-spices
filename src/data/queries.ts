@@ -11,12 +11,16 @@ import type {
   ItemInput,
   AuditEntry,
   ItemName,
+  ProductionCosting,
+  ProductionInputLine,
+  ProductionRun,
   ItemRemovalCheck,
   RemovedItem,
   Order,
   OrderStatusEvent,
   OrderStatus,
   Product,
+  MonthlyProfit,
   ProductRevenueRow,
   RevenuePoint,
   RevenueSummary,
@@ -61,15 +65,14 @@ export function useInventoryItems(
   })
 }
 
-export function useCustomers(filters: { search?: string; segment?: string; activity?: string } = {}) {
+export function useCustomers(filters: { search?: string; segment?: string } = {}) {
   const params = new URLSearchParams()
   if (filters.search) params.set('q', filters.search)
   if (filters.segment) params.set('segment', filters.segment)
-  if (filters.activity) params.set('activity', filters.activity)
   const queryString = params.toString()
 
   return useQuery({
-    queryKey: ['customers', filters.search ?? null, filters.segment ?? null, filters.activity ?? null],
+    queryKey: ['customers', filters.search ?? null, filters.segment ?? null],
     queryFn: () => api.get<Customer[]>(`/customers${queryString ? `?${queryString}` : ''}`),
     placeholderData: (previous) => previous,
   })
@@ -205,6 +208,14 @@ export function useMyOrders() {
   })
 }
 
+/** The signed-in customer's own profile — null until a customers row exists for them. */
+export function useMyProfile() {
+  return useQuery({
+    queryKey: ['me'],
+    queryFn: () => api.get<Customer | null>('/storefront/me'),
+  })
+}
+
 /** Current stock position for every item — quantity, average cost, value. */
 export function useStock() {
   return useQuery({
@@ -242,6 +253,32 @@ export function useRemovalCheck(itemId: string | null) {
     queryKey: ['item-removal-check', itemId],
     queryFn: () => api.get<ItemRemovalCheck>(`/items/${itemId}/removal-check`),
     enabled: Boolean(itemId),
+  })
+}
+
+/**
+ * What a batch would cost, drawing each material oldest batch first.
+ *
+ * A question rather than a change: it writes nothing, and it is keyed to the
+ * quantities it describes, so it can never be showing a figure for numbers
+ * that have since moved on.
+ */
+export function useProductionCosting(
+  input: { inputs: ProductionInputLine[]; outputQty: number } | null,
+) {
+  return useQuery({
+    queryKey: ['production-costing', input],
+    queryFn: () => api.post<ProductionCosting>('/production/costing', input),
+    enabled: Boolean(input),
+    staleTime: 30_000,
+  })
+}
+
+/** Batches already produced, newest first. */
+export function useProductionRuns(limit = 20) {
+  return useQuery({
+    queryKey: ['production', limit],
+    queryFn: () => api.get<ProductionRun[]>(`/production?limit=${limit}`),
   })
 }
 
@@ -292,5 +329,24 @@ export function useItem(id: string | null) {
     queryKey: ['item', id],
     queryFn: () => api.get<ItemInput>(`/items/${id}`),
     enabled: Boolean(id),
+    refetchOnMount: 'always',
+    staleTime: 0,
+  })
+}
+
+/** Months the shop has either sold in or spent in, newest first. */
+export function useProfitMonths() {
+  return useQuery({
+    queryKey: ['profit-months'],
+    queryFn: () => api.get<string[]>('/revenue/profit/months'),
+  })
+}
+
+/** Per-product revenue, cost of goods and profit for one month. */
+export function useMonthlyProfit(month: string) {
+  return useQuery({
+    queryKey: ['monthly-profit', month],
+    enabled: Boolean(month),
+    queryFn: () => api.get<MonthlyProfit>(`/revenue/profit?month=${month}`),
   })
 }

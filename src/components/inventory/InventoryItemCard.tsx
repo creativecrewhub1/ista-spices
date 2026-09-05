@@ -94,7 +94,12 @@ export function InventoryItemCard({ item, onEdit, onDelete }: InventoryItemCardP
             which the running average hides once older stock is cheaper. */}
         {item.lastPurchaseCost !== null ? (
           <div className="flex items-baseline justify-between gap-2 border-t border-slate-100 pt-2">
-            <span className="text-[11px] font-semibold text-slate-400">Last purchased</span>
+            <span className="text-[11px] font-semibold text-slate-400">
+              {item.lastBatchKind === 'production' ? 'Last produced' : 'Last purchased'}
+              {item.lastBatchNo ? (
+                <span className="ml-1 font-mono text-[10px] text-slate-400">{item.lastBatchNo}</span>
+              ) : null}
+            </span>
             <span className="font-mono text-xs font-bold tabular-nums text-slate-700">
               {formatRate(item.lastPurchaseCost)}
               <span className="font-sans font-semibold text-slate-400"> / {item.stockUnit}</span>

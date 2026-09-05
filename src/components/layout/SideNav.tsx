@@ -24,7 +24,7 @@ export function SideNav() {
           </span>
           <div className="flex flex-col">
             <span className="font-display text-xl font-black tracking-wider text-slate-900">
-              SPICEST
+              ISTA
             </span>
             <span className="text-[10px] font-bold text-orange-600 tracking-widest uppercase">
               Admin Studio

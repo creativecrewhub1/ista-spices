@@ -1,7 +1,6 @@
 import { MoreVertical, Pencil, Trash2 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -28,7 +27,6 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
   const category = categoryConfig[product.category]
   const level = product.stockLevel
   const levelBadge = stockLevelConfig[level]
-  const percent = Math.min(100, Math.round((product.unitsPackedThisBatch / product.batchCapacity) * 100))
   const packSizes = product.packSizes ?? []
   // A manufactured product is validated to have at least one priced pack, but
   // an older row need not, and an unpriced card should still draw.
@@ -134,36 +132,34 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
         {/* What the last consignment cost, where one has been recorded. */}
         {product.lastPurchaseCost !== null ? (
           <div className="flex items-baseline justify-between gap-2 border-t border-slate-100 pt-2">
-            <span className="text-[11px] font-semibold text-slate-400">Last purchased</span>
+            <span className="text-[11px] font-semibold text-slate-400">
+              {product.lastBatchKind === 'production' ? 'Last produced' : 'Last purchased'}
+              {product.lastBatchNo ? (
+                <span className="ml-1 font-mono text-[10px] text-slate-400">{product.lastBatchNo}</span>
+              ) : null}
+            </span>
             <span className="font-mono text-xs font-bold tabular-nums text-slate-700">
               {formatCurrency(product.lastPurchaseCost)}
             </span>
           </div>
         ) : null}
 
-        {/* Batch Capacity Progress Bar */}
-        <div className="pt-2 border-t border-slate-100 space-y-1.5">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
-            <span>Batch Capacity</span>
-            <div className="flex items-center gap-1.5">
-              <span className="font-mono tabular-nums text-slate-900">
-                {product.unitsPackedThisBatch}/{product.batchCapacity}
-              </span>
-              {levelBadge ? (
-                <Badge variant="outline" className={cn('text-[10px] font-bold px-1.5 py-0', levelBadge.badgeClass)}>
-                  {levelBadge.label}
-                </Badge>
-              ) : null}
-            </div>
+        {/* In stock */}
+        <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+          <div className="flex items-baseline gap-1">
+            <span className="font-display text-xl font-black tabular-nums text-slate-900">
+              {product.unitsPackedThisBatch}
+            </span>
+            <span className="text-xs font-bold uppercase text-slate-500">{product.stockUnit}</span>
           </div>
-          <Progress
-            value={percent}
-            className={cn(
-              'h-2 rounded-full',
-              level === 'low' && '[&>div]:bg-amber-500',
-              level === 'high' && '[&>div]:bg-emerald-500',
-            )}
-          />
+          {levelBadge ? (
+            <Badge
+              variant="outline"
+              className={cn('rounded-full px-2.5 py-0.5 text-xs font-bold', levelBadge.badgeClass)}
+            >
+              {levelBadge.label}
+            </Badge>
+          ) : null}
         </div>
       </div>
 

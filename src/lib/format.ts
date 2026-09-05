@@ -50,3 +50,16 @@ export function formatDateLong(iso: string): string {
 export function formatWeekday(isoDate: string): string {
   return new Date(`${isoDate}T00:00:00`).toLocaleDateString('en-IN', { weekday: 'short' })
 }
+
+/**
+ * A month, named. The stored value is the first of the month, so it is read
+ * back as a plain date rather than through the timezone-shifting Date parse
+ * that an ISO date string gets.
+ */
+export function formatMonth(isoDate: string): string {
+  const [year, month] = isoDate.split('-').map(Number)
+  return new Date(year, month - 1, 1).toLocaleDateString('en-IN', {
+    month: 'long',
+    year: 'numeric',
+  })
+}

@@ -1,5 +1,5 @@
 import { Hono } from 'npm:hono@4'
-import { cors } from 'npm:hono/cors'
+import { cors } from 'npm:hono@4/cors'
 import { authRoute } from './routes/auth.route.ts'
 import { productsRoute } from './routes/products.route.ts'
 import { inventoryItemsRoute } from './routes/inventoryItems.route.ts'
@@ -7,6 +7,7 @@ import { stockRoute } from './routes/stock.route.ts'
 import { unitsRoute } from './routes/units.route.ts'
 import { itemCategoriesRoute } from './routes/itemCategories.route.ts'
 import { itemsRoute } from './routes/items.route.ts'
+import { productionRoute } from './routes/production.route.ts'
 import { customersRoute } from './routes/customers.route.ts'
 import { ordersRoute } from './routes/orders.route.ts'
 import { revenueRoute } from './routes/revenue.route.ts'
@@ -25,14 +26,21 @@ app.use(
   cors({
     origin: '*',
     allowHeaders: ['authorization', 'apikey', 'content-type'],
-    allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   }),
 )
 
-// Reachable with no session at all: pre-login admin bootstrap checks, and
-// public storefront browsing (a customer can look at products before
-// signing in — login is only required to check out).
-const PUBLIC_PATHS = new Set(['/api/auth/status', '/api/auth/signup', '/api/storefront/products'])
+// Reachable with no session at all: pre-login admin bootstrap checks, public
+// storefront browsing (a customer can look at products before signing in —
+// login is only required to check out), and pure reference data (unit
+// conversions) that customer-facing pages need to render pack labels for
+// anyone, not just admins.
+const PUBLIC_PATHS = new Set([
+  '/api/auth/status',
+  '/api/auth/signup',
+  '/api/storefront/products',
+  '/api/units',
+])
 
 // Everything else needs a real signed-in user — the gateway's verify_jwt
 // only checks "is this some valid Supabase JWT", which the anon key itself
@@ -50,9 +58,10 @@ const ADMIN_PREFIXES = [
   '/api/products',
   '/api/inventory-items',
   '/api/stock',
-  '/api/units',
   '/api/item-categories',
   '/api/items',
+  // Production creates stock and consumes raw materials; it is never public.
+  '/api/production',
   '/api/customers',
   '/api/orders',
   '/api/revenue',
@@ -73,6 +82,7 @@ app.route('/stock', stockRoute)
 app.route('/units', unitsRoute)
 app.route('/item-categories', itemCategoriesRoute)
 app.route('/items', itemsRoute)
+app.route('/production', productionRoute)
 app.route('/customers', customersRoute)
 app.route('/orders', ordersRoute)
 app.route('/revenue', revenueRoute)

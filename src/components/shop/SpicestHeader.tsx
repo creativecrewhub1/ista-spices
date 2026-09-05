@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Search, ShoppingBag, ChevronDown, LayoutDashboard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { AccountMenu } from './AccountMenu'
 import { useCart } from '@/shop/CartContext'
 import { useAuth } from '@/auth/AuthProvider'
 import {
@@ -11,24 +12,23 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
-interface SpicestHeaderProps {
-  onSearchChange?: (query: string) => void
-  activeCategory?: string
-  onCategorySelect?: (category: string) => void
-}
-
-export function SpicestHeader({ onSearchChange, onCategorySelect }: SpicestHeaderProps) {
+export function SpicestHeader() {
   const { count } = useCart()
-  const { session, signOut } = useAuth()
+  const { session, role } = useAuth()
   const navigate = useNavigate()
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
 
+  // Browsing/filtering always happens on the full shop page — clicking a
+  // category or searching from anywhere else (e.g. the homepage) jumps there.
+  function goToShop(params: Record<string, string>) {
+    const query = new URLSearchParams(params).toString()
+    navigate(`/shop/all${query ? `?${query}` : ''}`)
+  }
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (onSearchChange) {
-      onSearchChange(searchQuery)
-    }
+    if (searchQuery.trim()) goToShop({ q: searchQuery.trim() })
   }
 
   return (
@@ -38,7 +38,7 @@ export function SpicestHeader({ onSearchChange, onCategorySelect }: SpicestHeade
         {/* Brand Logo */}
         <Link to="/shop" className="flex items-center gap-2 group">
           <span className="font-display text-2xl sm:text-3xl font-extrabold tracking-wider text-[#E85D19] group-hover:opacity-90 transition-opacity">
-            SPICEST
+            ISTA
           </span>
         </Link>
 
@@ -50,32 +50,30 @@ export function SpicestHeader({ onSearchChange, onCategorySelect }: SpicestHeade
               <ChevronDown className="size-4 opacity-70" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-48 p-2 rounded-xl shadow-lg border-orange-100 bg-white">
-              <DropdownMenuItem 
-                onClick={() => onCategorySelect?.('all')} 
+              <DropdownMenuItem
+                onClick={() => goToShop({})}
                 className="rounded-lg cursor-pointer hover:bg-orange-50 hover:text-[#E85D19]"
               >
                 All Products
               </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => onCategorySelect?.('spice-powder')} 
+              <DropdownMenuItem
+                onClick={() => goToShop({ category: 'spice-powder' })}
                 className="rounded-lg cursor-pointer hover:bg-orange-50 hover:text-[#E85D19]"
               >
                 Spice Powders
               </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => onCategorySelect?.('cooking-oil')} 
+              <DropdownMenuItem
+                onClick={() => goToShop({ category: 'cooking-oil' })}
                 className="rounded-lg cursor-pointer hover:bg-orange-50 hover:text-[#E85D19]"
               >
                 Cold-Pressed Oils
               </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => onCategorySelect?.('blends')} 
-                className="rounded-lg cursor-pointer hover:bg-orange-50 hover:text-[#E85D19]"
-              >
-                Spice Blends
-              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          <Link to="/shop/all" className="hover:text-[#E85D19] transition-colors">
+            Shop
+          </Link>
 
           <a href="#about" className="hover:text-[#E85D19] transition-colors">
             About Us
@@ -99,10 +97,7 @@ export function SpicestHeader({ onSearchChange, onCategorySelect }: SpicestHeade
                   type="text"
                   placeholder="Search spices..."
                   value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value)
-                    onSearchChange?.(e.target.value)
-                  }}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   autoFocus
                   className="w-36 sm:w-48 rounded-full border border-orange-200 bg-orange-50/50 py-1.5 pl-3 pr-8 text-xs sm:text-sm focus:border-[#E85D19] focus:outline-none focus:ring-1 focus:ring-[#E85D19]"
                 />
@@ -138,23 +133,18 @@ export function SpicestHeader({ onSearchChange, onCategorySelect }: SpicestHeade
           {/* Authentication & Dashboard Buttons */}
           {session ? (
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate('/')}
-                className="hidden lg:flex gap-1.5 rounded-full border-orange-200 text-xs font-medium text-gray-700 hover:border-[#E85D19] hover:bg-orange-50"
-              >
-                <LayoutDashboard className="size-3.5" />
-                Admin
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => signOut()}
-                className="rounded-full text-xs font-medium text-gray-600 hover:bg-orange-50"
-              >
-                Sign Out
-              </Button>
+              {role === 'admin' ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/')}
+                  className="hidden lg:flex gap-1.5 rounded-full border-orange-200 text-xs font-medium text-gray-700 hover:border-[#E85D19] hover:bg-orange-50"
+                >
+                  <LayoutDashboard className="size-3.5" />
+                  Admin
+                </Button>
+              ) : null}
+              <AccountMenu />
             </div>
           ) : (
             <div className="flex items-center space-x-2">

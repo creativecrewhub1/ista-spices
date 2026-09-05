@@ -1,10 +1,13 @@
+import { useNavigate } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 
-interface SpicestCategoryBannersProps {
-  onCategoryClick?: (category: string) => void
-}
+export function SpicestCategoryBanners() {
+  const navigate = useNavigate()
 
-export function SpicestCategoryBanners({ onCategoryClick }: SpicestCategoryBannersProps) {
+  function goToCategory(category: string) {
+    navigate(`/shop/all?category=${category}`)
+  }
+
   return (
     <section className="py-10 bg-white">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -12,7 +15,7 @@ export function SpicestCategoryBanners({ onCategoryClick }: SpicestCategoryBanne
           
           {/* Banner 1: BEST SPICE BLENDS */}
           <div 
-            onClick={() => onCategoryClick?.('blends')}
+            onClick={() => goToCategory('spice-powder')}
             className="group relative overflow-hidden rounded-2xl bg-[#F7F5F0] p-6 sm:p-8 flex items-center justify-between cursor-pointer border border-gray-100 hover:shadow-xl transition-all duration-300"
           >
             <div className="space-y-3 z-10 max-w-[55%]">
@@ -36,7 +39,7 @@ export function SpicestCategoryBanners({ onCategoryClick }: SpicestCategoryBanne
 
           {/* Banner 2: ROOTS AND RHIZOMES */}
           <div 
-            onClick={() => onCategoryClick?.('spice-powder')}
+            onClick={() => goToCategory('spice-powder')}
             className="group relative overflow-hidden rounded-2xl bg-[#F7F5F0] p-6 sm:p-8 flex items-center justify-between cursor-pointer border border-gray-100 hover:shadow-xl transition-all duration-300"
           >
             <div className="space-y-3 z-10 max-w-[55%]">

@@ -50,6 +50,7 @@ export function MyOrdersPage() {
                   <div>
                     <p className="text-sm font-medium text-foreground">{order.id}</p>
                     <p className="text-xs text-muted-foreground">{formatDateLong(order.placedAt)}</p>
+                    <p className="text-xs text-muted-foreground">{order.address}</p>
                   </div>
                   <Badge variant="outline" className={orderStatusConfig[order.status].badgeClass}>
                     {orderStatusConfig[order.status].label}

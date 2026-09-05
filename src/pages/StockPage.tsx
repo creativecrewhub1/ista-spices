@@ -1,5 +1,5 @@
 import { Fragment, useMemo, useState, type FormEvent } from 'react'
-import { ArrowDownToLine, ChevronRight, PackagePlus, Search } from 'lucide-react'
+import { ArrowDownToLine, ChevronRight, Factory, PackagePlus, Search } from 'lucide-react'
 import { TopBar } from '@/components/layout/TopBar'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -20,12 +20,15 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CardListSkeleton, ErrorState } from '@/components/common/QueryState'
 import { ItemMovements } from '@/components/stock/ItemMovements'
 import { useStock, useStockMovements } from '@/data/queries'
-import { useReceiveStock } from '@/data/mutations'
-import type { StockItem } from '@/data/types'
+import { useReceiveStock, useRecordProduction } from '@/data/mutations'
+import { ProductionSheet } from '@/components/stock/ProductionSheet'
+import type { ItemCategory, StockItem } from '@/data/types'
 import { formatCurrency, formatRate, formatDateLong } from '@/lib/format'
+import { itemCategoryLabel, stockItemCategory } from '@/lib/status'
 import { cn } from '@/lib/utils'
 import { pageEnter } from '@/lib/motion'
 
@@ -37,17 +40,23 @@ const MOVEMENT_LABELS: Record<string, { label: string; className: string }> = {
   adjustment: { label: 'Adjusted', className: 'bg-slate-100 text-slate-700 border-slate-200' },
 }
 
-function originLabel(item: StockItem): string {
-  if (item.origin === 'manufactured') return 'Manufacturing'
-  return item.isConsumable ? 'Raw Material' : 'B2B'
-}
+/**
+ * The two kinds of stock that arrive by being bought. A manufactured good
+ * gets its stock from a production run, which draws materials and costs the
+ * batch, so buying one in would put stock on the shelf with no batch behind
+ * it and no materials taken off it.
+ */
+const PURCHASABLE: ItemCategory[] = ['raw_material', 'b2b']
 
 export function StockPage() {
   const { data: stock, isLoading, error } = useStock()
   const { data: movements } = useStockMovements(undefined, 25)
   const receiveStock = useReceiveStock()
+  const recordProduction = useRecordProduction()
+  const [productionOpen, setProductionOpen] = useState(false)
 
   const [query, setQuery] = useState('')
+  const [tab, setTab] = useState<ItemCategory>('raw_material')
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [formOpen, setFormOpen] = useState(false)
   const [itemId, setItemId] = useState('')
@@ -55,9 +64,27 @@ export function StockPage() {
   const [totalCost, setTotalCost] = useState('')
   const [note, setNote] = useState('')
 
+  const matchesQuery = useMemo(() => {
+    const needle = query.trim().toLowerCase()
+    return (item: StockItem) => item.name.toLowerCase().includes(needle)
+  }, [query])
+
   const filtered = useMemo(
-    () => (stock ?? []).filter((s) => s.name.toLowerCase().includes(query.toLowerCase())),
-    [stock, query],
+    () => (stock ?? []).filter((s) => stockItemCategory(s) === tab && matchesQuery(s)),
+    [stock, tab, matchesQuery],
+  )
+
+  /* A search that finds nothing here may still have found something under
+     another tab. Saying so beats a bare "no matches". */
+  const matchesElsewhere = useMemo(
+    () => (stock ?? []).filter((s) => stockItemCategory(s) !== tab && matchesQuery(s)).length,
+    [stock, tab, matchesQuery],
+  )
+
+  /* Only what can be bought in. A manufactured good is made, not purchased. */
+  const purchasable = useMemo(
+    () => (stock ?? []).filter((s) => PURCHASABLE.includes(stockItemCategory(s))),
+    [stock],
   )
 
   const totals = useMemo(() => {
@@ -165,14 +192,41 @@ export function StockPage() {
               aria-label="Search stock"
             />
           </div>
-          <Button
-            onClick={() => setFormOpen(true)}
-            className="gap-1.5 rounded-2xl bg-gradient-to-r from-orange-500 to-rose-500 text-xs font-bold text-white"
-          >
-            <PackagePlus className="size-4" aria-hidden="true" />
-            Stock in
-          </Button>
+          <div className="flex items-center gap-2">
+            {/* The other way stock appears: made rather than bought. */}
+            <Button
+              variant="outline"
+              onClick={() => setProductionOpen(true)}
+              className="gap-1.5 rounded-2xl text-xs font-bold"
+            >
+              <Factory className="size-4" aria-hidden="true" />
+              Production
+            </Button>
+            <Button
+              onClick={() => setFormOpen(true)}
+              className="gap-1.5 rounded-2xl bg-gradient-to-r from-orange-500 to-rose-500 text-xs font-bold text-white"
+            >
+              <PackagePlus className="size-4" aria-hidden="true" />
+              Stock in
+            </Button>
+          </div>
         </div>
+
+        {/* The catalogue divides three ways, and stock is read one kind at
+            a time — raw materials, bought-in goods, and what the shop makes. */}
+        <Tabs value={tab} onValueChange={(v) => setTab(v as ItemCategory)}>
+          <TabsList className="w-full rounded-2xl bg-orange-50/70 p-1">
+            <TabsTrigger value="raw_material" className="flex-1 rounded-xl text-xs font-bold">
+              Raw Material
+            </TabsTrigger>
+            <TabsTrigger value="b2b" className="flex-1 rounded-xl text-xs font-bold">
+              B2B
+            </TabsTrigger>
+            <TabsTrigger value="manufacturing" className="flex-1 rounded-xl text-xs font-bold">
+              Manufacturing
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
 
         {/* Current position */}
         {isLoading ? (
@@ -229,7 +283,7 @@ export function StockPage() {
                           </Badge>
                         ) : null}
                       </td>
-                      <td className="px-4 py-3 text-slate-500">{originLabel(item)}</td>
+                      <td className="px-4 py-3 text-slate-500">{itemCategoryLabel[stockItemCategory(item)]}</td>
                       <td className="px-4 py-3 text-right font-mono tabular-nums text-slate-900">
                         {item.quantityOnHand} <span className="text-slate-400">{item.stockUnit}</span>
                       </td>
@@ -253,7 +307,13 @@ export function StockPage() {
               </table>
             </div>
             {filtered.length === 0 ? (
-              <p className="py-10 text-center text-sm text-slate-500">No items match your search.</p>
+              <p className="py-10 text-center text-sm text-slate-500">
+                {query.trim() === ''
+                  ? `Nothing under ${itemCategoryLabel[tab]} yet.`
+                  : matchesElsewhere > 0
+                    ? `No ${itemCategoryLabel[tab]} matches “${query.trim()}” — ${matchesElsewhere} match${matchesElsewhere > 1 ? 'es' : ''} under the other tabs.`
+                    : 'No items match your search.'}
+              </p>
             ) : null}
           </div>
         )}
@@ -308,6 +368,19 @@ export function StockPage() {
         </div>
       </div>
 
+      <ProductionSheet
+        open={productionOpen}
+        onOpenChange={setProductionOpen}
+        stock={stock ?? []}
+        isSaving={recordProduction.isPending}
+        error={recordProduction.isError ? (recordProduction.error as Error).message : null}
+        onSubmit={(input) =>
+          recordProduction.mutate(input, {
+            onSuccess: () => setProductionOpen(false),
+          })
+        }
+      />
+
       {/* Stock in form */}
       <Sheet
         open={formOpen}
@@ -316,7 +389,7 @@ export function StockPage() {
           if (!open) resetForm()
         }}
       >
-        <SheetContent className="w-full overflow-y-auto border-l border-slate-200 bg-white p-6 sm:max-w-md">
+        <SheetContent className="w-full overflow-y-auto border-l border-slate-200 bg-white p-6 sm:max-w-xl md:max-w-2xl">
           <SheetHeader className="border-b border-slate-100 p-0 pb-4">
             <div className="flex items-center gap-3">
               <span className="flex size-10 items-center justify-center rounded-2xl bg-orange-100 text-orange-600">
@@ -341,9 +414,9 @@ export function StockPage() {
                   <SelectValue placeholder="Choose an item" />
                 </SelectTrigger>
                 <SelectContent className="rounded-2xl">
-                  {(stock ?? []).map((item) => (
+                  {purchasable.map((item) => (
                     <SelectItem key={item.itemId} value={item.itemId} className="rounded-xl font-semibold">
-                      {item.name} · {originLabel(item)}
+                      {item.name} · {itemCategoryLabel[stockItemCategory(item)]}
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -85,13 +85,18 @@ export interface Product {
   packSizes: PackSize[]
   discountPercent: number
   spiceLevel: SpiceLevel | null
-  batchCapacity: number
+  /** At or below this, the item counts as running low. */
+  lowStockThreshold: number
+  /** How much is on hand, in stockUnit. */
   unitsPackedThisBatch: number
-  /** low/ok/high classification of unitsPackedThisBatch vs batchCapacity — a backend decision, not a frontend threshold. */
+  /** low/ok/high, computed server-side against lowStockThreshold. */
   stockLevel: StockLevel
-  /** Per-unit cost of the most recent consignment — today's buying price. */
+  /** Per-unit cost of the most recent lot, bought or made. */
   lastPurchaseCost: number | null
   lastPurchasedAt: string | null
+  /** The lot it came from. MNF- numbers were produced, BN- were bought. */
+  lastBatchNo: string | null
+  lastBatchKind: 'receipt' | 'production' | null
   isActive: boolean
   /** Display image — app-relative path or absolute URL. Null until a photo exists. */
   imageUrl: string | null
@@ -144,7 +149,6 @@ export interface ItemInput {
   spiceLevel: SpiceLevel | null
   packSizes: PackSize[]
   discountPercent: number
-  batchCapacity: number
 }
 
 export type StockMovementKind =
@@ -172,11 +176,12 @@ export interface StockItem {
   /** Null wherever avgUnitCost is — stock can't be valued without a basis. */
   stockValue: number | null
   isLowStock: boolean
-  /** Per-unit cost of the most recent consignment — today's buying price. */
+  /** Per-unit cost of the most recent lot, bought or made. */
   lastPurchaseCost: number | null
   lastPurchasedAt: string | null
-  /** Consignment reference of that most recent receipt. */
+  /** The lot it came from. MNF- numbers were produced, BN- were bought. */
   lastBatchNo: string | null
+  lastBatchKind: 'receipt' | 'production' | null
 }
 
 export interface StockMovement {
@@ -196,6 +201,68 @@ export interface StockMovement {
   note: string | null
   /** Consignment reference, assigned by the database on receipt. */
   batchNo: string | null
+}
+
+/** One material that went into a batch, and how much of it. */
+export interface ProductionInputLine {
+  itemId: string
+  qty: number
+}
+
+/** What a batch consumed and what it yielded. */
+export interface ProductionRunInput {
+  productId: string
+  outputQty: number
+  inputs: ProductionInputLine[]
+  occurredAt?: string
+  note?: string
+}
+
+/** One batch of stock still available to draw from, oldest first. */
+export interface StockLayer {
+  movementId: string
+  batchNo: string | null
+  occurredAt: string
+  remainingQty: number
+  unitCost: number | null
+}
+
+/**
+ * What a batch costs, material by material and batch by batch. Produced by
+ * walking each material's layers oldest first — the same rule the database
+ * applies when the run is posted.
+ */
+export interface ProductionCosting {
+  materials: {
+    itemId: string
+    itemName: string
+    unit: string
+    qty: number
+    /** Quantity no costed batch could cover, if any. */
+    uncovered: number
+    drawnFrom: {
+      batchNo: string | null
+      arrivedAt: string
+      qty: number
+      unitCost: number | null
+      lineCost: number
+    }[]
+    materialCost: number
+  }[]
+  totalCost: number
+  outputQty: number
+  costPerOutputUnit: number | null
+}
+
+/** A posted run, as it reads back. */
+export interface ProductionRun {
+  id: string
+  productName: string
+  outputQty: number
+  outputUnit: string
+  occurredAt: string
+  note: string | null
+  inputs: { itemName: string; qty: number; unit: string }[]
 }
 
 export interface StockReceiptInput {
@@ -226,9 +293,12 @@ export interface InventoryItem {
   packSizes: PackSize[]
   quantityOnHand: number
   lowStockThreshold: number
-  /** Per-unit cost of the most recent consignment — today's buying price. */
+  /** Per-unit cost of the most recent lot, bought or made. */
   lastPurchaseCost: number | null
   lastPurchasedAt: string | null
+  /** The lot it came from. MNF- numbers were produced, BN- were bought. */
+  lastBatchNo: string | null
+  lastBatchKind: 'receipt' | 'production' | null
   isActive: boolean
   /** Display image — app-relative path or absolute URL. Null until a photo exists. */
   imageUrl: string | null
@@ -290,33 +360,42 @@ export interface OrderListFilters {
   search?: string
 }
 
-export type CustomerSegment = 'new' | 'regular' | 'vip'
+export type CustomerSegment = 'new' | 'regular'
 export type PlanStatus = 'active' | 'paused' | 'none'
 
 export interface Customer {
   id: string
   name: string
-  phone: string
+  /** Null until the customer provides one — Google signup doesn't supply it. */
+  phone: string | null
   email: string | null
   initials: string
-  address: string
+  /** Null until the customer provides one — Google signup doesn't supply it. */
+  address: string | null
   joinedAt: string
   planStatus: PlanStatus
   segment: CustomerSegment
   totalOrders: number
   totalSpend: number
   lastOrderAt: string | null
-  /** Ordered within the last 90 days — computed in customers_with_stats. */
-  isActive: boolean
+  createdAt: string
+  updatedAt: string
+  /** Google's photo at signup, or a URL the customer pasted in on their profile. */
+  avatarUrl: string | null
+}
+
+/** Fields a customer can edit on their own profile — all optional, only provided fields change. */
+export interface UpdateProfileInput {
+  name?: string
+  phone?: string
+  address?: string
+  avatarUrl?: string
 }
 
 export interface CustomerCounts {
   total: number
-  active: number
-  inactive: number
   new: number
   regular: number
-  vip: number
 }
 
 export interface RevenuePoint {
@@ -372,7 +451,8 @@ export type AttentionItem =
       linkTo: '/inventory'
       productName: string
       unitsInHand: number
-      batchCapacity: number
+      /** What unitsInHand is measured in. */
+      stockUnit: string
     }
   | {
       id: string
@@ -411,4 +491,49 @@ export interface CheckoutInput {
   address: string
   name?: string
   phone?: string
+}
+
+/** One running cost recorded against a month rather than against a product. */
+export interface MonthlyExpense {
+  id: string
+  /** Always the first of the month, ISO date. */
+  month: string
+  description: string
+  amount: number
+  createdAt: string
+}
+
+/** Revenue and cost of goods for one product in one month, straight from the views. */
+export interface ProductProfitRow {
+  productId: string
+  productName: string
+  unitsSold: number
+  revenue: number
+  materialCost: number
+  grossProfit: number
+}
+
+/**
+ * The same row with the month's running costs apportioned onto it.
+ *
+ * Overheads belong to the month, not to any one product, so they are shared
+ * out in proportion to what each product earned. The split is a reporting
+ * choice; the figures it is derived from are not.
+ */
+export interface ProductProfitLine extends ProductProfitRow {
+  overhead: number
+  netProfit: number
+}
+
+export interface MonthlyProfit {
+  month: string
+  products: ProductProfitLine[]
+  expenses: MonthlyExpense[]
+  totals: {
+    revenue: number
+    materialCost: number
+    grossProfit: number
+    overhead: number
+    netProfit: number
+  }
 }

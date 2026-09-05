@@ -19,26 +19,31 @@ import { OrderDetailSheet } from '@/components/orders/OrderDetailSheet'
 import { CardListSkeleton, ErrorState } from '@/components/common/QueryState'
 import { useCustomerCounts, useCustomerOrders, useCustomers } from '@/data/queries'
 import { useDebouncedValue } from '@/lib/useDebouncedValue'
-import { useUpdateOrderStatus } from '@/data/mutations'
-import type { Customer, Order, OrderStatus } from '@/data/types'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { useSetCustomerSegment, useUpdateOrderStatus } from '@/data/mutations'
+import type { Customer, CustomerSegment, Order, OrderStatus } from '@/data/types'
 import { orderStatusConfig, segmentConfig } from '@/lib/status'
 import { formatCurrency, formatDateLong } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { pageEnter } from '@/lib/motion'
 
-type FilterValue = 'all' | 'active' | 'inactive' | 'new' | 'regular' | 'vip'
+type FilterValue = 'all' | 'new' | 'regular'
 
 const FILTER_TABS: { label: string; value: FilterValue }[] = [
   { label: 'All', value: 'all' },
-  { label: 'Active', value: 'active' },
-  { label: 'Inactive', value: 'inactive' },
   { label: 'New', value: 'new' },
   { label: 'Regular', value: 'regular' },
-  { label: 'VIP', value: 'vip' },
 ]
 
 // Extract city/locality from full address for location display
-function getCityFromAddress(address: string): string {
+function getCityFromAddress(address: string | null): string {
+  if (!address) return 'Not on file'
   const parts = address.split(',')
   if (parts.length >= 2) return `${parts[parts.length - 2].trim()}, ${parts[parts.length - 1].trim()}`
   return address
@@ -59,14 +64,14 @@ export function CustomersPage() {
     error,
   } = useCustomers({
     search: debouncedQuery || undefined,
-    segment: filter === 'new' || filter === 'regular' || filter === 'vip' ? filter : undefined,
-    activity: filter === 'active' || filter === 'inactive' ? filter : undefined,
+    segment: filter === 'all' ? undefined : filter,
   })
   const { data: customerCounts } = useCustomerCounts()
   const updateStatus = useUpdateOrderStatus()
+  const setSegment = useSetCustomerSegment()
 
   // Whole-book tallies, independent of the filter the list is under.
-  const counts = customerCounts ?? { total: 0, active: 0, inactive: 0, new: 0, regular: 0, vip: 0 }
+  const counts = customerCounts ?? { total: 0, new: 0, regular: 0 }
 
   // Search and filter are applied server-side.
   const filteredCustomers = customers ?? []
@@ -93,17 +98,7 @@ export function CustomersPage() {
             {FILTER_TABS.map((tab) => {
               const isActive = filter === tab.value
               const countVal =
-                tab.value === 'all'
-                  ? counts.total
-                  : tab.value === 'active'
-                    ? counts.active
-                    : tab.value === 'inactive'
-                      ? counts.inactive
-                      : tab.value === 'new'
-                        ? counts.new
-                        : tab.value === 'regular'
-                          ? counts.regular
-                          : counts.vip
+                tab.value === 'all' ? counts.total : tab.value === 'new' ? counts.new : counts.regular
 
               return (
                 <button
@@ -169,8 +164,6 @@ export function CustomersPage() {
                 {/* Mobile Cards (< md) */}
                 <div className="flex flex-col gap-3 md:hidden">
                   {filteredCustomers.map((customer) => {
-                    const activeStatus = (customer.isActive ? 'active' : 'inactive')
-
                     return (
                       <div
                         key={customer.id}
@@ -189,23 +182,11 @@ export function CustomersPage() {
                                 {customer.name}
                               </span>
                               <span className="text-[11px] font-mono text-slate-500 flex items-center gap-1">
-                                <Phone className="size-3 text-slate-400" /> {customer.phone}
+                                <Phone className="size-3 text-slate-400" /> {customer.phone ?? 'Not on file'}
                               </span>
                             </div>
                           </div>
 
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              'inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-bold rounded-full border shadow-2xs shrink-0',
-                              activeStatus === 'active'
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                : 'bg-rose-50 text-rose-700 border-rose-200',
-                            )}
-                          >
-                            <span className={cn('size-1.5 rounded-full', activeStatus === 'active' ? 'bg-emerald-500' : 'bg-rose-500')} />
-                            <span>{activeStatus === 'active' ? 'Active' : 'Inactive'}</span>
-                          </Badge>
                         </div>
 
                         <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs text-slate-600 font-semibold">
@@ -242,15 +223,12 @@ export function CustomersPage() {
                           <th className="py-4 px-6">Location</th>
                           <th className="py-4 px-6 w-36">Total Orders</th>
                           <th className="py-4 px-6 w-44 text-right">Total Spent</th>
-                          <th className="py-4 px-6 w-36 text-center">Status</th>
                         </tr>
                       </thead>
 
                       <tbody className="divide-y divide-slate-100/80">
                         {filteredCustomers.map((customer) => {
-                          const activeStatus = (customer.isActive ? 'active' : 'inactive')
-
-                          return (
+                                return (
                             <tr
                               key={customer.id}
                               onClick={() => setSelectedCustomer(customer)}
@@ -279,7 +257,7 @@ export function CustomersPage() {
                               <td className="py-4 px-6 font-mono font-semibold text-slate-700 group-hover:text-slate-900 transition-colors">
                                 <div className="flex items-center gap-1.5">
                                   <Phone className="size-3 text-slate-400 group-hover:text-orange-500 transition-colors shrink-0" />
-                                  <span>{customer.phone}</span>
+                                  <span>{customer.phone ?? 'Not on file'}</span>
                                 </div>
                               </td>
 
@@ -304,21 +282,6 @@ export function CustomersPage() {
                                 {formatCurrency(customer.totalSpend)}
                               </td>
 
-                              {/* 6. STATUS IN THE LAST COLUMN */}
-                              <td className="py-4 px-6 text-center">
-                                <Badge
-                                  variant="outline"
-                                  className={cn(
-                                    'inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold rounded-full border shadow-2xs transition-all duration-300 group-hover:scale-105',
-                                    activeStatus === 'active'
-                                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200/90'
-                                      : 'bg-rose-50 text-rose-700 border-rose-200/90',
-                                  )}
-                                >
-                                  <span className={cn('size-1.5 rounded-full', activeStatus === 'active' ? 'bg-emerald-500' : 'bg-rose-500')} />
-                                  <span>{activeStatus === 'active' ? 'Active' : 'Inactive'}</span>
-                                </Badge>
-                              </td>
                             </tr>
                           )
                         })}
@@ -350,7 +313,6 @@ export function CustomersPage() {
                   <div className="space-y-2">
                     {filteredCustomers.map((c) => {
                       const isSelected = selectedCustomer?.id === c.id
-                      const activeStatus = (c.isActive ? 'active' : 'inactive')
 
                       return (
                         <div
@@ -374,12 +336,6 @@ export function CustomersPage() {
                                 {c.initials}
                               </AvatarFallback>
                             </Avatar>
-                            <span
-                              className={cn(
-                                'absolute bottom-0 right-0 size-2.5 rounded-full ring-2 ring-white',
-                                activeStatus === 'active' ? 'bg-emerald-500' : 'bg-rose-500',
-                              )}
-                            />
                           </div>
 
                           <div className="min-w-0 flex-1 space-y-0.5">
@@ -390,7 +346,7 @@ export function CustomersPage() {
                               {isSelected && <ChevronRight className="size-3.5 text-white shrink-0" />}
                             </div>
                             <p className={cn('text-[11px] font-mono truncate', isSelected ? 'text-white/80' : 'text-slate-500')}>
-                              {c.phone}
+                              {c.phone ?? 'Not on file'}
                             </p>
                           </div>
                         </div>
@@ -415,36 +371,49 @@ export function CustomersPage() {
                               {selectedCustomer.initials}
                             </AvatarFallback>
                           </Avatar>
-                          <span
-                            className={cn(
-                              'absolute bottom-1 right-1 size-3.5 rounded-full ring-2 ring-white',
-                              selectedCustomer.isActive ? 'bg-emerald-500' : 'bg-rose-500',
-                            )}
-                          />
                         </div>
 
                         <div className="space-y-1">
-                          <div className="flex items-center gap-2.5">
+                          <div className="flex flex-wrap items-center gap-2.5">
                             <h2 className="font-display text-2xl font-black text-slate-900 tracking-tight">
                               {selectedCustomer.name}
                             </h2>
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                'px-3 py-0.5 text-xs font-bold rounded-full border',
-                                selectedCustomer.isActive
-                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                  : 'bg-rose-50 text-rose-700 border-rose-200',
-                              )}
+                            {/* Nothing works this out. Someone decides a
+                                customer is a regular, and a discount hangs
+                                off the answer, so it is set by hand. */}
+                            <Select
+                              value={selectedCustomer.segment}
+                              onValueChange={(value) =>
+                                setSegment.mutate({
+                                  id: selectedCustomer.id,
+                                  segment: value as CustomerSegment,
+                                })
+                              }
+                              disabled={setSegment.isPending}
                             >
-                              {selectedCustomer.isActive ? 'Active / Online' : 'Inactive'}
-                            </Badge>
+                              <SelectTrigger className="h-8 w-36 rounded-full border-orange-200 bg-orange-50/60 px-3 text-xs font-bold text-orange-700">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent position="popper" sideOffset={4} className="rounded-2xl">
+                                <SelectItem value="new" className="rounded-xl font-semibold">
+                                  New customer
+                                </SelectItem>
+                                <SelectItem value="regular" className="rounded-xl font-semibold">
+                                  Regular customer
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
+                          {setSegment.isError ? (
+                            <p className="text-[11px] font-bold text-rose-600">
+                              {(setSegment.error as Error).message}
+                            </p>
+                          ) : null}
 
                           {/* Contact Sub-details */}
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 font-semibold pt-0.5">
                             <span className="flex items-center gap-1 font-mono">
-                              <Phone className="size-3 text-orange-500" /> {selectedCustomer.phone}
+                              <Phone className="size-3 text-orange-500" /> {selectedCustomer.phone ?? 'Not on file'}
                             </span>
                             <span className="flex items-center gap-1">
                               <MapPin className="size-3 text-orange-500" /> {getCityFromAddress(selectedCustomer.address)}

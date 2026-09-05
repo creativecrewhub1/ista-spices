@@ -21,7 +21,7 @@ db/
   table, the stock movement ledger, `item_category`, the split of stock and
   sales units — was applied by hand through the CLI and was never captured.
 
-`baseline.sql` closes that gap. It was reconstructed on 2026-09-03 by
+`baseline.sql` closes that gap. It was reconstructed on 2026-09-03 (and kept current by hand since) by
 introspecting the live catalogue, so it describes the schema as it stands
 whether or not a migration file explains how it got that way. Read it as the
 current truth; read `migrations/` for the story since.
@@ -54,6 +54,15 @@ and verify the result.
 `supabase/migrations/`. Moving this folder there would buy automatic
 apply-and-record at the cost of the name; it also expects to own the history
 table, which already has hand-applied entries in it.
+
+## Deploying the Edge Function
+
+`supabase functions deploy api --project-ref <ref>` has, twice now (2026-09-03),
+silently deployed a version that 404s on routes that exist in the source —
+confirmed via `curl` immediately after, then fixed by running the exact same
+deploy command again with no code changes. Treat a fresh 404 on a route that
+demonstrably exists in the deployed source as "deploy didn't propagate," not
+as a code bug — redeploy once before spending time debugging the code.
 
 ## Pending
 

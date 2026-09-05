@@ -6,6 +6,7 @@ import { ProtectedRoute } from '@/auth/ProtectedRoute'
 import { RequireSession } from '@/auth/RequireSession'
 import { CartProvider } from '@/shop/CartContext'
 import { LoginPage } from '@/pages/LoginPage'
+import { ResetPasswordPage } from '@/pages/ResetPasswordPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { InventoryPage } from '@/pages/InventoryPage'
 import { StockPage } from '@/pages/StockPage'
@@ -13,9 +14,11 @@ import { OrdersPage } from '@/pages/OrdersPage'
 import { RevenuePage } from '@/pages/RevenuePage'
 import { CustomersPage } from '@/pages/CustomersPage'
 import { CatalogPage } from '@/pages/shop/CatalogPage'
+import { ShopAllPage } from '@/pages/shop/ShopAllPage'
 import { CartPage } from '@/pages/shop/CartPage'
 import { CheckoutPage } from '@/pages/shop/CheckoutPage'
 import { MyOrdersPage } from '@/pages/shop/MyOrdersPage'
+import { ProfilePage } from '@/pages/shop/ProfilePage'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -35,6 +38,7 @@ export default function App() {
             <Routes>
               {/* Authentication */}
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
 
               {/* Admin Panel (Primary Work Route) */}
               <Route element={<ProtectedRoute />}>
@@ -50,10 +54,12 @@ export default function App() {
 
               {/* Customer Storefront */}
               <Route path="/shop" element={<CatalogPage />} />
+              <Route path="/shop/all" element={<ShopAllPage />} />
               <Route path="/shop/cart" element={<CartPage />} />
               <Route element={<RequireSession />}>
                 <Route path="/shop/checkout" element={<CheckoutPage />} />
                 <Route path="/shop/orders" element={<MyOrdersPage />} />
+                <Route path="/shop/profile" element={<ProfilePage />} />
               </Route>
             </Routes>
           </CartProvider>

@@ -1,6 +1,7 @@
 import { Hono } from 'npm:hono@4'
 import { StorefrontService } from '../services/storefront.service.ts'
-import type { CheckoutInput } from '../types/domain.ts'
+import { HttpError } from '../lib/httpError.ts'
+import type { CheckoutInput, UpdateProfileInput } from '../types/domain.ts'
 import type { AppEnv } from '../types/context.ts'
 
 export const storefrontRoute = new Hono<AppEnv>()
@@ -26,4 +27,38 @@ storefrontRoute.get('/orders', async (c) => {
   const userId = c.get('userId')
   const orders = await StorefrontService.myOrders(userId)
   return c.json(orders)
+})
+
+storefrontRoute.get('/me', async (c) => {
+  const profile = await StorefrontService.myProfile(c.get('userId'))
+  return c.json(profile)
+})
+
+storefrontRoute.put('/me', async (c) => {
+  const body = await c.req.json<UpdateProfileInput>()
+  await StorefrontService.updateMyProfile(c.get('userId'), body)
+  return c.json({ ok: true })
+})
+
+/** A self-service data export — everything this account holds, as one JSON download. */
+storefrontRoute.get('/me/export', async (c) => {
+  const data = await StorefrontService.exportMyData(c.get('userId'))
+  return c.json(data)
+})
+
+/** Self-service account deletion. The admin account can't delete itself here. */
+storefrontRoute.delete('/me', async (c) => {
+  if (c.get('userRole') === 'admin') {
+    throw new HttpError(403, 'The admin account cannot be deleted here')
+  }
+  await StorefrontService.deleteMyAccount(c.get('userId'))
+  return c.json({ ok: true })
+})
+
+/** Uploads a profile photo — multipart/form-data with a single "file" field. */
+storefrontRoute.post('/me/avatar', async (c) => {
+  const formData = await c.req.formData()
+  const file = formData.get('file')
+  const result = await StorefrontService.uploadAvatar(c.get('userId'), file instanceof File ? file : null)
+  return c.json(result)
 })

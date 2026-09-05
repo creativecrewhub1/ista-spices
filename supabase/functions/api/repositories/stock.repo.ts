@@ -16,6 +16,7 @@ function mapStockRow(row: any): StockItem {
     lowStockThreshold: Number(row.low_stock_threshold),
     // Null means "never purchased, so cost unknown" — distinct from ₹0.
     avgUnitCost: row.avg_unit_cost === null ? null : Number(row.avg_unit_cost),
+    lastBatchKind: row.last_batch_kind ?? null,
     stockValue: row.stock_value === null ? null : Number(row.stock_value),
     isLowStock: row.is_low_stock,
     lastPurchaseCost: row.last_purchase_cost === null ? null : Number(row.last_purchase_cost),
@@ -97,4 +98,18 @@ export async function recordAdjustment(input: {
     note: input.note,
   })
   if (error) throw error
+}
+
+/** What the item is, for rules that turn on where its stock comes from. */
+export async function kindOf(
+  itemId: string,
+): Promise<{ name: string; origin: string; isConsumable: boolean } | null> {
+  const { data, error } = await supabase
+    .from('products')
+    .select('name, origin, is_consumable')
+    .eq('id', itemId)
+    .maybeSingle()
+  if (error) throw error
+  if (!data) return null
+  return { name: data.name, origin: data.origin, isConsumable: data.is_consumable }
 }

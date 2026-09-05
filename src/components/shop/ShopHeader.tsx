@@ -1,12 +1,13 @@
 import { Link } from 'react-router-dom'
-import { Flame, Package, ShoppingBag } from 'lucide-react'
+import { Flame, ShoppingBag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { AccountMenu } from './AccountMenu'
 import { useCart } from '@/shop/CartContext'
 import { useAuth } from '@/auth/AuthProvider'
 
 export function ShopHeader() {
   const { count } = useCart()
-  const { session, signOut } = useAuth()
+  const { session } = useAuth()
 
   return (
     <header className="sticky top-0 z-40 bg-background/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/85">
@@ -18,20 +19,8 @@ export function ShopHeader() {
           <span className="font-display text-lg font-bold tracking-tight text-foreground">Ista Spices</span>
         </Link>
 
-        <div className="flex items-center gap-1">
-          {session ? (
-            <>
-              <Button variant="ghost" size="sm" className="hidden gap-1.5 text-muted-foreground sm:inline-flex" asChild>
-                <Link to="/shop/orders">
-                  <Package className="size-4" aria-hidden="true" />
-                  My orders
-                </Link>
-              </Button>
-              <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => signOut()}>
-                Sign out
-              </Button>
-            </>
-          ) : null}
+        <div className="flex items-center gap-2">
+          {session ? <AccountMenu /> : null}
           <Button variant="ghost" size="icon" className="relative" asChild>
             <Link to="/shop/cart" aria-label={`Cart, ${count} items`}>
               <ShoppingBag className="size-[1.15rem]" aria-hidden="true" />
