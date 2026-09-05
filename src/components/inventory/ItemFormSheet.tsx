@@ -26,6 +26,9 @@ import { cn } from '@/lib/utils'
 import { useItemCategories, useItemNames, useUnits } from '@/data/queries'
 import { matchNames, normaliseName } from '@/lib/nameMatch'
 
+/** Radix needs a value for "no selling unit"; an empty string is not one. */
+const NOT_SOLD = '__not_sold__'
+
 export function emptyItem(category: ItemCategory): ItemInput {
   return {
     id: '',
@@ -128,7 +131,7 @@ export function ItemFormSheet({
   const isManufacturing = draft.category === 'manufacturing'
   // Manufactured goods and bought-in B2B goods are both sold, so both are
   // priced. A raw material is consumed by production and never sold.
-  const isSellable = draft.category !== 'raw_material'
+  const isSellable = draft.category !== 'raw_material' || Boolean(draft.salesUnit)
 
   // Suggestions rank by how alike the names look rather than by prefix, so a
   // typo still finds what it meant. Names close enough to be the same item
@@ -342,20 +345,38 @@ export function ItemFormSheet({
                 <Scale className="size-3.5 text-orange-500" /> Selling unit
               </Label>
               <Select
-                value={draft.salesUnit ?? (draft.category === 'raw_material' ? '' : draft.stockUnit)}
-                onValueChange={(v) =>
+                value={draft.salesUnit ?? NOT_SOLD}
+                onValueChange={(value) => {
+                  const salesUnit = value === NOT_SOLD ? null : value
                   setDraft({
                     ...draft,
-                    salesUnit: v,
-                    salesToStockFactor: v === draft.stockUnit ? 1 : draft.salesToStockFactor,
+                    salesUnit,
+                    // Nothing to convert once it is not for sale, and a unit
+                    // converted to itself is 1.
+                    salesToStockFactor:
+                      salesUnit === null || salesUnit === draft.stockUnit
+                        ? 1
+                        : draft.salesToStockFactor,
+                    // A price is meaningless without a unit to price by.
+                    packSizes: salesUnit === null && draft.category === 'raw_material'
+                      ? []
+                      : draft.packSizes.length > 0
+                        ? draft.packSizes
+                        : [{ qty: 1, price: 0, packaging: null }],
                   })
-                }
-                disabled={draft.category === 'raw_material'}
+                }}
               >
                 <SelectTrigger className="rounded-2xl border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-sm font-semibold text-slate-900 disabled:opacity-50">
-                  <SelectValue placeholder={draft.category === 'raw_material' ? 'N/A (Raw)' : 'Unit'} />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4} className="rounded-2xl">
+                  {/* Only a raw material can decline to be sold; the other two
+                      exist to be sold. */}
+                  {draft.category === 'raw_material' ? (
+                    <SelectItem value={NOT_SOLD} className="rounded-xl font-semibold">
+                      N/A — not sold
+                    </SelectItem>
+                  ) : null}
                   {units.map((u) => (
                     <SelectItem key={u.code} value={u.code} className="rounded-xl font-semibold">
                       {u.name} ({u.code})
@@ -368,7 +389,7 @@ export function ItemFormSheet({
 
           {/* How much of what is bought becomes what is sold. Without it a
               sale cannot know how much stock to draw down. */}
-          {draft.category === 'b2b' && draft.salesUnit && draft.salesUnit !== draft.stockUnit ? (
+          {!isManufacturing && draft.salesUnit && draft.salesUnit !== draft.stockUnit ? (
             <div className="space-y-1.5">
               <Label htmlFor="item-factor" className="text-xs font-bold uppercase tracking-wider text-slate-700">
                 How many {draft.salesUnit} in one {draft.stockUnit}?
