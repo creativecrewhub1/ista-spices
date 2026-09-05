@@ -2,6 +2,7 @@ import { useMemo, useState, type FormEvent } from 'react'
 import {
   AlertTriangle,
   Calculator,
+  ClipboardCheck,
   Coins,
   Factory,
   NotebookPen,
@@ -61,6 +62,10 @@ export function ProductionSheet({
   const [used, setUsed] = useState<Record<string, string>>({})
   const [query, setQuery] = useState('')
   const [showWorking, setShowWorking] = useState(false)
+  // Recording is irreversible in the ledger, so what is about to be consumed
+  // is read back and agreed to. The costing does not wait for this — it
+  // follows the quantities either way — but the write does.
+  const [confirmed, setConfirmed] = useState(false)
 
   const { data: inventoryItems } = useInventoryItems()
   const { data: products } = useProducts()
@@ -114,6 +119,7 @@ export function ProductionSheet({
 
   function reset() {
     setShowWorking(false)
+    setConfirmed(false)
     setProductId('')
     setOutputQty('')
     setNote('')
@@ -122,6 +128,7 @@ export function ProductionSheet({
   }
 
   function toggle(itemId: string, on: boolean) {
+    setConfirmed(false)
     setUsed((prev) => {
       const next = { ...prev }
       if (on) next[itemId] = next[itemId] ?? ''
@@ -146,7 +153,8 @@ export function ProductionSheet({
     ticked.length > 0 &&
     ticked.every(([, qty]) => Number(qty) > 0) &&
     shortages.length === 0 &&
-    Boolean(costing.data)
+    Boolean(costing.data) &&
+    confirmed
 
   return (
     <Sheet
@@ -184,7 +192,10 @@ export function ProductionSheet({
             </Label>
             <Select
               value={productId}
-              onValueChange={setProductId}
+              onValueChange={(value) => {
+                setConfirmed(false)
+                setProductId(value)
+              }}
             >
               <SelectTrigger className="rounded-2xl border-slate-200 bg-slate-50/70 px-4 py-3 font-semibold text-slate-900 focus:border-orange-500 focus:bg-white transition-all">
                 <SelectValue placeholder="Choose what was manufactured..." />
@@ -222,7 +233,10 @@ export function ProductionSheet({
                 step="any"
                 required
                 value={outputQty}
-                onChange={(e) => setOutputQty(e.target.value)}
+                onChange={(e) => {
+                  setConfirmed(false)
+                  setOutputQty(e.target.value)
+                }}
                 placeholder="e.g. 50"
                 className="rounded-2xl border-slate-200 bg-slate-50/70 px-4 py-3 font-mono text-base font-black text-slate-900 focus:border-orange-500 focus:bg-white transition-all pr-16"
               />
@@ -339,7 +353,8 @@ export function ProductionSheet({
                             step="any"
                             value={entered}
                             onChange={(e) =>
-                              setUsed((prev) => ({ ...prev, [material.itemId]: e.target.value }))
+                              (setConfirmed(false),
+                              setUsed((prev) => ({ ...prev, [material.itemId]: e.target.value })))
                             }
                             placeholder="0"
                             aria-label={`Quantity of ${material.name} used`}
@@ -483,6 +498,63 @@ export function ProductionSheet({
                   ) : null}
                 </div>
               ) : null}
+            </div>
+          ) : null}
+
+          {/* 5. WHAT IS ABOUT TO BE CONSUMED, READ BACK AND AGREED TO */}
+          {ticked.length > 0 && Number(outputQty) > 0 && shortages.length === 0 ? (
+            <div
+              className={cn(
+                'rounded-2xl border p-4 transition-colors',
+                confirmed ? 'border-emerald-200 bg-emerald-50/60' : 'border-slate-200 bg-slate-50/60',
+              )}
+            >
+              <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                <ClipboardCheck className="size-3.5 text-orange-500" /> Confirm what will be consumed
+              </span>
+
+              {/* The list above scrolls, so what was ticked is repeated here
+                  where it can be read in one go before committing to it. */}
+              <ul className="mt-2 space-y-1">
+                {ticked.map(([itemId, qty]) => {
+                  const material = stock.find((item) => item.itemId === itemId)
+                  const line = costing.data?.materials.find((m) => m.itemId === itemId)
+                  return (
+                    <li
+                      key={itemId}
+                      className="flex items-baseline justify-between gap-2 border-b border-slate-200/60 pb-1 text-xs last:border-0"
+                    >
+                      <span className="truncate font-semibold text-slate-700">
+                        {material?.name ?? itemId}
+                      </span>
+                      <span className="shrink-0 font-mono font-bold tabular-nums text-slate-800">
+                        {qty} {material?.stockUnit}
+                        {line ? (
+                          <span className="ml-2 font-sans font-semibold text-slate-400">
+                            {formatCurrency(line.materialCost)}
+                          </span>
+                        ) : null}
+                      </span>
+                    </li>
+                  )
+                })}
+              </ul>
+
+              <p className="mt-2 text-[11px] font-medium text-slate-500">
+                This comes out of stock as soon as the batch is recorded, oldest
+                batch first, and cannot be undone from here.
+              </p>
+
+              <label className="mt-3 flex cursor-pointer items-center gap-2">
+                <Checkbox
+                  checked={confirmed}
+                  onCheckedChange={(value) => setConfirmed(value === true)}
+                  aria-label="Confirm the materials and quantities"
+                />
+                <span className="text-xs font-bold text-slate-700">
+                  These materials and quantities are correct
+                </span>
+              </label>
             </div>
           ) : null}
 
