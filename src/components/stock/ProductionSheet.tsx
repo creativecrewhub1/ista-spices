@@ -28,11 +28,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { formatCurrency } from '@/lib/format'
+import { formatCurrency, formatRate } from '@/lib/format'
 import { productImage } from '@/lib/productImage'
 import { cn } from '@/lib/utils'
-import { useInventoryItems, useProducts } from '@/data/queries'
-import { useProductionCosting } from '@/data/mutations'
+import { useInventoryItems, useProductionCosting, useProducts } from '@/data/queries'
+import { useDebouncedValue } from '@/lib/useDebouncedValue'
+
 import { formatDateLong } from '@/lib/format'
 import type { ProductionRunInput, StockItem } from '@/data/types'
 
@@ -59,9 +60,7 @@ export function ProductionSheet({
   const [note, setNote] = useState('')
   const [used, setUsed] = useState<Record<string, string>>({})
   const [query, setQuery] = useState('')
-  const [confirmed, setConfirmed] = useState(false)
   const [showWorking, setShowWorking] = useState(false)
-  const costing = useProductionCosting()
 
   const { data: inventoryItems } = useInventoryItems()
   const { data: products } = useProducts()
@@ -88,15 +87,33 @@ export function ProductionSheet({
   const output = stock.find((s) => s.itemId === productId)
   const ticked = Object.entries(used).filter(([, qty]) => qty !== '')
 
+  // Keyed on the quantities themselves, so the answer on screen always
+  // belongs to the numbers above it.
+  const wanted = JSON.stringify({
+    outputQty: Number(outputQty),
+    inputs: ticked.map(([itemId, qty]) => ({ itemId, qty: Number(qty) })),
+  })
+  const settled = useDebouncedValue(wanted, 400)
+  const costingInput = useMemo(() => {
+    const parsed = JSON.parse(settled) as {
+      outputQty: number
+      inputs: { itemId: string; qty: number }[]
+    }
+    const usable =
+      parsed.outputQty > 0 &&
+      parsed.inputs.length > 0 &&
+      parsed.inputs.every((line) => line.qty > 0)
+    return usable ? parsed : null
+  }, [settled])
+  const costing = useProductionCosting(costingInput)
+
   const shortages = ticked.filter(([itemId, qty]) => {
     const material = stock.find((s) => s.itemId === itemId)
     return material ? Number(qty) > material.quantityOnHand : false
   })
 
   function reset() {
-    setConfirmed(false)
     setShowWorking(false)
-    costing.reset()
     setProductId('')
     setOutputQty('')
     setNote('')
@@ -104,31 +121,13 @@ export function ProductionSheet({
     setQuery('')
   }
 
-  function unconfirm() {
-    if (!confirmed) return
-    setConfirmed(false)
-    setShowWorking(false)
-    costing.reset()
-  }
-
   function toggle(itemId: string, on: boolean) {
-    unconfirm()
     setUsed((prev) => {
       const next = { ...prev }
       if (on) next[itemId] = next[itemId] ?? ''
       else delete next[itemId]
       return next
     })
-  }
-
-  function confirmMaterials() {
-    costing.mutate(
-      {
-        outputQty: Number(outputQty),
-        inputs: ticked.map(([itemId, qty]) => ({ itemId, qty: Number(qty) })),
-      },
-      { onSuccess: () => setConfirmed(true) },
-    )
   }
 
   function handleSubmit(event: FormEvent) {
@@ -147,7 +146,7 @@ export function ProductionSheet({
     ticked.length > 0 &&
     ticked.every(([, qty]) => Number(qty) > 0) &&
     shortages.length === 0 &&
-    confirmed
+    Boolean(costing.data)
 
   return (
     <Sheet
@@ -185,10 +184,7 @@ export function ProductionSheet({
             </Label>
             <Select
               value={productId}
-              onValueChange={(value) => {
-                unconfirm()
-                setProductId(value)
-              }}
+              onValueChange={setProductId}
             >
               <SelectTrigger className="rounded-2xl border-slate-200 bg-slate-50/70 px-4 py-3 font-semibold text-slate-900 focus:border-orange-500 focus:bg-white transition-all">
                 <SelectValue placeholder="Choose what was manufactured..." />
@@ -226,10 +222,7 @@ export function ProductionSheet({
                 step="any"
                 required
                 value={outputQty}
-                onChange={(e) => {
-                  unconfirm()
-                  setOutputQty(e.target.value)
-                }}
+                onChange={(e) => setOutputQty(e.target.value)}
                 placeholder="e.g. 50"
                 className="rounded-2xl border-slate-200 bg-slate-50/70 px-4 py-3 font-mono text-base font-black text-slate-900 focus:border-orange-500 focus:bg-white transition-all pr-16"
               />
@@ -346,8 +339,7 @@ export function ProductionSheet({
                             step="any"
                             value={entered}
                             onChange={(e) =>
-                              (unconfirm(),
-                              setUsed((prev) => ({ ...prev, [material.itemId]: e.target.value })))
+                              setUsed((prev) => ({ ...prev, [material.itemId]: e.target.value }))
                             }
                             placeholder="0"
                             aria-label={`Quantity of ${material.name} used`}
@@ -381,29 +373,22 @@ export function ProductionSheet({
             ) : null}
           </div>
 
-          {/* 4. CONFIRM, THEN THE COSTING THAT FOLLOWS FROM IT */}
+          {/* 4. WHAT THE BATCH COSTS, KEPT IN STEP WITH THE QUANTITIES */}
           {ticked.length > 0 && Number(outputQty) > 0 && shortages.length === 0 ? (
             <div className="space-y-3">
-              {!confirmed ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={confirmMaterials}
-                  disabled={costing.isPending}
-                  className="w-full gap-1.5 rounded-2xl border-orange-200 py-3 text-sm font-bold text-orange-700 hover:bg-orange-50"
-                >
-                  <Calculator className="size-4" aria-hidden="true" />
-                  {costing.isPending ? 'Costing the batch…' : 'Confirm materials & cost this batch'}
-                </Button>
-              ) : null}
-
               {costing.isError ? (
                 <p className="rounded-2xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs font-bold text-rose-700">
                   {(costing.error as Error).message}
                 </p>
               ) : null}
 
-              {confirmed && costing.data ? (
+              {costing.isPending && !costing.data ? (
+                <p className="rounded-2xl border border-orange-100 bg-orange-50/40 px-3.5 py-3 text-center text-xs font-bold text-slate-400">
+                  Costing the batch…
+                </p>
+              ) : null}
+
+              {costing.data ? (
                 <div className="rounded-2xl border border-orange-200/80 bg-gradient-to-br from-orange-50/90 via-amber-50/60 to-orange-50/30 p-4 shadow-2xs">
                   <div className="flex items-center justify-between gap-3">
                     <div className="space-y-0.5">
@@ -412,7 +397,7 @@ export function ProductionSheet({
                       </span>
                       {costing.data.costPerOutputUnit !== null ? (
                         <span className="block text-xs font-semibold text-slate-500">
-                          {formatCurrency(costing.data.costPerOutputUnit)} per{' '}
+                          {formatRate(costing.data.costPerOutputUnit)} per{' '}
                           {output?.stockUnit ?? 'unit'}
                         </span>
                       ) : null}
@@ -471,7 +456,7 @@ export function ProductionSheet({
                                     {draw.qty} {material.unit}
                                   </td>
                                   <td className="py-1 text-right">
-                                    {draw.unitCost === null ? '—' : formatCurrency(draw.unitCost)}
+                                    {draw.unitCost === null ? '—' : formatRate(draw.unitCost)}
                                   </td>
                                   <td className="py-1 text-right font-bold">
                                     {formatCurrency(draw.lineCost)}

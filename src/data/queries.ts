@@ -11,6 +11,8 @@ import type {
   ItemInput,
   AuditEntry,
   ItemName,
+  ProductionCosting,
+  ProductionInputLine,
   ProductionRun,
   ItemRemovalCheck,
   RemovedItem,
@@ -251,6 +253,24 @@ export function useRemovalCheck(itemId: string | null) {
     queryKey: ['item-removal-check', itemId],
     queryFn: () => api.get<ItemRemovalCheck>(`/items/${itemId}/removal-check`),
     enabled: Boolean(itemId),
+  })
+}
+
+/**
+ * What a batch would cost, drawing each material oldest batch first.
+ *
+ * A question rather than a change: it writes nothing, and it is keyed to the
+ * quantities it describes, so it can never be showing a figure for numbers
+ * that have since moved on.
+ */
+export function useProductionCosting(
+  input: { inputs: ProductionInputLine[]; outputQty: number } | null,
+) {
+  return useQuery({
+    queryKey: ['production-costing', input],
+    queryFn: () => api.post<ProductionCosting>('/production/costing', input),
+    enabled: Boolean(input),
+    staleTime: 30_000,
   })
 }
 
