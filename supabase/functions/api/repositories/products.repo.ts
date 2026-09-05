@@ -44,6 +44,8 @@ function mapRow(row: any, position: LedgerPosition): Product {
     stockLevel: batchCapacity > 0 ? classifyStockLevel(quantityOnHand, batchCapacity) : 'ok',
     lastPurchaseCost: position.lastPurchaseCost,
     lastPurchasedAt: position.lastPurchasedAt,
+    lastBatchNo: position.lastBatchNo,
+    lastBatchKind: position.lastBatchKind,
     isActive: row.is_active,
     imageUrl: row.image_url ?? null,
   }
@@ -60,7 +62,13 @@ export async function listActive(search?: string): Promise<Product[]> {
 
   const [{ data, error }, positions] = await Promise.all([query.order('name'), positionByItem()])
   if (error) throw error
-  return data.map((row) => mapRow(row, positions.get(row.id) ?? { quantityOnHand: 0, lastPurchaseCost: null, lastPurchasedAt: null }))
+  return data.map((row) => mapRow(row, positions.get(row.id) ?? {
+      quantityOnHand: 0,
+      lastPurchaseCost: null,
+      lastPurchasedAt: null,
+      lastBatchNo: null,
+      lastBatchKind: null,
+    }))
 }
 
 

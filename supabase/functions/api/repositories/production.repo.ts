@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabaseClient.ts'
-import type { ProductionRun, ProductionRunInput } from '../types/domain.ts'
+import type { ProductionRun, ProductionRunInput, StockLayer } from '../types/domain.ts'
 
 /**
  * A production run is a header and its input lines, and the ledger entries
@@ -44,6 +44,51 @@ export async function record(input: ProductionRunInput, userId: string | null): 
   }
 
   return runId
+}
+
+/**
+ * Every batch of these items that still has stock in it, oldest first.
+ * FIFO is only meaningful in that order, so it is imposed here rather than
+ * left to whoever calls.
+ */
+export async function layersFor(itemIds: string[]): Promise<Map<string, StockLayer[]>> {
+  const { data, error } = await supabase
+    .from('stock_layers')
+    .select('movement_id, item_id, batch_no, occurred_at, remaining_qty, unit_cost')
+    .in('item_id', itemIds)
+    .gt('remaining_qty', 0)
+    .order('occurred_at', { ascending: true })
+    .order('movement_id', { ascending: true })
+  if (error) throw error
+
+  const byItem = new Map<string, StockLayer[]>()
+  // deno-lint-ignore no-explicit-any
+  for (const row of data as any[]) {
+    const layer: StockLayer = {
+      movementId: String(row.movement_id),
+      batchNo: row.batch_no ?? null,
+      occurredAt: row.occurred_at,
+      remainingQty: Number(row.remaining_qty),
+      unitCost: row.unit_cost === null ? null : Number(row.unit_cost),
+    }
+    const list = byItem.get(row.item_id)
+    if (list) list.push(layer)
+    else byItem.set(row.item_id, [layer])
+  }
+  return byItem
+}
+
+/** Names and units for the items being costed, so the breakdown reads. */
+export async function namesFor(
+  itemIds: string[],
+): Promise<Map<string, { name: string; unit: string }>> {
+  const { data, error } = await supabase
+    .from('products')
+    .select('id, name, stock_unit')
+    .in('id', itemIds)
+  if (error) throw error
+  // deno-lint-ignore no-explicit-any
+  return new Map((data as any[]).map((row) => [row.id, { name: row.name, unit: row.stock_unit }]))
 }
 
 /** On-hand for the items a run wants to consume, so it can be judged first. */

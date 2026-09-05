@@ -134,7 +134,12 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
         {/* What the last consignment cost, where one has been recorded. */}
         {product.lastPurchaseCost !== null ? (
           <div className="flex items-baseline justify-between gap-2 border-t border-slate-100 pt-2">
-            <span className="text-[11px] font-semibold text-slate-400">Last purchased</span>
+            <span className="text-[11px] font-semibold text-slate-400">
+              {product.lastBatchKind === 'production' ? 'Last produced' : 'Last purchased'}
+              {product.lastBatchNo ? (
+                <span className="ml-1 font-mono text-[10px] text-slate-400">{product.lastBatchNo}</span>
+              ) : null}
+            </span>
             <span className="font-mono text-xs font-bold tabular-nums text-slate-700">
               {formatCurrency(product.lastPurchaseCost)}
             </span>

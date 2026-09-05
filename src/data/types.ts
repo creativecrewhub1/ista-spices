@@ -87,9 +87,12 @@ export interface Product {
   unitsPackedThisBatch: number
   /** low/ok/high classification, computed server-side from unitsPackedThisBatch vs batchCapacity. */
   stockLevel: StockLevel
-  /** Per-unit cost of the most recent consignment — today's buying price. */
+  /** Per-unit cost of the most recent lot, bought or made. */
   lastPurchaseCost: number | null
   lastPurchasedAt: string | null
+  /** The lot it came from. MNF- numbers were produced, BN- were bought. */
+  lastBatchNo: string | null
+  lastBatchKind: 'receipt' | 'production' | null
   isActive: boolean
   /** Display image — app-relative path or absolute URL. Null until a photo exists. */
   imageUrl: string | null
@@ -170,11 +173,12 @@ export interface StockItem {
   /** Null wherever avgUnitCost is — stock can't be valued without a basis. */
   stockValue: number | null
   isLowStock: boolean
-  /** Per-unit cost of the most recent consignment — today's buying price. */
+  /** Per-unit cost of the most recent lot, bought or made. */
   lastPurchaseCost: number | null
   lastPurchasedAt: string | null
-  /** Consignment reference of that most recent receipt. */
+  /** The lot it came from. MNF- numbers were produced, BN- were bought. */
   lastBatchNo: string | null
+  lastBatchKind: 'receipt' | 'production' | null
 }
 
 export interface StockMovement {
@@ -209,6 +213,42 @@ export interface ProductionRunInput {
   inputs: ProductionInputLine[]
   occurredAt?: string
   note?: string
+}
+
+/** One batch of stock still available to draw from, oldest first. */
+export interface StockLayer {
+  movementId: string
+  batchNo: string | null
+  occurredAt: string
+  remainingQty: number
+  unitCost: number | null
+}
+
+/**
+ * What a batch costs, material by material and batch by batch. Produced by
+ * walking each material's layers oldest first — the same rule the database
+ * applies when the run is posted.
+ */
+export interface ProductionCosting {
+  materials: {
+    itemId: string
+    itemName: string
+    unit: string
+    qty: number
+    /** Quantity no costed batch could cover, if any. */
+    uncovered: number
+    drawnFrom: {
+      batchNo: string | null
+      arrivedAt: string
+      qty: number
+      unitCost: number | null
+      lineCost: number
+    }[]
+    materialCost: number
+  }[]
+  totalCost: number
+  outputQty: number
+  costPerOutputUnit: number | null
 }
 
 /** A posted run, as it reads back. */
@@ -250,9 +290,12 @@ export interface InventoryItem {
   packSizes: PackSize[]
   quantityOnHand: number
   lowStockThreshold: number
-  /** Per-unit cost of the most recent consignment — today's buying price. */
+  /** Per-unit cost of the most recent lot, bought or made. */
   lastPurchaseCost: number | null
   lastPurchasedAt: string | null
+  /** The lot it came from. MNF- numbers were produced, BN- were bought. */
+  lastBatchNo: string | null
+  lastBatchKind: 'receipt' | 'production' | null
   isActive: boolean
   /** Display image — app-relative path or absolute URL. Null until a photo exists. */
   imageUrl: string | null

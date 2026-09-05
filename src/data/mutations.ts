@@ -6,6 +6,8 @@ import type {
   ItemInput,
   Order,
   OrderStatus,
+  ProductionCosting,
+  ProductionInputLine,
   ProductionRunInput,
   StockReceiptInput,
   UpdateProfileInput,
@@ -177,6 +179,18 @@ export function useReceiveStock() {
         queryClient.invalidateQueries({ queryKey: ['dashboard-needs-attention'] }),
       ])
     },
+  })
+}
+
+/**
+ * Asks what a batch would cost, drawing each material oldest batch first.
+ * A question rather than a change — it writes nothing, so it can be asked
+ * again whenever the quantities move.
+ */
+export function useProductionCosting() {
+  return useMutation({
+    mutationFn: (input: { inputs: ProductionInputLine[]; outputQty: number }) =>
+      api.post<ProductionCosting>('/production/costing', input),
   })
 }
 
