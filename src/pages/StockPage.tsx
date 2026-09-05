@@ -20,13 +20,15 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CardListSkeleton, ErrorState } from '@/components/common/QueryState'
 import { ItemMovements } from '@/components/stock/ItemMovements'
 import { useStock, useStockMovements } from '@/data/queries'
 import { useReceiveStock, useRecordProduction } from '@/data/mutations'
 import { ProductionSheet } from '@/components/stock/ProductionSheet'
-import type { StockItem } from '@/data/types'
+import type { ItemCategory, StockItem } from '@/data/types'
 import { formatCurrency, formatRate, formatDateLong } from '@/lib/format'
+import { itemCategoryLabel, stockItemCategory } from '@/lib/status'
 import { cn } from '@/lib/utils'
 import { pageEnter } from '@/lib/motion'
 
@@ -38,10 +40,13 @@ const MOVEMENT_LABELS: Record<string, { label: string; className: string }> = {
   adjustment: { label: 'Adjusted', className: 'bg-slate-100 text-slate-700 border-slate-200' },
 }
 
-function originLabel(item: StockItem): string {
-  if (item.origin === 'manufactured') return 'Manufacturing'
-  return item.isConsumable ? 'Raw Material' : 'B2B'
-}
+/**
+ * The two kinds of stock that arrive by being bought. A manufactured good
+ * gets its stock from a production run, which draws materials and costs the
+ * batch, so buying one in would put stock on the shelf with no batch behind
+ * it and no materials taken off it.
+ */
+const PURCHASABLE: ItemCategory[] = ['raw_material', 'b2b']
 
 export function StockPage() {
   const { data: stock, isLoading, error } = useStock()
@@ -51,6 +56,7 @@ export function StockPage() {
   const [productionOpen, setProductionOpen] = useState(false)
 
   const [query, setQuery] = useState('')
+  const [tab, setTab] = useState<ItemCategory>('raw_material')
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [formOpen, setFormOpen] = useState(false)
   const [itemId, setItemId] = useState('')
@@ -58,9 +64,27 @@ export function StockPage() {
   const [totalCost, setTotalCost] = useState('')
   const [note, setNote] = useState('')
 
+  const matchesQuery = useMemo(() => {
+    const needle = query.trim().toLowerCase()
+    return (item: StockItem) => item.name.toLowerCase().includes(needle)
+  }, [query])
+
   const filtered = useMemo(
-    () => (stock ?? []).filter((s) => s.name.toLowerCase().includes(query.toLowerCase())),
-    [stock, query],
+    () => (stock ?? []).filter((s) => stockItemCategory(s) === tab && matchesQuery(s)),
+    [stock, tab, matchesQuery],
+  )
+
+  /* A search that finds nothing here may still have found something under
+     another tab. Saying so beats a bare "no matches". */
+  const matchesElsewhere = useMemo(
+    () => (stock ?? []).filter((s) => stockItemCategory(s) !== tab && matchesQuery(s)).length,
+    [stock, tab, matchesQuery],
+  )
+
+  /* Only what can be bought in. A manufactured good is made, not purchased. */
+  const purchasable = useMemo(
+    () => (stock ?? []).filter((s) => PURCHASABLE.includes(stockItemCategory(s))),
+    [stock],
   )
 
   const totals = useMemo(() => {
@@ -188,6 +212,22 @@ export function StockPage() {
           </div>
         </div>
 
+        {/* The catalogue divides three ways, and stock is read one kind at
+            a time — raw materials, bought-in goods, and what the shop makes. */}
+        <Tabs value={tab} onValueChange={(v) => setTab(v as ItemCategory)}>
+          <TabsList className="w-full rounded-2xl bg-orange-50/70 p-1">
+            <TabsTrigger value="raw_material" className="flex-1 rounded-xl text-xs font-bold">
+              Raw Material
+            </TabsTrigger>
+            <TabsTrigger value="b2b" className="flex-1 rounded-xl text-xs font-bold">
+              B2B
+            </TabsTrigger>
+            <TabsTrigger value="manufacturing" className="flex-1 rounded-xl text-xs font-bold">
+              Manufacturing
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
         {/* Current position */}
         {isLoading ? (
           <div className="rounded-3xl border border-orange-100 bg-white p-6">
@@ -243,7 +283,7 @@ export function StockPage() {
                           </Badge>
                         ) : null}
                       </td>
-                      <td className="px-4 py-3 text-slate-500">{originLabel(item)}</td>
+                      <td className="px-4 py-3 text-slate-500">{itemCategoryLabel[stockItemCategory(item)]}</td>
                       <td className="px-4 py-3 text-right font-mono tabular-nums text-slate-900">
                         {item.quantityOnHand} <span className="text-slate-400">{item.stockUnit}</span>
                       </td>
@@ -267,7 +307,13 @@ export function StockPage() {
               </table>
             </div>
             {filtered.length === 0 ? (
-              <p className="py-10 text-center text-sm text-slate-500">No items match your search.</p>
+              <p className="py-10 text-center text-sm text-slate-500">
+                {query.trim() === ''
+                  ? `Nothing under ${itemCategoryLabel[tab]} yet.`
+                  : matchesElsewhere > 0
+                    ? `No ${itemCategoryLabel[tab]} matches “${query.trim()}” — ${matchesElsewhere} match${matchesElsewhere > 1 ? 'es' : ''} under the other tabs.`
+                    : 'No items match your search.'}
+              </p>
             ) : null}
           </div>
         )}
@@ -368,9 +414,9 @@ export function StockPage() {
                   <SelectValue placeholder="Choose an item" />
                 </SelectTrigger>
                 <SelectContent className="rounded-2xl">
-                  {(stock ?? []).map((item) => (
+                  {purchasable.map((item) => (
                     <SelectItem key={item.itemId} value={item.itemId} className="rounded-xl font-semibold">
-                      {item.name} · {originLabel(item)}
+                      {item.name} · {itemCategoryLabel[stockItemCategory(item)]}
                     </SelectItem>
                   ))}
                 </SelectContent>

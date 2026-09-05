@@ -1,6 +1,8 @@
 import type {
   CustomerSegment,
   InventoryItemType,
+  ItemCategory,
+  ItemOrigin,
   OrderStatus,
   ProductCategory,
   SpiceLevel,
@@ -77,4 +79,25 @@ export const segmentConfig: Record<CustomerSegment, { label: string; badgeClass:
 export const stockLevelConfig: Partial<Record<StockLevel, { label: string; badgeClass: string }>> = {
   low: { label: 'Low stock', badgeClass: 'bg-warning/15 text-warning border-warning/30' },
   high: { label: 'Well stocked', badgeClass: 'bg-success/15 text-success border-success/30' },
+}
+
+/**
+ * Which of the three kinds the shop treats an item as.
+ *
+ * The database keeps this as two separate facts — where the item came from,
+ * and whether it is consumed — because those are what the rules act on. This
+ * is the one place they are read back as a single category, so that every
+ * screen divides the catalogue the same way.
+ */
+export function stockItemCategory(
+  item: { origin: ItemOrigin; isConsumable: boolean },
+): ItemCategory {
+  if (item.origin === 'manufactured') return 'manufacturing'
+  return item.isConsumable ? 'raw_material' : 'b2b'
+}
+
+export const itemCategoryLabel: Record<ItemCategory, string> = {
+  raw_material: 'Raw Material',
+  b2b: 'B2B',
+  manufacturing: 'Manufacturing',
 }

@@ -99,3 +99,17 @@ export async function recordAdjustment(input: {
   })
   if (error) throw error
 }
+
+/** What the item is, for rules that turn on where its stock comes from. */
+export async function kindOf(
+  itemId: string,
+): Promise<{ name: string; origin: string; isConsumable: boolean } | null> {
+  const { data, error } = await supabase
+    .from('products')
+    .select('name, origin, is_consumable')
+    .eq('id', itemId)
+    .maybeSingle()
+  if (error) throw error
+  if (!data) return null
+  return { name: data.name, origin: data.origin, isConsumable: data.is_consumable }
+}
