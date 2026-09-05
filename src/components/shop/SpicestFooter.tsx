@@ -12,7 +12,7 @@ export function SpicestFooter() {
           <div className="lg:col-span-2 space-y-4">
             <Link to="/shop" className="flex items-center gap-2">
               <span className="font-display text-2xl font-extrabold tracking-wider text-[#E85D19]">
-                SPICEST
+                ISTA SPICES
               </span>
             </Link>
             <p className="text-xs sm:text-sm text-amber-200/70 leading-relaxed max-w-sm">
@@ -75,7 +75,7 @@ export function SpicestFooter() {
               </li>
               <li className="flex items-center gap-2">
                 <Mail className="size-4 text-[#E85D19] shrink-0" />
-                <span>hello@spicest.com</span>
+                <span>hello@istaspices.com</span>
               </li>
             </ul>
           </div>
@@ -84,7 +84,7 @@ export function SpicestFooter() {
 
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-amber-900/30 flex flex-col sm:flex-row items-center justify-between text-xs text-amber-200/50 gap-4">
-          <p>© {new Date().getFullYear()} SPICEST. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} ISTA SPICES. All rights reserved.</p>
           <div className="flex items-center space-x-6">
             <a href="#" className="hover:text-amber-200 transition-colors">Privacy Policy</a>
             <a href="#" className="hover:text-amber-200 transition-colors">Terms of Service</a>

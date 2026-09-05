@@ -10,24 +10,38 @@ interface SpicestHeroProps {
 const HERO_SLIDES = [
   {
     id: 1,
+    type: 'desi_masale',
+    line1: 'COOK',
+    line1Accent: 'WITH',
+    line2: 'DELIGHT',
+    line3: 'WITH OUR PRODUCTS',
+    subtitle: 'Elevate every dish with our pure, freshly ground artisanal spices, authentic hand-crafted blends, and cold-pressed oils.',
+    buttonText: 'Shop Spices',
+    image: '/images/spicest/hero_desi_masale_bg.jpg',
+  },
+  {
+    id: 2,
+    type: 'classic',
     title: 'Everything you lacked for cooking',
     subtitle: 'Hand-crafted artisanal spices, fresh cold-pressed oils & authentic Indian blends sourced directly from master growers.',
     buttonText: 'Shop Now!',
     image: '/images/spicest/hero_banner_dark.jpg',
   },
   {
-    id: 2,
+    id: 3,
+    type: 'classic',
     title: 'Exquisite Spices & Seasoning',
     subtitle: 'Elevate every dish with our pure, freshly ground artisanal masalas and traditional secret recipes.',
     buttonText: 'Explore Catalogue',
-    image: '/images/spicest/hero_banner_dark.jpg',
+    image: '/images/spicest/hero_desi_masale_bg.jpg',
   },
   {
-    id: 3,
-    title: 'Pure Farm-Fresh Quality',
-    subtitle: '100% natural, chemical-free ingredients packaged under strict hygienic quality controls.',
-    buttonText: 'Buy Now',
-    image: '/images/spicest/hero_banner_dark.jpg',
+    id: 4,
+    type: 'classic',
+    title: 'Pure Flavors, Authentic Tradition',
+    subtitle: 'Crafted with love from seed to spoon — 100% natural purity, rich heritage aromas & zero artificial preservatives.',
+    buttonText: 'Discover ISTA Spices',
+    image: '/images/spicest/hero_banner_brass.jpg',
   },
 ]
 
@@ -53,7 +67,7 @@ export function SpicestHero({ onBuyNowClick, onMoreProductClick }: SpicestHeroPr
   const slide = HERO_SLIDES[currentSlide]
 
   return (
-    <section className="relative w-full overflow-hidden bg-slate-950 min-h-[420px] sm:min-h-[500px] lg:min-h-[560px] flex items-center">
+    <section className="relative w-full overflow-hidden bg-slate-950 min-h-[440px] sm:min-h-[520px] lg:min-h-[580px] flex items-center">
       
       {/* Background Image Carousel Layer */}
       {HERO_SLIDES.map((s, index) => (
@@ -66,11 +80,11 @@ export function SpicestHero({ onBuyNowClick, onMoreProductClick }: SpicestHeroPr
           {/* Main Background Image */}
           <img
             src={s.image}
-            alt={s.title}
+            alt="Artisanal Spices Banner"
             className="h-full w-full object-cover object-center transform scale-105 transition-transform duration-10000 ease-linear"
           />
           {/* Dark Overlay Gradient to match Reference UI */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-black/40" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/65 to-black/35" />
         </div>
       ))}
 
@@ -78,22 +92,42 @@ export function SpicestHero({ onBuyNowClick, onMoreProductClick }: SpicestHeroPr
       <div className="relative z-20 mx-auto max-w-7xl px-6 sm:px-12 lg:px-16 py-16 sm:py-24 w-full">
         <div className="max-w-2xl space-y-6 motion-safe:animate-in motion-safe:fade-in-50 motion-safe:slide-in-from-left-4 duration-700">
           
-          {/* Slide Title (Matching reference Serif typography) */}
-          <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-light text-white leading-tight tracking-wide drop-shadow-md">
-            {slide.title}
-          </h1>
+          {/* Slide 1: Desi Masale Typography (COOK WITH DELIGHT WITH OUR PRODUCTS) */}
+          {slide.type === 'desi_masale' ? (
+            <div className="space-y-1">
+              <div className="flex items-baseline gap-3">
+                <span className="font-sans text-5xl sm:text-7xl lg:text-8xl font-black text-white tracking-tight uppercase leading-none drop-shadow-lg">
+                  {slide.line1}
+                </span>
+                <span className="font-serif italic text-3xl sm:text-5xl font-normal text-rose-500 tracking-wider drop-shadow-md">
+                  {slide.line1Accent}
+                </span>
+              </div>
+              <div className="font-serif italic text-5xl sm:text-7xl lg:text-8xl text-white font-light tracking-wide leading-none drop-shadow-xl text-shadow-lg">
+                {slide.line2}
+              </div>
+              <div className="font-mono text-xs sm:text-sm lg:text-base font-extrabold uppercase tracking-[0.35em] text-slate-300 pt-2 drop-shadow-sm">
+                {slide.line3}
+              </div>
+            </div>
+          ) : (
+            /* Slide 2 & 3: Classic Serif Title */
+            <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-light text-white leading-tight tracking-wide drop-shadow-md">
+              {slide.title}
+            </h1>
+          )}
 
-          {/* Slide Subtitle */}
+          {/* Subtitle Description */}
           <p className="text-gray-200 text-sm sm:text-base lg:text-lg font-sans max-w-xl leading-relaxed drop-shadow-sm">
             {slide.subtitle}
           </p>
 
           {/* CTA Action Button (Matching Reference UI "Shop Now! ->") */}
-          <div className="pt-4">
+          <div className="pt-3">
             <Button
               size="lg"
               onClick={onBuyNowClick || onMoreProductClick}
-              className="group inline-flex items-center gap-3 rounded-md border-2 border-white/90 bg-black/40 hover:bg-white hover:text-black text-white px-7 py-3.5 text-sm sm:text-base font-bold tracking-wider transition-all duration-300 shadow-xl backdrop-blur-sm active:scale-95"
+              className="group inline-flex items-center gap-3 rounded-md border-2 border-white/90 bg-black/40 hover:bg-white hover:text-black text-white px-7 py-3.5 text-sm sm:text-base font-bold tracking-wider transition-all duration-300 shadow-xl backdrop-blur-sm active:scale-95 cursor-pointer"
             >
               <span>{slide.buttonText}</span>
               <ArrowRightCircle className="size-5 transition-transform duration-300 group-hover:translate-x-1" />
@@ -108,7 +142,7 @@ export function SpicestHero({ onBuyNowClick, onMoreProductClick }: SpicestHeroPr
         type="button"
         onClick={prevSlide}
         aria-label="Previous slide"
-        className="absolute left-3 sm:left-6 top-1/2 z-30 -translate-y-1/2 flex size-10 sm:size-12 items-center justify-center rounded-lg bg-white/20 hover:bg-white/40 text-white backdrop-blur-md transition-all duration-300 shadow-lg active:scale-90 border border-white/20"
+        className="absolute left-3 sm:left-6 top-1/2 z-30 -translate-y-1/2 flex size-10 sm:size-12 items-center justify-center rounded-lg bg-white/20 hover:bg-white/40 text-white backdrop-blur-md transition-all duration-300 shadow-lg active:scale-90 border border-white/20 cursor-pointer"
       >
         <ChevronLeft className="size-6 sm:size-7" />
       </button>
@@ -118,7 +152,7 @@ export function SpicestHero({ onBuyNowClick, onMoreProductClick }: SpicestHeroPr
         type="button"
         onClick={nextSlide}
         aria-label="Next slide"
-        className="absolute right-3 sm:right-6 top-1/2 z-30 -translate-y-1/2 flex size-10 sm:size-12 items-center justify-center rounded-lg bg-white/20 hover:bg-white/40 text-white backdrop-blur-md transition-all duration-300 shadow-lg active:scale-90 border border-white/20"
+        className="absolute right-3 sm:right-6 top-1/2 z-30 -translate-y-1/2 flex size-10 sm:size-12 items-center justify-center rounded-lg bg-white/20 hover:bg-white/40 text-white backdrop-blur-md transition-all duration-300 shadow-lg active:scale-90 border border-white/20 cursor-pointer"
       >
         <ChevronRight className="size-6 sm:size-7" />
       </button>
@@ -131,8 +165,8 @@ export function SpicestHero({ onBuyNowClick, onMoreProductClick }: SpicestHeroPr
             type="button"
             onClick={() => setCurrentSlide(index)}
             aria-label={`Go to slide ${index + 1}`}
-            className={`h-2.5 rounded-full transition-all duration-500 ${
-              index === currentSlide ? 'w-8 bg-orange-500 shadow-md shadow-orange-500/50' : 'w-2.5 bg-white/50 hover:bg-white/80'
+            className={`h-2.5 rounded-full transition-all duration-500 cursor-pointer ${
+              index === currentSlide ? 'w-8 bg-rose-500 shadow-md shadow-rose-500/50' : 'w-2.5 bg-white/50 hover:bg-white/80'
             }`}
           />
         ))}

@@ -164,7 +164,7 @@ export function ProductionSheet({
         if (!next) reset()
       }}
     >
-      <SheetContent className="w-full overflow-y-auto border-l border-orange-100 bg-white p-6 sm:max-w-lg">
+      <SheetContent className="w-full overflow-y-auto border-l border-orange-100 bg-white p-6 sm:max-w-xl md:max-w-2xl">
         
         {/* HEADER */}
         <SheetHeader className="border-b border-orange-100/60 pb-4">

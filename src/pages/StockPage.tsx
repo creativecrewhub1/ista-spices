@@ -389,7 +389,7 @@ export function StockPage() {
           if (!open) resetForm()
         }}
       >
-        <SheetContent className="w-full overflow-y-auto border-l border-slate-200 bg-white p-6 sm:max-w-md">
+        <SheetContent className="w-full overflow-y-auto border-l border-slate-200 bg-white p-6 sm:max-w-xl md:max-w-2xl">
           <SheetHeader className="border-b border-slate-100 p-0 pb-4">
             <div className="flex items-center gap-3">
               <span className="flex size-10 items-center justify-center rounded-2xl bg-orange-100 text-orange-600">
