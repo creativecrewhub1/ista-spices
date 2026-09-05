@@ -428,7 +428,7 @@ export function ProductionSheet({
                     className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-orange-200 bg-white/70 py-2 text-[11px] font-bold uppercase tracking-wider text-orange-700 hover:bg-white"
                   >
                     <Calculator className="size-3.5" aria-hidden="true" />
-                    {showWorking ? 'Hide calculation' : 'Calculation'}
+                    {showWorking ? 'Hide breakdown' : 'View breakdown'}
                   </button>
 
                   {/* Which batch each material came out of, and at what it was
