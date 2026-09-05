@@ -492,3 +492,48 @@ export interface CheckoutInput {
   name?: string
   phone?: string
 }
+
+/** One running cost recorded against a month rather than against a product. */
+export interface MonthlyExpense {
+  id: string
+  /** Always the first of the month, ISO date. */
+  month: string
+  description: string
+  amount: number
+  createdAt: string
+}
+
+/** Revenue and cost of goods for one product in one month, straight from the views. */
+export interface ProductProfitRow {
+  productId: string
+  productName: string
+  unitsSold: number
+  revenue: number
+  materialCost: number
+  grossProfit: number
+}
+
+/**
+ * The same row with the month's running costs apportioned onto it.
+ *
+ * Overheads belong to the month, not to any one product, so they are shared
+ * out in proportion to what each product earned. The split is a reporting
+ * choice; the figures it is derived from are not.
+ */
+export interface ProductProfitLine extends ProductProfitRow {
+  overhead: number
+  netProfit: number
+}
+
+export interface MonthlyProfit {
+  month: string
+  products: ProductProfitLine[]
+  expenses: MonthlyExpense[]
+  totals: {
+    revenue: number
+    materialCost: number
+    grossProfit: number
+    overhead: number
+    netProfit: number
+  }
+}

@@ -75,6 +75,15 @@ create table item_categories (
   sort_order integer default 0 not null
 );
 
+create table monthly_expenses (
+  id bigint not null,
+  month date not null,
+  description text not null,
+  amount numeric(12,2) not null,
+  created_by uuid,
+  created_at timestamp with time zone default now() not null
+);
+
 create table order_items (
   id uuid default gen_random_uuid() not null,
   order_id text not null,
@@ -232,6 +241,16 @@ alter table item_audit_log add constraint item_audit_log_item_id_fkey FOREIGN KE
 
 alter table item_categories add constraint item_categories_pkey PRIMARY KEY (code);
 
+alter table monthly_expenses add constraint monthly_expenses_pkey PRIMARY KEY (id);
+
+alter table monthly_expenses add constraint monthly_expenses_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id);
+
+alter table monthly_expenses add constraint monthly_expenses_month_is_first_of_month CHECK (month = date_trunc('month', month)::date);
+
+alter table monthly_expenses add constraint monthly_expenses_description_check CHECK (btrim(description) <> '');
+
+alter table monthly_expenses add constraint monthly_expenses_amount_check CHECK (amount >= 0);
+
 alter table order_items add constraint order_items_price_non_negative CHECK ((price >= (0)::numeric));
 
 alter table order_items add constraint order_items_pkey PRIMARY KEY (id);
@@ -367,6 +386,8 @@ CREATE UNIQUE INDEX customers_email_unique_idx ON public.customers USING btree (
 CREATE INDEX customers_user_id_idx ON public.customers USING btree (user_id);
 
 CREATE INDEX customers_name_trgm_idx ON public.customers USING gin (name gin_trgm_ops);
+
+CREATE INDEX monthly_expenses_month_idx ON public.monthly_expenses USING btree (month);
 
 CREATE INDEX inventory_items_name_trgm_idx ON public.inventory_items USING gin (name gin_trgm_ops);
 
@@ -518,6 +539,33 @@ create view orders_with_total as  SELECT o.id,
      LEFT JOIN order_items oi ON oi.order_id = o.id
   GROUP BY o.id;
 
+create view product_cogs_by_month as  SELECT m.item_id AS product_id,
+    date_trunc('month'::text, (m.occurred_at AT TIME ZONE 'Asia/Kolkata'::text))::date AS month,
+    sum(a.qty * COALESCE(a.unit_cost, 0::numeric))::numeric(12,2) AS material_cost,
+    sum(a.qty)::numeric(12,3) AS units_drawn
+   FROM stock_movements m
+     JOIN stock_batch_allocations a ON a.consuming_movement_id = m.id
+  WHERE m.kind = 'sale'::stock_movement_kind
+  GROUP BY m.item_id, (date_trunc('month'::text, (m.occurred_at AT TIME ZONE 'Asia/Kolkata'::text))::date);
+
+create view product_profit_by_month as  SELECT r.month,
+    r.product_id,
+    r.product_name,
+    r.units_sold,
+    r.revenue,
+    COALESCE(c.material_cost, 0::numeric)::numeric(12,2) AS material_cost,
+    (r.revenue - COALESCE(c.material_cost, 0::numeric))::numeric(12,2) AS gross_profit
+   FROM product_revenue_by_month r
+     LEFT JOIN product_cogs_by_month c ON c.product_id = r.product_id AND c.month = r.month;
+
+create view product_revenue_by_month as  SELECT product_id,
+    product_name,
+    date_trunc('month'::text, (placed_at AT TIME ZONE 'Asia/Kolkata'::text))::date AS month,
+    sum(qty)::integer AS units_sold,
+    sum(line_total)::numeric(12,2) AS revenue
+   FROM order_line_revenue oi
+  GROUP BY product_id, product_name, (date_trunc('month'::text, (placed_at AT TIME ZONE 'Asia/Kolkata'::text))::date);
+
 create view revenue_by_day as  SELECT placed_at::date AS day,
     sum(line_total)::numeric(10,2) AS revenue
    FROM order_line_revenue
@@ -627,28 +675,59 @@ AS $function$
 $function$
 ;
 
-CREATE OR REPLACE FUNCTION public.despatch_order_stock()
- RETURNS trigger
- LANGUAGE plpgsql
-AS $function$
+create or replace function public.despatch_order_stock() returns trigger
+language plpgsql as $fn$
+declare
+  line record;
+  layer record;
+  sale_id bigint;
+  still_needed numeric;
+  taken numeric;
 begin
   if new.status in ('shipped','delivered')
-     and (tg_op='INSERT' or old.status is distinct from new.status)
-     and (tg_op='INSERT' or old.status not in ('shipped','delivered'))
+     and (tg_op = 'INSERT' or old.status is distinct from new.status)
+     and (tg_op = 'INSERT' or old.status not in ('shipped','delivered'))
   then
-    insert into stock_movements (item_id, kind, qty, order_id, note)
-    select oi.product_id, 'sale',
-           /* The line snapshots the pack quantity in the selling unit, so the
-              draw-down is that times the item's selling-to-stock factor. */
-           -sum(oi.qty * oi.pack_qty * p.sales_to_stock_factor),
-           new.id, 'Despatched with order ' || new.id
-      from order_items oi join products p on p.id = oi.product_id
-     where oi.order_id = new.id group by oi.product_id
-    on conflict (order_id, item_id) where kind = 'sale' do nothing;
+    for line in
+      select oi.product_id,
+             -- The line snapshots the pack quantity in the selling unit, so
+             -- the draw-down is that times the selling-to-stock factor.
+             sum(oi.qty * oi.pack_qty * p.sales_to_stock_factor) as draw
+        from order_items oi join products p on p.id = oi.product_id
+       where oi.order_id = new.id
+       group by oi.product_id
+    loop
+      insert into stock_movements (item_id, kind, qty, order_id, note)
+      values (line.product_id, 'sale', -line.draw, new.id,
+              'Despatched with order ' || new.id)
+      on conflict (order_id, item_id) where kind = 'sale' do nothing
+      returning id into sale_id;
+
+      -- Already despatched — the conflict did nothing, so there is nothing
+      -- to allocate either.
+      continue when sale_id is null;
+
+      -- Costed the same way production is: oldest batch first, at what that
+      -- batch cost. This is what makes cost of goods sold a real figure
+      -- rather than an average standing in for one.
+      still_needed := line.draw;
+      for layer in
+        select l.movement_id, l.remaining_qty, l.unit_cost
+          from stock_layers l
+         where l.item_id = line.product_id and l.remaining_qty > 0
+         order by l.occurred_at, l.movement_id
+      loop
+        exit when still_needed <= 0;
+        taken := least(still_needed, layer.remaining_qty);
+        insert into stock_batch_allocations (consuming_movement_id, batch_movement_id, qty, unit_cost)
+        values (sale_id, layer.movement_id, taken, layer.unit_cost);
+        still_needed := still_needed - taken;
+      end loop;
+    end loop;
   end if;
+
   return new;
-end $function$
-;
+end $fn$;
 
 CREATE OR REPLACE FUNCTION public.gin_extract_query_trgm(text, internal, smallint, internal, internal, internal, internal)
  RETURNS internal
@@ -1170,6 +1249,8 @@ alter table inventory_items enable row level security;
 alter table item_audit_log enable row level security;
 
 alter table item_categories enable row level security;
+
+alter table monthly_expenses enable row level security;
 
 alter table order_items enable row level security;
 

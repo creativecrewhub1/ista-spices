@@ -21,7 +21,7 @@ db/
   table, the stock movement ledger, `item_category`, the split of stock and
   sales units — was applied by hand through the CLI and was never captured.
 
-`baseline.sql` closes that gap. It was reconstructed on 2026-09-03 by
+`baseline.sql` closes that gap. It was reconstructed on 2026-09-03 (and kept current by hand since) by
 introspecting the live catalogue, so it describes the schema as it stands
 whether or not a migration file explains how it got that way. Read it as the
 current truth; read `migrations/` for the story since.

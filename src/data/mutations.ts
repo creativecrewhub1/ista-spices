@@ -235,3 +235,33 @@ export function useAdjustStock() {
     },
   })
 }
+
+/**
+ * Records a running cost against a month. Both the month's profit figures and
+ * the list of months that have anything in them change as a result, so both
+ * are refetched.
+ */
+export function useAddMonthlyExpense() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: { month: string; description: string; amount: number }) =>
+      api.post('/revenue/expenses', input),
+    onSuccess: (_data, input) => {
+      queryClient.invalidateQueries({ queryKey: ['monthly-profit', input.month] })
+      queryClient.invalidateQueries({ queryKey: ['profit-months'] })
+    },
+  })
+}
+
+export function useDeleteMonthlyExpense() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id }: { id: string; month: string }) =>
+      api.delete(`/revenue/expenses/${id}`),
+    onSuccess: (_data, { month }) => {
+      queryClient.invalidateQueries({ queryKey: ['monthly-profit', month] })
+    },
+  })
+}

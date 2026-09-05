@@ -20,6 +20,7 @@ import type {
   OrderStatusEvent,
   OrderStatus,
   Product,
+  MonthlyProfit,
   ProductRevenueRow,
   RevenuePoint,
   RevenueSummary,
@@ -330,5 +331,22 @@ export function useItem(id: string | null) {
     enabled: Boolean(id),
     refetchOnMount: 'always',
     staleTime: 0,
+  })
+}
+
+/** Months the shop has either sold in or spent in, newest first. */
+export function useProfitMonths() {
+  return useQuery({
+    queryKey: ['profit-months'],
+    queryFn: () => api.get<string[]>('/revenue/profit/months'),
+  })
+}
+
+/** Per-product revenue, cost of goods and profit for one month. */
+export function useMonthlyProfit(month: string) {
+  return useQuery({
+    queryKey: ['monthly-profit', month],
+    enabled: Boolean(month),
+    queryFn: () => api.get<MonthlyProfit>(`/revenue/profit?month=${month}`),
   })
 }

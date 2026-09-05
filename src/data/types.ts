@@ -479,3 +479,44 @@ export type AttentionItem =
       customerName: string
       eta: string
     }
+
+/** One running cost recorded against a month rather than against a product. */
+export interface MonthlyExpense {
+  id: string
+  /** Always the first of the month, ISO date. */
+  month: string
+  description: string
+  amount: number
+  createdAt: string
+}
+
+/**
+ * A product's month: what it earned, what the goods sold cost, and its share
+ * of the month's running costs.
+ *
+ * Overheads belong to the month, not to any one product, so they are shared
+ * out in proportion to what each product earned.
+ */
+export interface ProductProfitLine {
+  productId: string
+  productName: string
+  unitsSold: number
+  revenue: number
+  materialCost: number
+  grossProfit: number
+  overhead: number
+  netProfit: number
+}
+
+export interface MonthlyProfit {
+  month: string
+  products: ProductProfitLine[]
+  expenses: MonthlyExpense[]
+  totals: {
+    revenue: number
+    materialCost: number
+    grossProfit: number
+    overhead: number
+    netProfit: number
+  }
+}
