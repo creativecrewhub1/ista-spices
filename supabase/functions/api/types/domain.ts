@@ -62,6 +62,12 @@ export interface ItemName {
 export interface PackSize {
   qty: number
   price: number
+  /**
+   * What to call this quantity — a piece, a pack, a box. Optional: without
+   * it the quantity speaks for itself ("250 ml"). The quantity is always in
+   * the item's sales unit, so naming it changes the label, never the maths.
+   */
+  packaging: string | null
 }
 
 export type SpiceLevel = 'mild' | 'medium' | 'hot'
@@ -181,6 +187,9 @@ export interface StockMovement {
   kind: StockMovementKind
   /** Signed: positive brought stock in, negative took it out. */
   qty: number
+  /** What the consignment cost in total — the figure on the invoice. */
+  totalCost: number | null
+  /** Derived by the database from totalCost and qty; never written. */
   unitCost: number | null
   occurredAt: string
   orderId: string | null
@@ -192,8 +201,12 @@ export interface StockMovement {
 export interface StockReceiptInput {
   itemId: string
   qty: number
-  /** Purchase cost per unit — not the sale price. */
-  unitCost: number
+  /**
+   * What the whole consignment cost, not a rate. It is the figure on the
+   * supplier's invoice, so it is what gets recorded; the per-unit cost is
+   * worked out from it rather than the other way round.
+   */
+  totalCost: number
   occurredAt?: string
   note?: string
 }

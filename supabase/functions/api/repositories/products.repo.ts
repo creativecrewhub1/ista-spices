@@ -25,7 +25,7 @@ function mapRow(row: any, position: LedgerPosition): Product {
   const packSizes = [...row.product_pack_sizes]
     .sort(byQty)
     // deno-lint-ignore no-explicit-any
-    .map((p: any) => ({ qty: Number(p.pack_qty), price: Number(p.price) }))
+    .map((p: any) => ({ qty: Number(p.pack_qty), price: Number(p.price), packaging: p.packaging ?? null }))
 
   const batchCapacity = row.batch_capacity ?? 0
 
@@ -95,7 +95,7 @@ export async function listPublicCatalog(): Promise<CatalogProduct[]> {
     packSizes: [...row.product_pack_sizes]
       .sort(byQty)
       // deno-lint-ignore no-explicit-any
-      .map((p: any) => ({ qty: Number(p.pack_qty), price: Number(p.price) })),
+      .map((p: any) => ({ qty: Number(p.pack_qty), price: Number(p.price), packaging: p.packaging ?? null })),
         discountPercent: row.discount_percent,
         spiceLevel: row.spice_level,
         imageUrl: row.image_url ?? null,

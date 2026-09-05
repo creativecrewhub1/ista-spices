@@ -1,5 +1,5 @@
 import { useStockMovements } from '@/data/queries'
-import { formatCurrency, formatDateLong } from '@/lib/format'
+import { formatCurrency, formatRate, formatDateLong } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
 const KIND_LABELS: Record<string, string> = {
@@ -60,11 +60,11 @@ export function ItemMovements({ itemId, unit }: { itemId: string; unit: string }
                 {m.qty} <span className="font-sans font-medium text-slate-400">{unit}</span>
               </td>
               <td className="py-2 pr-4 text-right font-mono tabular-nums text-slate-700">
-                {m.unitCost !== null ? formatCurrency(m.unitCost) : <span className="text-slate-300">—</span>}
+                {m.unitCost !== null ? formatRate(m.unitCost) : <span className="text-slate-300">—</span>}
               </td>
               <td className="py-2 text-right font-mono font-bold tabular-nums text-slate-900">
-                {m.unitCost !== null ? (
-                  formatCurrency(Math.abs(m.qty) * m.unitCost)
+                {m.totalCost !== null ? (
+                  formatCurrency(m.totalCost)
                 ) : (
                   <span className="text-slate-300">—</span>
                 )}

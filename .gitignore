@@ -89,3 +89,22 @@ deno.lock
 *.key
 *.p12
 service-account*.json
+
+# Linter caches
+.eslintcache
+.oxlintcache
+
+# Vite writes these beside the config while resolving it
+vite.config.*.timestamp-*
+vitest.config.*.timestamp-*
+
+# Process id files from a dev server left running
+*.pid
+
+# Throwaway verification scripts. Browser and API checks get written to the
+# repo root while working and deleted after; ignoring them means one that
+# outlives its purpose cannot be committed by accident. Config files here are
+# .ts, so nothing real matches.
+/*.mjs
+/*.cjs
+/scratch/
