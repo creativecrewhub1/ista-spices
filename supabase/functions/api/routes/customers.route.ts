@@ -17,6 +17,12 @@ customersRoute.get('/counts', async (c) => {
   return c.json(counts)
 })
 
+customersRoute.patch('/:id/segment', async (c) => {
+  const body = await c.req.json<{ segment: string }>()
+  await CustomersService.setSegment(c.req.param('id'), body.segment)
+  return c.json({ ok: true })
+})
+
 customersRoute.get('/:id/orders', async (c) => {
   const orders = await CustomersService.orders(c.req.param('id'))
   return c.json(orders)

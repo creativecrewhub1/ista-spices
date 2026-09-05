@@ -19,8 +19,15 @@ import { OrderDetailSheet } from '@/components/orders/OrderDetailSheet'
 import { CardListSkeleton, ErrorState } from '@/components/common/QueryState'
 import { useCustomerCounts, useCustomerOrders, useCustomers } from '@/data/queries'
 import { useDebouncedValue } from '@/lib/useDebouncedValue'
-import { useUpdateOrderStatus } from '@/data/mutations'
-import type { Customer, Order, OrderStatus } from '@/data/types'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { useSetCustomerSegment, useUpdateOrderStatus } from '@/data/mutations'
+import type { Customer, CustomerSegment, Order, OrderStatus } from '@/data/types'
 import { orderStatusConfig, segmentConfig } from '@/lib/status'
 import { formatCurrency, formatDateLong } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -61,6 +68,7 @@ export function CustomersPage() {
   })
   const { data: customerCounts } = useCustomerCounts()
   const updateStatus = useUpdateOrderStatus()
+  const setSegment = useSetCustomerSegment()
 
   // Whole-book tallies, independent of the filter the list is under.
   const counts = customerCounts ?? { total: 0, new: 0, regular: 0 }
@@ -366,11 +374,41 @@ export function CustomersPage() {
                         </div>
 
                         <div className="space-y-1">
-                          <div className="flex items-center gap-2.5">
+                          <div className="flex flex-wrap items-center gap-2.5">
                             <h2 className="font-display text-2xl font-black text-slate-900 tracking-tight">
                               {selectedCustomer.name}
                             </h2>
+                            {/* Nothing works this out. Someone decides a
+                                customer is a regular, and a discount hangs
+                                off the answer, so it is set by hand. */}
+                            <Select
+                              value={selectedCustomer.segment}
+                              onValueChange={(value) =>
+                                setSegment.mutate({
+                                  id: selectedCustomer.id,
+                                  segment: value as CustomerSegment,
+                                })
+                              }
+                              disabled={setSegment.isPending}
+                            >
+                              <SelectTrigger className="h-8 w-36 rounded-full border-orange-200 bg-orange-50/60 px-3 text-xs font-bold text-orange-700">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent position="popper" sideOffset={4} className="rounded-2xl">
+                                <SelectItem value="new" className="rounded-xl font-semibold">
+                                  New customer
+                                </SelectItem>
+                                <SelectItem value="regular" className="rounded-xl font-semibold">
+                                  Regular customer
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
+                          {setSegment.isError ? (
+                            <p className="text-[11px] font-bold text-rose-600">
+                              {(setSegment.error as Error).message}
+                            </p>
+                          ) : null}
 
                           {/* Contact Sub-details */}
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 font-semibold pt-0.5">

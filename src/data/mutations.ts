@@ -5,6 +5,7 @@ import type {
   CheckoutInput,
   ItemInput,
   Order,
+  CustomerSegment,
   OrderStatus,
   ProductionRunInput,
   StockReceiptInput,
@@ -184,6 +185,24 @@ export function useReceiveStock() {
  * Records a batch: what it consumed and what it yielded. One call moves the
  * ledger in both directions, so everything that reads stock has to refresh.
  */
+/**
+ * Marks a customer new or regular. Nothing derives this — who counts as a
+ * regular is the shop's judgement, and a discount hangs off the answer.
+ */
+export function useSetCustomerSegment() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, segment }: { id: string; segment: CustomerSegment }) =>
+      api.patch(`/customers/${id}/segment`, { segment }),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['customers'] }),
+        queryClient.invalidateQueries({ queryKey: ['customer-counts'] }),
+      ]),
+  })
+}
+
 export function useRecordProduction() {
   const queryClient = useQueryClient()
 

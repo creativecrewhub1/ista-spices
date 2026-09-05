@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabaseClient.ts'
-import type { Customer, CustomerCounts } from '../types/domain.ts'
+import type { Customer, CustomerCounts, CustomerSegment } from '../types/domain.ts'
 
 // deno-lint-ignore no-explicit-any
 function mapRow(row: any): Customer {
@@ -41,6 +41,28 @@ export async function listWithStats(filters: CustomerFilters = {}): Promise<Cust
   const { data, error } = await query.order('name')
   if (error) throw error
   return data.map(mapRow)
+}
+
+/**
+ * Marks a customer as new or regular.
+ *
+ * Nothing derives this. Who counts as a regular is a judgement about the
+ * relationship, and the shop makes it — so it is recorded when someone says
+ * so, not guessed from an order count.
+ */
+/** Whether the customer exists at all, before writing anything to them. */
+export async function findById(id: string): Promise<{ id: string } | null> {
+  const { data, error } = await supabase.from('customers').select('id').eq('id', id).maybeSingle()
+  if (error) throw error
+  return (data as { id: string } | null) ?? null
+}
+
+export async function setSegment(id: string, segment: CustomerSegment): Promise<void> {
+  const { error } = await supabase
+    .from('customers')
+    .update({ segment, updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) throw error
 }
 
 /** Whole-book tallies, so the KPI tiles stay stable while the list is filtered. */
