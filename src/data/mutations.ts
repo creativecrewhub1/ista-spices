@@ -5,7 +5,9 @@ import type {
   CheckoutInput,
   ItemInput,
   Order,
+  CustomerSegment,
   OrderStatus,
+  ProductionRunInput,
   StockReceiptInput,
   UpdateProfileInput,
 } from './types'
@@ -64,18 +66,25 @@ export function useDeleteItem() {
 
 /** An item change moves through every list that reads it. */
 function invalidateItemViews(queryClient: ReturnType<typeof useQueryClient>) {
-  return () => {
-    queryClient.invalidateQueries({ queryKey: ['products'] })
-    queryClient.invalidateQueries({ queryKey: ['inventory-items'] })
+  return () =>
+    Promise.all([
+    // The edit form reads this one. Without it a save is written, the sheet
+    // closes, and reopening serves the copy from before the save — the item
+    // looks unchanged while the database holds the new value.
+    queryClient.invalidateQueries({ queryKey: ['item'] }),
+    // What is blocking removal moves with the item and with its stock.
+    queryClient.invalidateQueries({ queryKey: ['item-removal-check'] }),
+    queryClient.invalidateQueries({ queryKey: ['products'] }),
+    queryClient.invalidateQueries({ queryKey: ['inventory-items'] }),
     // Without this the add form keeps suggesting an item that has just been
     // removed, and misses one just added.
-    queryClient.invalidateQueries({ queryKey: ['item-names'] })
-    queryClient.invalidateQueries({ queryKey: ['items-removed'] })
-    queryClient.invalidateQueries({ queryKey: ['item-audit'] })
-    queryClient.invalidateQueries({ queryKey: ['stock'] })
-    queryClient.invalidateQueries({ queryKey: ['storefront-catalog'] })
-    queryClient.invalidateQueries({ queryKey: ['dashboard-needs-attention'] })
-  }
+    queryClient.invalidateQueries({ queryKey: ['item-names'] }),
+    queryClient.invalidateQueries({ queryKey: ['items-removed'] }),
+    queryClient.invalidateQueries({ queryKey: ['item-audit'] }),
+    queryClient.invalidateQueries({ queryKey: ['stock'] }),
+    queryClient.invalidateQueries({ queryKey: ['storefront-catalog'] }),
+    queryClient.invalidateQueries({ queryKey: ['dashboard-needs-attention'] }),
+    ])
 }
 /** Places a storefront order — server resolves/creates the customer record and recomputes prices from the DB. */
 export function useCheckout() {
@@ -160,10 +169,55 @@ export function useReceiveStock() {
   return useMutation({
     mutationFn: (input: StockReceiptInput) => api.post('/stock/receipts', input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['stock'] })
-      queryClient.invalidateQueries({ queryKey: ['stock-movements'] })
-      queryClient.invalidateQueries({ queryKey: ['dashboard-needs-attention'] })
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['stock'] }),
+        queryClient.invalidateQueries({ queryKey: ['stock-movements'] }),
+        queryClient.invalidateQueries({ queryKey: ['item-removal-check'] }),
+        queryClient.invalidateQueries({ queryKey: ['products'] }),
+        queryClient.invalidateQueries({ queryKey: ['inventory-items'] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard-needs-attention'] }),
+      ])
     },
+  })
+}
+
+/**
+ * Records a batch: what it consumed and what it yielded. One call moves the
+ * ledger in both directions, so everything that reads stock has to refresh.
+ */
+/**
+ * Marks a customer new or regular. Nothing derives this — who counts as a
+ * regular is the shop's judgement, and a discount hangs off the answer.
+ */
+export function useSetCustomerSegment() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, segment }: { id: string; segment: CustomerSegment }) =>
+      api.patch(`/customers/${id}/segment`, { segment }),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['customers'] }),
+        queryClient.invalidateQueries({ queryKey: ['customer-counts'] }),
+      ]),
+  })
+}
+
+export function useRecordProduction() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: ProductionRunInput) => api.post('/production', input),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['production'] }),
+        queryClient.invalidateQueries({ queryKey: ['stock'] }),
+        queryClient.invalidateQueries({ queryKey: ['stock-movements'] }),
+        queryClient.invalidateQueries({ queryKey: ['products'] }),
+        queryClient.invalidateQueries({ queryKey: ['inventory-items'] }),
+        queryClient.invalidateQueries({ queryKey: ['item-removal-check'] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard-needs-attention'] }),
+      ]),
   })
 }
 
@@ -178,6 +232,36 @@ export function useAdjustStock() {
       queryClient.invalidateQueries({ queryKey: ['stock'] })
       queryClient.invalidateQueries({ queryKey: ['stock-movements'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard-needs-attention'] })
+    },
+  })
+}
+
+/**
+ * Records a running cost against a month. Both the month's profit figures and
+ * the list of months that have anything in them change as a result, so both
+ * are refetched.
+ */
+export function useAddMonthlyExpense() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: { month: string; description: string; amount: number }) =>
+      api.post('/revenue/expenses', input),
+    onSuccess: (_data, input) => {
+      queryClient.invalidateQueries({ queryKey: ['monthly-profit', input.month] })
+      queryClient.invalidateQueries({ queryKey: ['profit-months'] })
+    },
+  })
+}
+
+export function useDeleteMonthlyExpense() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id }: { id: string; month: string }) =>
+      api.delete(`/revenue/expenses/${id}`),
+    onSuccess: (_data, { month }) => {
+      queryClient.invalidateQueries({ queryKey: ['monthly-profit', month] })
     },
   })
 }

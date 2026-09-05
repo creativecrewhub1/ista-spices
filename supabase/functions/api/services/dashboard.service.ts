@@ -27,7 +27,7 @@ export const DashboardService = {
         linkTo: '/inventory' as const,
         productName: p.name,
         unitsInHand: p.unitsPackedThisBatch,
-        batchCapacity: p.batchCapacity,
+        stockUnit: p.stockUnit,
       }))
 
     const lateOrders: AttentionItem[] = orders

@@ -7,7 +7,6 @@ customersRoute.get('/', async (c) => {
   const customers = await CustomersService.list({
     search: c.req.query('q'),
     segment: c.req.query('segment'),
-    activity: c.req.query('activity'),
   })
   return c.json(customers)
 })
@@ -16,6 +15,12 @@ customersRoute.get('/', async (c) => {
 customersRoute.get('/counts', async (c) => {
   const counts = await CustomersService.counts()
   return c.json(counts)
+})
+
+customersRoute.patch('/:id/segment', async (c) => {
+  const body = await c.req.json<{ segment: string }>()
+  await CustomersService.setSegment(c.req.param('id'), body.segment)
+  return c.json({ ok: true })
 })
 
 customersRoute.get('/:id/orders', async (c) => {

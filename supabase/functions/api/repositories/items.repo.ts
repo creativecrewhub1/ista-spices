@@ -58,6 +58,9 @@ const CAPABILITIES: Record<ItemCategory, {
   isSellable: boolean
   isConsumable: boolean
 }> = {
+  // Selling a raw material is optional, so isSellable here is only the
+  // default; a chosen selling unit overrides it. Consumable is what matters
+  // for the category, and that does not change either way.
   raw_material:  { origin: 'purchased',    isSellable: false, isConsumable: true },
   b2b:           { origin: 'purchased',    isSellable: true,  isConsumable: false },
   manufacturing: { origin: 'manufactured', isSellable: true,  isConsumable: false },
@@ -75,6 +78,15 @@ function generateId(category: ItemCategory): string {
 
 export async function save(input: ItemInput, userId: string | null): Promise<string> {
   const caps = CAPABILITIES[input.category]
+  /**
+   * A raw material is bought to be consumed by production, and the shop may
+   * also sell it as it is. Choosing a selling unit is what says so; leaving
+   * it at N/A says it is not for sale. is_consumable is untouched, so the
+   * item stays a raw material — the generated category reads that column,
+   * not this one.
+   */
+  const isSellable =
+    input.category === 'raw_material' ? Boolean(input.salesUnit) : caps.isSellable
   const creating = !input.id
   const id = input.id || generateId(input.category)
   const isManufactured = input.category === 'manufacturing'
@@ -86,13 +98,13 @@ export async function save(input: ItemInput, userId: string | null): Promise<str
     name: input.name.trim(),
     description: input.description.trim(),
     stock_unit: input.stockUnit,
-    sales_unit: caps.isSellable ? input.salesUnit : null,
+    sales_unit: isSellable ? input.salesUnit : null,
     sales_to_stock_factor: input.salesToStockFactor,
     low_stock_threshold: input.lowStockThreshold,
     image_url: input.imageUrl,
 
     origin: caps.origin,
-    is_sellable: caps.isSellable,
+    is_sellable: isSellable,
     is_consumable: caps.isConsumable,
 
     // Storefront classification, spice heat, batch size and discounting only
@@ -100,7 +112,6 @@ export async function save(input: ItemInput, userId: string | null): Promise<str
     // stock would violate the table's own constraints, and rightly so.
     category: isManufactured ? input.productCategory : null,
     spice_level: isManufactured ? input.spiceLevel : null,
-    batch_capacity: isManufactured ? input.batchCapacity : null,
     discount_percent: isManufactured ? input.discountPercent : 0,
 
     // The audit trigger reads these off the row, so every change carries the
@@ -114,7 +125,7 @@ export async function save(input: ItemInput, userId: string | null): Promise<str
   // them — a resold B2B good just as much as one the shop makes. The
   // submitted list is the whole truth: a quantity the admin took off the form
   // is withdrawn from the catalogue.
-  if (caps.isSellable) {
+  if (isSellable) {
     const quantities = input.packSizes.map((pack) => pack.qty)
 
     if (quantities.length > 0) {
@@ -138,6 +149,16 @@ export async function save(input: ItemInput, userId: string | null): Promise<str
     if (quantities.length > 0) stale = stale.not('pack_qty', 'in', `(${quantities.join(',')})`)
     const { error: delError } = await stale
     if (delError) throw delError
+  } else {
+    // A price is a quantity of a selling unit. Take the selling unit away and
+    // the price no longer means anything — worse, it would be read against
+    // whatever unit is chosen next. Past orders are unaffected: a line records
+    // what it sold at rather than pointing at these rows.
+    const { error: clearError } = await supabase
+      .from('product_pack_sizes')
+      .delete()
+      .eq('product_id', id)
+    if (clearError) throw clearError
   }
 
   return id
@@ -334,6 +355,5 @@ export async function findById(id: string): Promise<ItemInput | null> {
     spiceLevel: row.spice_level ?? null,
     packSizes,
     discountPercent: row.discount_percent ?? 0,
-    batchCapacity: row.batch_capacity ?? 30,
   }
 }

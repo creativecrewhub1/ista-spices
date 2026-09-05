@@ -40,6 +40,10 @@ export const ItemsService = {
       if (!input.salesUnit?.trim()) {
         throw new HttpError(400, 'Sales unit is required for anything sold')
       }
+    }
+    // Whatever is sold has to say how a sale draws on stock, raw materials
+    // included once they are for sale.
+    if (input.salesUnit?.trim()) {
       if (!Number.isFinite(input.salesToStockFactor) || input.salesToStockFactor <= 0) {
         throw new HttpError(400, 'Conversion must be greater than zero')
       }
@@ -48,9 +52,13 @@ export const ItemsService = {
       throw new HttpError(400, 'Low-stock alert cannot be negative')
     }
 
-    // Anything sold needs a price, whether the shop made it or bought it in.
-    // Without one the storefront would list it with nothing to charge.
-    if (input.category !== 'raw_material') {
+    // A raw material is for sale only once a selling unit is chosen for it.
+    const isSellable = input.category !== 'raw_material' || Boolean(input.salesUnit?.trim())
+
+    // Anything sold needs a price, whether the shop made it, bought it in, or
+    // sells the raw material as it stands. Without one the storefront would
+    // list it with nothing to charge.
+    if (isSellable) {
       if (input.packSizes.length === 0) {
         throw new HttpError(400, 'Add at least one selling price')
       }
@@ -74,9 +82,6 @@ export const ItemsService = {
     if (input.category === 'manufacturing') {
       if (!SHOP_CATEGORIES.includes(input.productCategory)) {
         throw new HttpError(400, 'Choose a shop category')
-      }
-      if (!Number.isFinite(input.batchCapacity) || input.batchCapacity <= 0) {
-        throw new HttpError(400, 'Batch capacity must be greater than zero')
       }
       if (input.discountPercent < 0 || input.discountPercent > 100) {
         throw new HttpError(400, 'Discount must be between 0 and 100')

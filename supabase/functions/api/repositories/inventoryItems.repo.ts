@@ -24,12 +24,17 @@ export interface LedgerPosition {
   quantityOnHand: number
   lastPurchaseCost: number | null
   lastPurchasedAt: string | null
+  /** The most recent lot, bought or made — MNF- numbers are production runs. */
+  lastBatchNo: string | null
+  lastBatchKind: 'receipt' | 'production' | null
 }
 
 const EMPTY_POSITION: LedgerPosition = {
   quantityOnHand: 0,
   lastPurchaseCost: null,
   lastPurchasedAt: null,
+  lastBatchNo: null,
+  lastBatchKind: null,
 }
 
 // deno-lint-ignore no-explicit-any
@@ -51,6 +56,8 @@ function mapRow(row: any, position: LedgerPosition): InventoryItem {
     lowStockThreshold: Number(row.low_stock_threshold),
     lastPurchaseCost: position.lastPurchaseCost,
     lastPurchasedAt: position.lastPurchasedAt,
+    lastBatchNo: position.lastBatchNo,
+    lastBatchKind: position.lastBatchKind,
     isActive: row.is_active,
     imageUrl: row.image_url ?? null,
   }
@@ -60,7 +67,7 @@ function mapRow(row: any, position: LedgerPosition): InventoryItem {
 export async function positionByItem(): Promise<Map<string, LedgerPosition>> {
   const { data, error } = await supabase
     .from('item_stock')
-    .select('item_id, quantity_on_hand, last_purchase_cost, last_purchased_at')
+    .select('item_id, quantity_on_hand, last_purchase_cost, last_purchased_at, last_batch_no, last_batch_kind')
   if (error) throw error
 
   return new Map(
@@ -71,6 +78,8 @@ export async function positionByItem(): Promise<Map<string, LedgerPosition>> {
         quantityOnHand: Number(r.quantity_on_hand),
         lastPurchaseCost: r.last_purchase_cost === null ? null : Number(r.last_purchase_cost),
         lastPurchasedAt: r.last_purchased_at ?? null,
+        lastBatchNo: r.last_batch_no ?? null,
+        lastBatchKind: r.last_batch_kind ?? null,
       },
     ]),
   )

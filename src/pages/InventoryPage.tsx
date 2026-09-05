@@ -78,10 +78,12 @@ export function InventoryPage() {
   // The id only. The form is loaded from the API so nothing editable is
   // reconstructed from a list row and then saved back as a guess.
   const [editingId, setEditingId] = useState<string | null>(null)
-  const { data: editing = null } = useItem(editingId)
-  // Loaded means "this item", not merely "not fetching" — the previous item's
-  // data is kept as placeholder while the next one is in flight.
-  const editLoading = Boolean(editingId) && editing?.id !== editingId
+  const { data: editing = null, isFetching: fetchingItem } = useItem(editingId)
+  // Loaded means "this item, freshly read". The form copies the item into a
+  // draft once, when it mounts, so anything arriving after that never reaches
+  // the fields — waiting for the fetch is what makes an edit show the value
+  // that was actually saved rather than the one cached before it.
+  const editLoading = Boolean(editingId) && (fetchingItem || editing?.id !== editingId)
   const [deleting, setDeleting] = useState<{ id: string; name: string } | null>(null)
   // The server decides what may be removed; the dialog only reports it.
   const { data: removal, isFetching: checkingRemoval } = useRemovalCheck(deleting?.id ?? null)

@@ -38,7 +38,7 @@ export function SpicestHeader() {
         {/* Brand Logo */}
         <Link to="/shop" className="flex items-center gap-2 group">
           <span className="font-display text-2xl sm:text-3xl font-extrabold tracking-wider text-[#E85D19] group-hover:opacity-90 transition-opacity">
-            SPICEST
+            ISTA
           </span>
         </Link>
 
