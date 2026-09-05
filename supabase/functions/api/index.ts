@@ -7,6 +7,7 @@ import { stockRoute } from './routes/stock.route.ts'
 import { unitsRoute } from './routes/units.route.ts'
 import { itemCategoriesRoute } from './routes/itemCategories.route.ts'
 import { itemsRoute } from './routes/items.route.ts'
+import { productionRoute } from './routes/production.route.ts'
 import { customersRoute } from './routes/customers.route.ts'
 import { ordersRoute } from './routes/orders.route.ts'
 import { revenueRoute } from './routes/revenue.route.ts'
@@ -59,6 +60,8 @@ const ADMIN_PREFIXES = [
   '/api/stock',
   '/api/item-categories',
   '/api/items',
+  // Production creates stock and consumes raw materials; it is never public.
+  '/api/production',
   '/api/customers',
   '/api/orders',
   '/api/revenue',
@@ -79,6 +82,7 @@ app.route('/stock', stockRoute)
 app.route('/units', unitsRoute)
 app.route('/item-categories', itemCategoriesRoute)
 app.route('/items', itemsRoute)
+app.route('/production', productionRoute)
 app.route('/customers', customersRoute)
 app.route('/orders', ordersRoute)
 app.route('/revenue', revenueRoute)

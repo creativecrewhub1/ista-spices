@@ -6,6 +6,7 @@ import type {
   ItemInput,
   Order,
   OrderStatus,
+  ProductionRunInput,
   StockReceiptInput,
   UpdateProfileInput,
 } from './types'
@@ -176,6 +177,28 @@ export function useReceiveStock() {
         queryClient.invalidateQueries({ queryKey: ['dashboard-needs-attention'] }),
       ])
     },
+  })
+}
+
+/**
+ * Records a batch: what it consumed and what it yielded. One call moves the
+ * ledger in both directions, so everything that reads stock has to refresh.
+ */
+export function useRecordProduction() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: ProductionRunInput) => api.post('/production', input),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['production'] }),
+        queryClient.invalidateQueries({ queryKey: ['stock'] }),
+        queryClient.invalidateQueries({ queryKey: ['stock-movements'] }),
+        queryClient.invalidateQueries({ queryKey: ['products'] }),
+        queryClient.invalidateQueries({ queryKey: ['inventory-items'] }),
+        queryClient.invalidateQueries({ queryKey: ['item-removal-check'] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard-needs-attention'] }),
+      ]),
   })
 }
 

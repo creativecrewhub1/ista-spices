@@ -11,6 +11,7 @@ import type {
   ItemInput,
   AuditEntry,
   ItemName,
+  ProductionRun,
   ItemRemovalCheck,
   RemovedItem,
   Order,
@@ -250,6 +251,14 @@ export function useRemovalCheck(itemId: string | null) {
     queryKey: ['item-removal-check', itemId],
     queryFn: () => api.get<ItemRemovalCheck>(`/items/${itemId}/removal-check`),
     enabled: Boolean(itemId),
+  })
+}
+
+/** Batches already produced, newest first. */
+export function useProductionRuns(limit = 20) {
+  return useQuery({
+    queryKey: ['production', limit],
+    queryFn: () => api.get<ProductionRun[]>(`/production?limit=${limit}`),
   })
 }
 

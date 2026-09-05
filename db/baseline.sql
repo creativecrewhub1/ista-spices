@@ -5,7 +5,7 @@
 -- snapshot to read and to rebuild from, not a migration to re-run against
 -- the existing database.
 --
--- Last refreshed 2026-09-03. Everything after this file lives in
+-- Last refreshed 2026-09-05. Everything after this file lives in
 -- db/migrations, one file per change.
 
 create type customer_segment as enum ('new', 'regular', 'vip');
@@ -118,6 +118,24 @@ create table product_pack_sizes (
   packaging text
 );
 
+create table production_inputs (
+  id bigint not null,
+  run_id bigint not null,
+  item_id text not null,
+  qty numeric(12,3) not null
+);
+
+create table production_runs (
+  id bigint not null,
+  product_id text not null,
+  output_qty numeric(12,3) not null,
+  occurred_at timestamp with time zone default now() not null,
+  posted_at timestamp with time zone,
+  note text,
+  created_by uuid,
+  created_at timestamp with time zone default now() not null
+);
+
 create table products (
   id text not null,
   name text not null,
@@ -186,57 +204,57 @@ create table units_of_measure (
 
 alter table customers add constraint customers_user_id_key UNIQUE (user_id);
 
-alter table customers add constraint customers_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id);
-
 alter table customers add constraint customers_pkey PRIMARY KEY (id);
 
-alter table inventory_items add constraint inventory_items_threshold_non_negative CHECK ((low_stock_threshold >= (0)::numeric));
+alter table customers add constraint customers_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id);
 
 alter table inventory_items add constraint inventory_items_qty_non_negative CHECK ((quantity_on_hand >= (0)::numeric));
 
 alter table inventory_items add constraint inventory_items_pkey PRIMARY KEY (id);
 
-alter table item_audit_log add constraint item_audit_log_pkey PRIMARY KEY (id);
-
-alter table item_audit_log add constraint item_audit_log_changed_by_fkey FOREIGN KEY (changed_by) REFERENCES profiles(id);
+alter table inventory_items add constraint inventory_items_threshold_non_negative CHECK ((low_stock_threshold >= (0)::numeric));
 
 alter table item_audit_log add constraint item_audit_log_item_id_fkey FOREIGN KEY (item_id) REFERENCES products(id) ON DELETE CASCADE;
 
+alter table item_audit_log add constraint item_audit_log_changed_by_fkey FOREIGN KEY (changed_by) REFERENCES profiles(id);
+
 alter table item_audit_log add constraint item_audit_log_action_check CHECK ((action = ANY (ARRAY['created'::text, 'updated'::text, 'removed'::text, 'restored'::text])));
+
+alter table item_audit_log add constraint item_audit_log_pkey PRIMARY KEY (id);
 
 alter table item_categories add constraint item_categories_pkey PRIMARY KEY (code);
 
-alter table order_items add constraint order_items_order_product_pack_key UNIQUE (order_id, product_id, pack_qty);
+alter table order_items add constraint order_items_pack_unit_fkey FOREIGN KEY (pack_unit) REFERENCES units_of_measure(code);
+
+alter table order_items add constraint order_items_pkey PRIMARY KEY (id);
 
 alter table order_items add constraint order_items_order_id_fkey FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE;
+
+alter table order_items add constraint order_items_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id);
+
+alter table order_items add constraint order_items_order_product_pack_key UNIQUE (order_id, product_id, pack_qty);
 
 alter table order_items add constraint order_items_qty_positive CHECK ((qty > 0));
 
 alter table order_items add constraint order_items_price_non_negative CHECK ((price >= (0)::numeric));
 
-alter table order_items add constraint order_items_pkey PRIMARY KEY (id);
-
 alter table order_items add constraint order_items_pack_qty_positive CHECK ((pack_qty > (0)::numeric));
-
-alter table order_items add constraint order_items_pack_unit_fkey FOREIGN KEY (pack_unit) REFERENCES units_of_measure(code);
-
-alter table order_items add constraint order_items_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id);
-
-alter table order_status_events add constraint order_status_events_pkey PRIMARY KEY (id);
-
-alter table order_status_events add constraint order_status_events_order_id_fkey FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE;
 
 alter table order_status_events add constraint order_status_events_changed_by_fkey FOREIGN KEY (changed_by) REFERENCES auth.users(id);
 
-alter table orders add constraint orders_pkey PRIMARY KEY (id);
+alter table order_status_events add constraint order_status_events_order_id_fkey FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE;
+
+alter table order_status_events add constraint order_status_events_pkey PRIMARY KEY (id);
 
 alter table orders add constraint orders_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customers(id);
 
-alter table product_pack_sizes add constraint product_pack_sizes_pkey PRIMARY KEY (id);
+alter table orders add constraint orders_pkey PRIMARY KEY (id);
+
+alter table product_pack_sizes add constraint product_pack_sizes_stock_units_positive CHECK ((stock_units > (0)::numeric));
 
 alter table product_pack_sizes add constraint product_pack_sizes_price_non_negative CHECK ((price >= (0)::numeric));
 
-alter table product_pack_sizes add constraint product_pack_sizes_stock_units_positive CHECK ((stock_units > (0)::numeric));
+alter table product_pack_sizes add constraint product_pack_sizes_pkey PRIMARY KEY (id);
 
 alter table product_pack_sizes add constraint product_pack_sizes_product_id_pack_qty_key UNIQUE (product_id, pack_qty);
 
@@ -246,39 +264,57 @@ alter table product_pack_sizes add constraint product_pack_sizes_packaging_fkey 
 
 alter table product_pack_sizes add constraint product_pack_sizes_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE;
 
-alter table products add constraint products_deleted_by_fkey FOREIGN KEY (deleted_by) REFERENCES profiles(id);
+alter table production_inputs add constraint production_inputs_run_id_fkey FOREIGN KEY (run_id) REFERENCES production_runs(id) ON DELETE CASCADE;
 
-alter table products add constraint products_pkey PRIMARY KEY (id);
+alter table production_inputs add constraint production_inputs_run_id_item_id_key UNIQUE (run_id, item_id);
 
-alter table products add constraint products_discount_range CHECK (((discount_percent >= 0) AND (discount_percent <= 100)));
+alter table production_inputs add constraint production_inputs_pkey PRIMARY KEY (id);
 
-alter table products add constraint products_batch_capacity_positive CHECK ((batch_capacity > 0));
+alter table production_inputs add constraint production_inputs_qty_check CHECK ((qty > (0)::numeric));
 
-alter table products add constraint products_units_packed_non_negative CHECK ((units_packed_this_batch >= 0));
+alter table production_inputs add constraint production_inputs_item_id_fkey FOREIGN KEY (item_id) REFERENCES products(id);
 
-alter table products add constraint products_units_within_capacity CHECK ((units_packed_this_batch <= batch_capacity));
+alter table production_runs add constraint production_runs_pkey PRIMARY KEY (id);
 
-alter table products add constraint products_batch_capacity_manufactured_only CHECK (((batch_capacity IS NULL) OR (origin = 'manufactured'::item_origin)));
+alter table production_runs add constraint production_runs_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id);
 
-alter table products add constraint products_category_sellable_only CHECK (((category IS NULL) OR is_sellable));
+alter table production_runs add constraint production_runs_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id);
 
-alter table products add constraint products_low_stock_threshold_non_negative CHECK ((low_stock_threshold >= (0)::numeric));
+alter table production_runs add constraint production_runs_output_qty_check CHECK ((output_qty > (0)::numeric));
 
 alter table products add constraint products_sales_factor_positive CHECK ((sales_to_stock_factor > (0)::numeric));
 
-alter table products add constraint products_sales_unit_required_when_sellable CHECK (((NOT is_sellable) OR (sales_unit IS NOT NULL)));
+alter table products add constraint products_units_within_capacity CHECK ((units_packed_this_batch <= batch_capacity));
+
+alter table products add constraint products_low_stock_threshold_non_negative CHECK ((low_stock_threshold >= (0)::numeric));
 
 alter table products add constraint products_stock_unit_fkey FOREIGN KEY (stock_unit) REFERENCES units_of_measure(code);
 
 alter table products add constraint products_sales_unit_fkey FOREIGN KEY (sales_unit) REFERENCES units_of_measure(code);
 
+alter table products add constraint products_discount_range CHECK (((discount_percent >= 0) AND (discount_percent <= 100)));
+
 alter table products add constraint products_item_category_fkey FOREIGN KEY (item_category) REFERENCES item_categories(code);
+
+alter table products add constraint products_category_sellable_only CHECK (((category IS NULL) OR is_sellable));
+
+alter table products add constraint products_batch_capacity_manufactured_only CHECK (((batch_capacity IS NULL) OR (origin = 'manufactured'::item_origin)));
+
+alter table products add constraint products_units_packed_non_negative CHECK ((units_packed_this_batch >= 0));
+
+alter table products add constraint products_batch_capacity_positive CHECK ((batch_capacity > 0));
+
+alter table products add constraint products_pkey PRIMARY KEY (id);
+
+alter table products add constraint products_deleted_by_fkey FOREIGN KEY (deleted_by) REFERENCES profiles(id);
 
 alter table products add constraint products_removal_is_consistent CHECK (((is_active AND (deleted_at IS NULL)) OR ((NOT is_active) AND (deleted_at IS NOT NULL))));
 
 alter table products add constraint products_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id);
 
 alter table products add constraint products_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES profiles(id);
+
+alter table products add constraint products_sales_unit_required_when_sellable CHECK (((NOT is_sellable) OR (sales_unit IS NOT NULL)));
 
 alter table profiles add constraint profiles_role_check CHECK ((role = ANY (ARRAY['admin'::text, 'customer'::text])));
 
@@ -290,33 +326,33 @@ alter table stock_movements add constraint stock_movements_receipt_has_cost CHEC
 
 alter table stock_movements add constraint stock_movements_total_cost_non_negative CHECK (((total_cost IS NULL) OR (total_cost >= (0)::numeric)));
 
-alter table stock_movements add constraint stock_movements_direction CHECK ((((kind = ANY (ARRAY['receipt'::stock_movement_kind, 'production'::stock_movement_kind])) AND (qty > (0)::numeric)) OR ((kind = ANY (ARRAY['sale'::stock_movement_kind, 'consumption'::stock_movement_kind])) AND (qty < (0)::numeric)) OR (kind = 'adjustment'::stock_movement_kind)));
-
-alter table stock_movements add constraint stock_movements_qty_non_zero CHECK ((qty <> (0)::numeric));
-
 alter table stock_movements add constraint stock_movements_order_id_fkey FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL;
 
 alter table stock_movements add constraint stock_movements_item_id_fkey FOREIGN KEY (item_id) REFERENCES products(id);
 
 alter table stock_movements add constraint stock_movements_pkey PRIMARY KEY (id);
 
+alter table stock_movements add constraint stock_movements_direction CHECK ((((kind = ANY (ARRAY['receipt'::stock_movement_kind, 'production'::stock_movement_kind])) AND (qty > (0)::numeric)) OR ((kind = ANY (ARRAY['sale'::stock_movement_kind, 'consumption'::stock_movement_kind])) AND (qty < (0)::numeric)) OR (kind = 'adjustment'::stock_movement_kind)));
+
+alter table stock_movements add constraint stock_movements_qty_non_zero CHECK ((qty <> (0)::numeric));
+
+alter table units_of_measure add constraint units_of_measure_dimension_check CHECK ((dimension = ANY (ARRAY['weight'::text, 'volume'::text, 'count'::text])));
+
 alter table units_of_measure add constraint units_of_measure_pkey PRIMARY KEY (code);
 
 alter table units_of_measure add constraint units_of_measure_base_factor_check CHECK ((base_factor > (0)::numeric));
 
-alter table units_of_measure add constraint units_of_measure_dimension_check CHECK ((dimension = ANY (ARRAY['weight'::text, 'volume'::text, 'count'::text])));
+CREATE INDEX customers_phone_trgm_idx ON public.customers USING gin (phone gin_trgm_ops);
+
+CREATE UNIQUE INDEX customers_email_unique_idx ON public.customers USING btree (lower(email)) WHERE (email IS NOT NULL);
 
 CREATE INDEX customers_user_id_idx ON public.customers USING btree (user_id);
 
 CREATE INDEX customers_name_trgm_idx ON public.customers USING gin (name gin_trgm_ops);
 
-CREATE UNIQUE INDEX customers_email_unique_idx ON public.customers USING btree (lower(email)) WHERE (email IS NOT NULL);
-
-CREATE INDEX customers_phone_trgm_idx ON public.customers USING gin (phone gin_trgm_ops);
+CREATE INDEX inventory_items_name_trgm_idx ON public.inventory_items USING gin (name gin_trgm_ops);
 
 CREATE INDEX inventory_items_type_active_idx ON public.inventory_items USING btree (type, is_active);
-
-CREATE INDEX inventory_items_name_trgm_idx ON public.inventory_items USING gin (name gin_trgm_ops);
 
 CREATE INDEX item_audit_log_item_time_idx ON public.item_audit_log USING btree (item_id, changed_at DESC, id DESC);
 
@@ -326,29 +362,33 @@ CREATE INDEX order_items_order_id_idx ON public.order_items USING btree (order_i
 
 CREATE INDEX order_status_events_order_id_idx ON public.order_status_events USING btree (order_id, changed_at);
 
-CREATE INDEX orders_placed_at_idx ON public.orders USING btree (placed_at);
+CREATE INDEX orders_customer_id_idx ON public.orders USING btree (customer_id);
 
 CREATE INDEX orders_id_trgm_idx ON public.orders USING gin (id gin_trgm_ops);
 
-CREATE INDEX orders_customer_id_idx ON public.orders USING btree (customer_id);
-
 CREATE INDEX orders_status_placed_at_idx ON public.orders USING btree (status, placed_at DESC);
+
+CREATE INDEX orders_placed_at_idx ON public.orders USING btree (placed_at);
+
+CREATE INDEX production_inputs_item_idx ON public.production_inputs USING btree (item_id);
+
+CREATE INDEX production_runs_product_idx ON public.production_runs USING btree (product_id, occurred_at DESC);
 
 CREATE INDEX products_item_category_active_idx ON public.products USING btree (item_category, is_active);
 
 CREATE INDEX products_is_active_idx ON public.products USING btree (is_active);
 
-CREATE INDEX products_name_trgm_idx ON public.products USING gin (name gin_trgm_ops);
-
 CREATE UNIQUE INDEX products_active_name_norm_unique_idx ON public.products USING btree (lower(btrim(regexp_replace(name, '\s+'::text, ' '::text, 'g'::text)))) WHERE is_active;
 
-CREATE INDEX stock_movements_item_idx ON public.stock_movements USING btree (item_id, occurred_at);
-
-CREATE UNIQUE INDEX stock_movements_batch_no_key ON public.stock_movements USING btree (batch_no) WHERE (batch_no IS NOT NULL);
+CREATE INDEX products_name_trgm_idx ON public.products USING gin (name gin_trgm_ops);
 
 CREATE UNIQUE INDEX stock_movements_one_sale_per_order_line ON public.stock_movements USING btree (order_id, item_id) WHERE (kind = 'sale'::stock_movement_kind);
 
 CREATE INDEX stock_movements_order_idx ON public.stock_movements USING btree (order_id) WHERE (order_id IS NOT NULL);
+
+CREATE UNIQUE INDEX stock_movements_batch_no_key ON public.stock_movements USING btree (batch_no) WHERE (batch_no IS NOT NULL);
+
+CREATE INDEX stock_movements_item_idx ON public.stock_movements USING btree (item_id, occurred_at);
 
 create view customers_with_stats as  SELECT c.id,
     c.name,
@@ -399,7 +439,7 @@ create view item_stock as  WITH last_receipt AS (
             sum(m_1.total_cost) AS purchase_spend,
             sum(m_1.qty) AS purchased_qty
            FROM stock_movements m_1
-          WHERE m_1.kind = 'receipt'::stock_movement_kind
+          WHERE (m_1.kind = ANY (ARRAY['receipt'::stock_movement_kind, 'production'::stock_movement_kind])) AND m_1.total_cost IS NOT NULL
           GROUP BY m_1.item_id
         )
  SELECT p.id AS item_id,
@@ -484,9 +524,12 @@ CREATE OR REPLACE FUNCTION public.assign_batch_no()
  LANGUAGE plpgsql
 AS $function$
 begin
-  -- Only stock arriving forms a batch. Sales and consumption draw from
-  -- the pooled balance, which is what weighted-average costing means.
-  if new.kind = 'receipt' and new.batch_no is null then
+  /* Stock arriving forms a batch, and so does stock made: a produced lot is
+     the thing a recall or a quality question has to be traced back to. Sales
+     and consumption draw from the pooled balance, which is what
+     weighted-average costing means. */
+  if new.kind in ('receipt'::stock_movement_kind, 'production'::stock_movement_kind)
+     and new.batch_no is null then
     new.batch_no :=
       'BN-'
       || to_char(coalesce(new.occurred_at, now()) at time zone 'Asia/Kolkata', 'YYYYMMDD')
@@ -770,6 +813,58 @@ begin
 end $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.post_production_run()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+declare
+  consumed_cost numeric;
+  short_item text;
+begin
+  /* Only the transition into posted writes anything. */
+  if new.posted_at is null or old.posted_at is not null then
+    return new;
+  end if;
+
+  /* Nothing is made out of nothing. A run with no inputs would credit stock
+     that never came from anywhere. */
+  if not exists (select 1 from production_inputs i where i.run_id = new.id) then
+    raise exception 'Production run % has no inputs', new.id;
+  end if;
+
+  /* Refuse to consume what is not there. The ledger would accept a negative
+     balance and quietly report stock the shop does not have. */
+  select p.name into short_item
+    from production_inputs i
+    join products p on p.id = i.item_id
+    join item_stock s on s.item_id = i.item_id
+   where i.run_id = new.id and i.qty > s.quantity_on_hand
+   limit 1;
+  if short_item is not null then
+    raise exception 'Not enough % in stock for this run', short_item;
+  end if;
+
+  /* What the run consumed, valued at each component's average cost. This is
+     the only thing that gives a manufactured good a cost basis. */
+  select sum(i.qty * s.avg_unit_cost) into consumed_cost
+    from production_inputs i
+    join item_stock s on s.item_id = i.item_id
+   where i.run_id = new.id;
+
+  insert into stock_movements (item_id, kind, qty, total_cost, occurred_at, note)
+  values (new.product_id, 'production', new.output_qty, consumed_cost, new.occurred_at,
+          coalesce(nullif(new.note, ''), 'Production run ' || new.id));
+
+  insert into stock_movements (item_id, kind, qty, occurred_at, note)
+  select i.item_id, 'consumption', -i.qty, new.occurred_at,
+         'Consumed by production run ' || new.id
+    from production_inputs i
+   where i.run_id = new.id;
+
+  return new;
+end $function$
+;
+
 CREATE OR REPLACE FUNCTION public.products_audit()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -984,23 +1079,25 @@ CREATE TRIGGER customers_set_updated_at BEFORE UPDATE ON public.customers FOR EA
 
 CREATE TRIGGER inventory_items_set_updated_at BEFORE UPDATE ON public.inventory_items FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
-CREATE TRIGGER orders_despatch_stock_insert AFTER INSERT ON public.orders FOR EACH ROW EXECUTE FUNCTION despatch_order_stock();
+CREATE TRIGGER orders_log_status_insert AFTER INSERT ON public.orders FOR EACH ROW EXECUTE FUNCTION log_order_status_change();
 
 CREATE TRIGGER orders_set_updated_at BEFORE UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
-CREATE TRIGGER orders_log_status_insert AFTER INSERT ON public.orders FOR EACH ROW EXECUTE FUNCTION log_order_status_change();
-
-CREATE TRIGGER orders_log_status_update AFTER UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION log_order_status_change();
+CREATE TRIGGER orders_despatch_stock_insert AFTER INSERT ON public.orders FOR EACH ROW EXECUTE FUNCTION despatch_order_stock();
 
 CREATE TRIGGER orders_despatch_stock_update AFTER UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION despatch_order_stock();
 
+CREATE TRIGGER orders_log_status_update AFTER UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION log_order_status_change();
+
 CREATE TRIGGER pack_sizes_audit_after AFTER INSERT OR DELETE OR UPDATE ON public.product_pack_sizes FOR EACH ROW EXECUTE FUNCTION pack_sizes_audit();
+
+CREATE TRIGGER production_runs_post AFTER UPDATE ON public.production_runs FOR EACH ROW EXECUTE FUNCTION post_production_run();
+
+CREATE TRIGGER products_audit_after AFTER INSERT OR UPDATE ON public.products FOR EACH ROW EXECUTE FUNCTION products_audit();
 
 CREATE TRIGGER products_set_updated_at BEFORE UPDATE ON public.products FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 CREATE TRIGGER products_touch_before BEFORE UPDATE ON public.products FOR EACH ROW EXECUTE FUNCTION products_touch();
-
-CREATE TRIGGER products_audit_after AFTER INSERT OR UPDATE ON public.products FOR EACH ROW EXECUTE FUNCTION products_audit();
 
 CREATE TRIGGER stock_movements_assign_batch_no BEFORE INSERT ON public.stock_movements FOR EACH ROW EXECUTE FUNCTION assign_batch_no();
 
@@ -1019,6 +1116,10 @@ alter table order_status_events enable row level security;
 alter table orders enable row level security;
 
 alter table product_pack_sizes enable row level security;
+
+alter table production_inputs enable row level security;
+
+alter table production_runs enable row level security;
 
 alter table products enable row level security;
 

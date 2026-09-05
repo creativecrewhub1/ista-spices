@@ -1,5 +1,5 @@
 import { Fragment, useMemo, useState, type FormEvent } from 'react'
-import { ArrowDownToLine, ChevronRight, PackagePlus, Search } from 'lucide-react'
+import { ArrowDownToLine, ChevronRight, Factory, PackagePlus, Search } from 'lucide-react'
 import { TopBar } from '@/components/layout/TopBar'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -23,7 +23,8 @@ import {
 import { CardListSkeleton, ErrorState } from '@/components/common/QueryState'
 import { ItemMovements } from '@/components/stock/ItemMovements'
 import { useStock, useStockMovements } from '@/data/queries'
-import { useReceiveStock } from '@/data/mutations'
+import { useReceiveStock, useRecordProduction } from '@/data/mutations'
+import { ProductionSheet } from '@/components/stock/ProductionSheet'
 import type { StockItem } from '@/data/types'
 import { formatCurrency, formatRate, formatDateLong } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -46,6 +47,8 @@ export function StockPage() {
   const { data: stock, isLoading, error } = useStock()
   const { data: movements } = useStockMovements(undefined, 25)
   const receiveStock = useReceiveStock()
+  const recordProduction = useRecordProduction()
+  const [productionOpen, setProductionOpen] = useState(false)
 
   const [query, setQuery] = useState('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -165,13 +168,24 @@ export function StockPage() {
               aria-label="Search stock"
             />
           </div>
-          <Button
-            onClick={() => setFormOpen(true)}
-            className="gap-1.5 rounded-2xl bg-gradient-to-r from-orange-500 to-rose-500 text-xs font-bold text-white"
-          >
-            <PackagePlus className="size-4" aria-hidden="true" />
-            Stock in
-          </Button>
+          <div className="flex items-center gap-2">
+            {/* The other way stock appears: made rather than bought. */}
+            <Button
+              variant="outline"
+              onClick={() => setProductionOpen(true)}
+              className="gap-1.5 rounded-2xl text-xs font-bold"
+            >
+              <Factory className="size-4" aria-hidden="true" />
+              Production
+            </Button>
+            <Button
+              onClick={() => setFormOpen(true)}
+              className="gap-1.5 rounded-2xl bg-gradient-to-r from-orange-500 to-rose-500 text-xs font-bold text-white"
+            >
+              <PackagePlus className="size-4" aria-hidden="true" />
+              Stock in
+            </Button>
+          </div>
         </div>
 
         {/* Current position */}
@@ -307,6 +321,19 @@ export function StockPage() {
           )}
         </div>
       </div>
+
+      <ProductionSheet
+        open={productionOpen}
+        onOpenChange={setProductionOpen}
+        stock={stock ?? []}
+        isSaving={recordProduction.isPending}
+        error={recordProduction.isError ? (recordProduction.error as Error).message : null}
+        onSubmit={(input) =>
+          recordProduction.mutate(input, {
+            onSuccess: () => setProductionOpen(false),
+          })
+        }
+      />
 
       {/* Stock in form */}
       <Sheet

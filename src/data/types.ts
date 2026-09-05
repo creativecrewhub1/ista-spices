@@ -196,6 +196,32 @@ export interface StockMovement {
   batchNo: string | null
 }
 
+/** One material that went into a batch, and how much of it. */
+export interface ProductionInputLine {
+  itemId: string
+  qty: number
+}
+
+/** What a batch consumed and what it yielded. */
+export interface ProductionRunInput {
+  productId: string
+  outputQty: number
+  inputs: ProductionInputLine[]
+  occurredAt?: string
+  note?: string
+}
+
+/** A posted run, as it reads back. */
+export interface ProductionRun {
+  id: string
+  productName: string
+  outputQty: number
+  outputUnit: string
+  occurredAt: string
+  note: string | null
+  inputs: { itemName: string; qty: number; unit: string }[]
+}
+
 export interface StockReceiptInput {
   itemId: string
   qty: number
