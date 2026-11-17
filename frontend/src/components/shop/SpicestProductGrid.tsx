@@ -13,6 +13,12 @@ interface SpicestProductGridProps {
 }
 
 const FEATURED_COUNT = 4
+const productQuotes: Record<string, string> = {
+  'black pepper powder': 'A warm, bold finish in every pinch.',
+  'black peppercorns': 'Whole pepper, freshly cracked character.',
+  'cold-pressed groundnut oil': 'The golden touch behind everyday cooking.',
+  'coriander powder': 'A gentle citrus note for every dish.',
+}
 
 export function SpicestProductGrid({ products }: SpicestProductGridProps) {
   const featured = (products ?? []).filter((product) => product.packSizes.length > 0).slice(0, FEATURED_COUNT)
@@ -68,7 +74,7 @@ export function SpicestProductGrid({ products }: SpicestProductGridProps) {
                         ) : (
                           <button type="button" onClick={() => addItem(product, pack.qty, 1)} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#e85d19] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#ca4b0e] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"><ShoppingBag className="size-4" aria-hidden="true" /> Add to cart</button>
                         )}
-                        <span className="hidden text-xs italic text-[#f4d1b6] sm:inline">A little spice changes everything.</span>
+                        <span className="hidden text-xs italic text-[#f4d1b6] sm:inline">{productQuotes[product.name.toLowerCase()] ?? 'Good flavour makes every meal memorable.'}</span>
                       </div>
                     </div>
                   ) : (
