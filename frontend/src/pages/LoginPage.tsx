@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
-import { Flame, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { AuthBackdrop } from '@/components/common/AuthBackdrop'
 import { GoogleSignInButton } from '@/components/shop/GoogleSignInButton'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -75,9 +75,11 @@ export function LoginPage() {
     <AuthBackdrop>
       <Card className="w-full max-w-sm border-white/40 bg-card/70 shadow-2xl backdrop-blur-xl dark:border-white/10">
         <CardHeader className="items-center text-center">
-          <span className="mb-2 flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-lg shadow-primary/30">
-            <Flame className="size-5" aria-hidden="true" />
-          </span>
+          <img
+            src="/images/spicest/logo.webp"
+            alt="Ista logo"
+            className="mb-2 size-12 rounded-full object-cover shadow-lg ring-1 ring-primary/20"
+          />
           <CardTitle className="text-lg">Ista Spices</CardTitle>
           <CardDescription>Sign in to your account</CardDescription>
         </CardHeader>

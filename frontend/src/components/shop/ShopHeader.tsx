@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Flame, ShoppingBag } from 'lucide-react'
+import { ShoppingBag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AccountMenu } from './AccountMenu'
 import { useCart } from '@/shop/CartContext'
@@ -12,10 +12,12 @@ export function ShopHeader() {
   return (
     <header className="sticky top-0 z-40 bg-background/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/85">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 md:px-8">
-        <Link to="/shop" className="flex items-center gap-2">
-          <span className="flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
-            <Flame className="size-4" aria-hidden="true" />
-          </span>
+        <Link to="/shop" className="flex items-center gap-2.5">
+          <img
+            src="/images/spicest/logo.webp"
+            alt="Ista logo"
+            className="size-9 rounded-full object-cover shadow-sm ring-1 ring-primary/20"
+          />
           <span className="font-display text-lg font-bold tracking-tight text-foreground">Ista Spices</span>
         </Link>
 

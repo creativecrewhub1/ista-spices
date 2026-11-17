@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { useLayoutEffect } from 'react'
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AppShell } from '@/components/layout/AppShell'
 import { AuthProvider } from '@/auth/AuthProvider'
 import { ProtectedRoute } from '@/auth/ProtectedRoute'
@@ -30,16 +31,29 @@ const queryClient = new QueryClient({
   },
 })
 
+function ScrollToTop() {
+  const { pathname, search, hash } = useLocation()
+
+  useLayoutEffect(() => {
+    if (!hash) window.scrollTo(0, 0)
+  }, [pathname, search, hash])
+
+  return null
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+        <ScrollToTop />
         <AuthProvider>
           <CartProvider>
             <Routes>
               {/* Authentication */}
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/shop/login" element={<CustomerLoginPage />} />
+              <Route path="/login" element={<CustomerLoginPage />} />
+              <Route path="/staff/login" element={<Navigate to="/login" replace />} />
+              <Route path="/staff/setup" element={<LoginPage />} />
+              <Route path="/shop/login" element={<Navigate to="/login" replace />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
 
               {/* Admin Panel (Primary Work Route) */}
@@ -55,14 +69,15 @@ export default function App() {
               </Route>
 
               {/* Customer Storefront */}
-              <Route path="/shop" element={<CatalogPage />} />
-              <Route path="/shop/all" element={<ShopAllPage />} />
-              <Route path="/shop/cart" element={<CartPage />} />
               <Route element={<RequireSession />}>
+                <Route path="/shop" element={<CatalogPage />} />
+                <Route path="/shop/all" element={<ShopAllPage />} />
+                <Route path="/shop/cart" element={<CartPage />} />
                 <Route path="/shop/checkout" element={<CheckoutPage />} />
                 <Route path="/shop/orders" element={<MyOrdersPage />} />
                 <Route path="/shop/profile" element={<ProfilePage />} />
               </Route>
+              <Route path="*" element={<Navigate to="/shop" replace />} />
             </Routes>
           </CartProvider>
         </AuthProvider>
