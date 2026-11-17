@@ -50,13 +50,12 @@ export function CustomerLoginPage() {
   return (
     <main className="flex min-h-svh items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_15%_15%,#f5dfc6,transparent_35%),radial-gradient(circle_at_85%_90%,#f2d6bc,transparent_32%),#fff9f1] px-4 py-6 font-sans text-[#2b1b12] sm:px-8 sm:py-12">
       <section className="grid w-full max-w-6xl overflow-hidden rounded-[30px] border border-[#eed9c6] bg-[#fbf0e4] shadow-[0_26px_70px_rgba(91,59,29,0.18)] lg:min-h-[700px] lg:grid-cols-[0.95fr_1.05fr]" aria-label="Customer account">
-        <div className="relative min-h-[280px] overflow-hidden bg-[#e9ba92] sm:min-h-[360px] lg:min-h-full" aria-hidden="true">
-          <div className="absolute inset-y-0 left-[30%] w-[45%] bg-[#e6a975]/45" />
-          <div className="absolute -left-20 -top-16 size-72 rounded-full border border-[#a06037]/20 sm:size-96" />
-          <img src="/images/spicest/prod_golden_turmeric.png" alt="" className="absolute left-[8%] top-[-11%] w-[39%] max-w-52 rotate-[-12deg] rounded-[40%] object-cover shadow-[0_16px_28px_rgba(94,46,13,0.18)] lg:left-[8%] lg:top-[4%] lg:w-[43%]" />
-          <img src="/images/spicest/hero_spices.png" alt="" className="absolute left-[15%] top-[25%] w-[74%] rotate-[5deg] rounded-2xl object-cover shadow-[0_22px_38px_rgba(73,36,15,0.25)] sm:left-[17%] sm:top-[22%] sm:w-[68%] lg:left-[8%] lg:top-[29%] lg:w-[87%]" />
-          <img src="/images/spicest/prod_red_powder.png" alt="" className="absolute bottom-[-12%] left-[7%] w-[35%] max-w-48 rotate-[-10deg] rounded-[40%] object-cover shadow-[0_16px_28px_rgba(94,46,13,0.2)] lg:bottom-[-5%] lg:left-[10%] lg:w-[39%]" />
-          <img src="/images/spicest/star_anise_float.png" alt="" className="absolute bottom-[-4%] right-[-5%] w-20 rotate-[-20deg] drop-shadow-xl sm:w-28 lg:w-36" />
+        <div className="relative min-h-[290px] overflow-hidden bg-[#171a18] sm:min-h-[380px] lg:min-h-full" aria-hidden="true">
+          <img src="/images/spicest/hero_desi_masale_bg.jpg" alt="" className="absolute inset-0 h-full w-full object-cover object-[62%_center] lg:object-[58%_center]" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#11110e]/80 via-[#17120d]/15 to-[#17120d]/35" />
+          <img src="/images/spicest/blog_1.png" alt="" className="absolute left-[7%] top-[8%] w-[29%] max-w-36 -rotate-6 rounded-xl border-4 border-[#fffaf3] object-cover shadow-[0_18px_35px_rgba(0,0,0,0.35)] sm:w-[25%] lg:left-[7%] lg:top-[12%] lg:w-[34%]" />
+          <img src="/images/spicest/blog_3.png" alt="" className="absolute bottom-[11%] right-[7%] w-[29%] max-w-36 rotate-6 rounded-xl border-4 border-[#fffaf3] object-cover shadow-[0_18px_35px_rgba(0,0,0,0.35)] sm:w-[25%] lg:bottom-[17%] lg:right-[7%] lg:w-[34%]" />
+          <p className="absolute bottom-5 left-6 max-w-[60%] font-display text-xl leading-tight text-white drop-shadow-lg sm:text-2xl lg:bottom-9 lg:left-9 lg:text-3xl">A little spice changes everything.</p>
         </div>
         <div className="flex flex-col px-6 pb-8 pt-6 sm:px-12 sm:pb-12 sm:pt-9 lg:px-14 xl:px-20">
           <header className="flex items-center justify-between gap-4">
