@@ -34,7 +34,7 @@ export function ResetPasswordPage() {
     }
     // Still signed in (from the recovery link) — /login's own redirect
     // logic takes it from here, straight into the admin panel.
-    navigate('/login', { replace: true })
+    navigate('/staff/login', { replace: true })
   }
 
   return (
@@ -48,7 +48,7 @@ export function ResetPasswordPage() {
           {loading ? null : !session ? (
             <p className="text-sm text-muted-foreground">
               This reset link is invalid or has expired. Request a new one from the{' '}
-              <a href="/login" className="underline underline-offset-2">
+              <a href="/staff/login" className="underline underline-offset-2">
                 sign-in page
               </a>
               .

@@ -16,7 +16,7 @@ export function ProtectedRoute() {
   }
 
   if (!session) {
-    return <Navigate to="/login" state={{ from: location.pathname }} replace />
+    return <Navigate to="/staff/login" state={{ from: location.pathname }} replace />
   }
 
   if (role !== 'admin') {

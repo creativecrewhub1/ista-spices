@@ -38,7 +38,8 @@ export default function App() {
           <CartProvider>
             <Routes>
               {/* Authentication */}
-              <Route path="/login" element={<LoginPage />} />
+              <Route path="/login" element={<CustomerLoginPage />} />
+              <Route path="/staff/login" element={<LoginPage />} />
               <Route path="/shop/login" element={<CustomerLoginPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
 
