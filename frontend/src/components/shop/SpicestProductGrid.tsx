@@ -22,7 +22,7 @@ export function SpicestProductGrid({ products }: SpicestProductGridProps) {
   const selectedId = featured.some((product) => product.id === activeId) ? activeId : featured[0]?.id
 
   return (
-    <section id="products" className="scroll-mt-20 overflow-hidden bg-[#211711] py-16 text-white sm:py-20">
+    <section id="products" className="featured-range scroll-mt-20 overflow-hidden py-16 sm:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-9 flex flex-col justify-between gap-6 md:flex-row md:items-end">
           <div>
@@ -36,7 +36,7 @@ export function SpicestProductGrid({ products }: SpicestProductGridProps) {
         {featured.length === 0 ? (
           <p className="rounded-2xl border border-white/20 p-8 text-center text-[#e7d5c6]">No products are available right now.</p>
         ) : (
-          <div className="flex flex-col gap-3 lg:h-[560px] lg:flex-row" aria-label="Featured products">
+          <div className="featured-range__items" aria-label="Featured products">
             {featured.map((product, index) => {
               const active = product.id === selectedId
               const pack = product.packSizes[0]
@@ -46,10 +46,11 @@ export function SpicestProductGrid({ products }: SpicestProductGridProps) {
                   key={product.id}
                   onMouseEnter={() => setActiveId(product.id)}
                   onFocusCapture={() => setActiveId(product.id)}
-                  className={`relative isolate overflow-hidden rounded-[28px] bg-[#f7f1e8] text-[#2b1b12] transition-[flex,height] duration-500 ease-out motion-reduce:transition-none lg:h-full ${active ? 'h-[410px] lg:flex-[4.5]' : 'h-20 lg:flex-1'}`}
+                  className="featured-range__card"
+                  data-active={active}
                 >
-                  <img src={productImage(product.imageUrl)} alt="" loading="lazy" className={`absolute inset-0 h-full w-full object-contain transition-transform duration-500 motion-reduce:transition-none ${active ? 'scale-100 p-5 pb-36 lg:p-8 lg:pb-44' : 'scale-105 p-2 lg:p-0'}`} />
-                  <div className={`pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#1a120d] via-[#1a120d]/85 to-transparent ${active ? 'h-[65%]' : 'h-full lg:h-[70%]'}`} />
+                  <img src={productImage(product.imageUrl)} alt="" loading="lazy" className="featured-range__image" />
+                  <div className="featured-range__shade" />
                   <span className={`absolute left-5 top-4 z-10 text-xs font-bold tracking-[0.16em] ${active ? 'text-[#d85818]' : 'text-white lg:text-[#d85818]'}`}>{String(index + 1).padStart(2, '0')}</span>
 
                   {active ? (
