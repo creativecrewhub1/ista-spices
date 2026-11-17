@@ -52,8 +52,6 @@ export function SpicestFooter() {
             </h4>
             <ul className="space-y-2 text-xs text-amber-200/70">
               <li><a href="#about" className="hover:text-[#E85D19] transition-colors">About Us</a></li>
-              <li><a href="#testimonials" className="hover:text-[#E85D19] transition-colors">Customer Reviews</a></li>
-              <li><a href="#blog" className="hover:text-[#E85D19] transition-colors">Our Blog</a></li>
               <li><Link to="/shop/cart" className="hover:text-[#E85D19] transition-colors">Shopping Cart</Link></li>
               <li><Link to="/" className="hover:text-[#E85D19] transition-colors">Admin Dashboard</Link></li>
             </ul>

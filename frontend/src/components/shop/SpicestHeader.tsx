@@ -78,9 +78,6 @@ export function SpicestHeader() {
           <a href="#about" className="hover:text-[#E85D19] transition-colors">
             About Us
           </a>
-          <a href="#blog" className="hover:text-[#E85D19] transition-colors">
-            Blog
-          </a>
           <a href="#footer" className="hover:text-[#E85D19] transition-colors">
             Contact Us
           </a>

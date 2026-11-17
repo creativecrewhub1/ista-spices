@@ -2,8 +2,6 @@ import { SpicestHeader } from '@/components/shop/SpicestHeader'
 import { SpicestHero } from '@/components/shop/SpicestHero'
 import { SpicestCategoryBanners } from '@/components/shop/SpicestCategoryBanners'
 import { SpicestProductGrid } from '@/components/shop/SpicestProductGrid'
-import { SpicestTestimonials } from '@/components/shop/SpicestTestimonials'
-import { SpicestBlogSection } from '@/components/shop/SpicestBlogSection'
 import { SpicestNewsletter } from '@/components/shop/SpicestNewsletter'
 import { SpicestFooter } from '@/components/shop/SpicestFooter'
 import { useCatalog } from '@/data/queries'
@@ -24,8 +22,6 @@ export function CatalogPage() {
       <SpicestHero onBuyNowClick={scrollToProducts} onMoreProductClick={scrollToProducts} />
       <SpicestCategoryBanners />
       <SpicestProductGrid products={products} />
-      <SpicestTestimonials />
-      <SpicestBlogSection />
       <SpicestNewsletter />
       <SpicestFooter />
     </div>
