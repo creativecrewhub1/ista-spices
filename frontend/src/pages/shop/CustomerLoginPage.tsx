@@ -53,8 +53,6 @@ export function CustomerLoginPage() {
         <div className="relative min-h-[290px] overflow-hidden bg-[#171a18] sm:min-h-[380px] lg:min-h-full" aria-hidden="true">
           <img src="/images/spicest/hero_desi_masale_bg.jpg" alt="" className="absolute inset-0 h-full w-full object-cover object-[62%_center] lg:object-[58%_center]" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#11110e]/80 via-[#17120d]/15 to-[#17120d]/35" />
-          <img src="/images/spicest/blog_1.png" alt="" className="absolute left-[7%] top-[8%] w-[29%] max-w-36 -rotate-6 rounded-xl border-4 border-[#fffaf3] object-cover shadow-[0_18px_35px_rgba(0,0,0,0.35)] sm:w-[25%] lg:left-[7%] lg:top-[12%] lg:w-[34%]" />
-          <img src="/images/spicest/blog_3.png" alt="" className="absolute bottom-[11%] right-[7%] w-[29%] max-w-36 rotate-6 rounded-xl border-4 border-[#fffaf3] object-cover shadow-[0_18px_35px_rgba(0,0,0,0.35)] sm:w-[25%] lg:bottom-[17%] lg:right-[7%] lg:w-[34%]" />
           <p className="absolute bottom-5 left-6 max-w-[60%] font-display text-xl leading-tight text-white drop-shadow-lg sm:text-2xl lg:bottom-9 lg:left-9 lg:text-3xl">A little spice changes everything.</p>
         </div>
         <div className="flex flex-col px-6 pb-8 pt-6 sm:px-12 sm:pb-12 sm:pt-9 lg:px-14 xl:px-20">
