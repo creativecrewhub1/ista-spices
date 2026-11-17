@@ -4,7 +4,7 @@ import { LoadingState } from '@/components/common/QueryState'
 
 /** Gates a page behind "must be signed in" — any role. Unlike ProtectedRoute, no admin requirement. */
 export function RequireSession() {
-  const { session, loading } = useAuth()
+  const { session, role, loading } = useAuth()
   const location = useLocation()
 
   if (loading) {
@@ -15,7 +15,7 @@ export function RequireSession() {
     )
   }
 
-  if (!session) {
+  if (!session || role !== 'customer') {
     return <Navigate to="/shop/login" state={{ from: location.pathname }} replace />
   }
 

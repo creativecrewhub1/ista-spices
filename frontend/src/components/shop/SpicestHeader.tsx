@@ -148,7 +148,7 @@ export function SpicestHeader() {
             </div>
           ) : (
             <div className="flex items-center space-x-2">
-              <Link to="/login">
+              <Link to="/shop/login">
                 <Button
                   variant="outline"
                   size="sm"
@@ -157,7 +157,7 @@ export function SpicestHeader() {
                   Login
                 </Button>
               </Link>
-              <Link to="/login">
+              <Link to="/shop/login?mode=signup">
                 <Button
                   size="sm"
                   className="rounded-full bg-[#E85D19] hover:bg-[#d24e0f] text-white px-4 sm:px-5 py-1.5 text-xs sm:text-sm font-medium shadow-sm transition-all"

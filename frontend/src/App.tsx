@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from '@/components/layout/AppShell'
 import { AuthProvider } from '@/auth/AuthProvider'
 import { ProtectedRoute } from '@/auth/ProtectedRoute'
@@ -55,14 +55,15 @@ export default function App() {
               </Route>
 
               {/* Customer Storefront */}
-              <Route path="/shop" element={<CatalogPage />} />
-              <Route path="/shop/all" element={<ShopAllPage />} />
-              <Route path="/shop/cart" element={<CartPage />} />
               <Route element={<RequireSession />}>
+                <Route path="/shop" element={<CatalogPage />} />
+                <Route path="/shop/all" element={<ShopAllPage />} />
+                <Route path="/shop/cart" element={<CartPage />} />
                 <Route path="/shop/checkout" element={<CheckoutPage />} />
                 <Route path="/shop/orders" element={<MyOrdersPage />} />
                 <Route path="/shop/profile" element={<ProfilePage />} />
               </Route>
+              <Route path="*" element={<Navigate to="/shop" replace />} />
             </Routes>
           </CartProvider>
         </AuthProvider>
