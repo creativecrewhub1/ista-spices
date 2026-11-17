@@ -39,9 +39,9 @@ export default function App() {
             <Routes>
               {/* Authentication */}
               <Route path="/login" element={<CustomerLoginPage />} />
-              <Route path="/staff/login" element={<CustomerLoginPage />} />
+              <Route path="/staff/login" element={<Navigate to="/login" replace />} />
               <Route path="/staff/setup" element={<LoginPage />} />
-              <Route path="/shop/login" element={<CustomerLoginPage />} />
+              <Route path="/shop/login" element={<Navigate to="/login" replace />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
 
               {/* Admin Panel (Primary Work Route) */}

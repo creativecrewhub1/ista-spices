@@ -16,7 +16,7 @@ export function RequireSession() {
   }
 
   if (!session || role !== 'customer') {
-    return <Navigate to="/shop/login" state={{ from: location.pathname }} replace />
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />
   }
 
   return <Outlet />
