@@ -19,6 +19,7 @@ export function CustomerLoginPage() {
 
   const from = (location.state as { from?: string } | null)?.from
   if (!loading && session && role === 'customer') return <Navigate to={from?.startsWith('/shop/') ? from : '/shop'} replace />
+  if (!loading && session && role === 'admin') return <Navigate to={from && !from.startsWith('/shop') ? from : '/'} replace />
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -33,9 +34,9 @@ export function CustomerLoginPage() {
         const { error } = await supabaseAuth.auth.signInWithPassword({ email, password })
         if (error) throw error
         const profile = await api.get<{ role: string }>('/auth/whoami')
-        if (profile.role !== 'customer') {
+        if (profile.role !== 'customer' && profile.role !== 'admin') {
           await supabaseAuth.auth.signOut()
-          throw new Error('This login is for customer accounts only.')
+          throw new Error('This account does not have access. Please contact support.')
         }
       }
     } catch (error) {
@@ -49,7 +50,7 @@ export function CustomerLoginPage() {
 
   return (
     <main className="flex min-h-svh items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_15%_15%,#f5dfc6,transparent_35%),radial-gradient(circle_at_85%_90%,#f2d6bc,transparent_32%),#fff9f1] px-4 py-6 font-sans text-[#2b1b12] sm:px-8 sm:py-12">
-      <section className="grid w-full max-w-6xl overflow-hidden rounded-[30px] border border-[#eed9c6] bg-[#fbf0e4] shadow-[0_26px_70px_rgba(91,59,29,0.18)] lg:min-h-[700px] lg:grid-cols-[0.95fr_1.05fr]" aria-label="Customer account">
+      <section className="grid w-full max-w-6xl overflow-hidden rounded-[30px] border border-[#eed9c6] bg-[#fbf0e4] shadow-[0_26px_70px_rgba(91,59,29,0.18)] lg:min-h-[700px] lg:grid-cols-[0.95fr_1.05fr]" aria-label="Sign in to ISTA">
         <div className="relative min-h-[290px] overflow-hidden bg-[#171a18] sm:min-h-[380px] lg:min-h-full" aria-hidden="true">
           <img src="/images/spicest/hero_desi_masale_bg.jpg" alt="" className="absolute inset-0 h-full w-full object-cover object-[62%_center] lg:object-[58%_center]" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#11110e]/80 via-[#17120d]/15 to-[#17120d]/35" />

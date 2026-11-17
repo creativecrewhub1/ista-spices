@@ -39,7 +39,8 @@ export default function App() {
             <Routes>
               {/* Authentication */}
               <Route path="/login" element={<CustomerLoginPage />} />
-              <Route path="/staff/login" element={<LoginPage />} />
+              <Route path="/staff/login" element={<CustomerLoginPage />} />
+              <Route path="/staff/setup" element={<LoginPage />} />
               <Route path="/shop/login" element={<CustomerLoginPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
 
