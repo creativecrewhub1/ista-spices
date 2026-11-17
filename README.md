@@ -31,7 +31,6 @@ frontend/   the React app — everything Vite builds into frontend/dist
 backend/    everything that runs on or changes Supabase
   supabase/functions/api/   the Edge Function (Deno, Hono)
   db/                       schema baseline and migrations — see backend/db/README.md
-  scripts/                  one-off admin scripts (service-role key, never shipped)
 package.json  forwards dev/build/lint/preview to frontend/
 ```
 
