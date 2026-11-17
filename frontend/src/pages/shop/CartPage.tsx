@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Minus, Plus, ShoppingBag, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, ChevronDown, Minus, Plus, ShoppingBag, X } from 'lucide-react'
 import { ShopHeader } from '@/components/shop/ShopHeader'
 import { productImage } from '@/lib/productImage'
 import { Button } from '@/components/ui/button'
@@ -101,6 +101,19 @@ export function CartPage() {
                 <span className="text-[#8d7565]">Subtotal</span>
                 <span className="font-semibold tabular-nums text-[#2b1b12]">{formatCurrency(total)}</span>
               </div>
+              <details className="group rounded-xl bg-[#fff9f2] px-4 py-3 text-sm">
+                <summary className="flex cursor-pointer list-none items-center justify-between font-semibold text-[#d85818] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e85d19] [&::-webkit-details-marker]:hidden">
+                  View details <ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden="true" />
+                </summary>
+                <ul className="mt-4 space-y-3 border-t border-[#f0dfce] pt-4">
+                  {items.map((item) => (
+                    <li key={`${item.productId}-${item.packQty}`} className="flex items-start justify-between gap-3 text-[#735a49]">
+                      <span className="min-w-0">{item.productName}<span className="block text-xs text-[#9a806d]">{item.qty} × {formatCurrency(item.price)} · {formatPack(item.packQty, item.packUnit, units)}</span></span>
+                      <span className="shrink-0 font-medium tabular-nums text-[#2b1b12]">{formatCurrency(item.price * item.qty)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </details>
               <p className="text-xs text-[#947968]">Shipping and taxes calculated at checkout.</p>
               <Separator />
               <div className="flex justify-between text-base font-medium">
