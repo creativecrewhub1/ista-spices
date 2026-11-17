@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { useLayoutEffect } from 'react'
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AppShell } from '@/components/layout/AppShell'
 import { AuthProvider } from '@/auth/AuthProvider'
 import { ProtectedRoute } from '@/auth/ProtectedRoute'
@@ -30,10 +31,21 @@ const queryClient = new QueryClient({
   },
 })
 
+function ScrollToTop() {
+  const { pathname, search, hash } = useLocation()
+
+  useLayoutEffect(() => {
+    if (!hash) window.scrollTo(0, 0)
+  }, [pathname, search, hash])
+
+  return null
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+        <ScrollToTop />
         <AuthProvider>
           <CartProvider>
             <Routes>
