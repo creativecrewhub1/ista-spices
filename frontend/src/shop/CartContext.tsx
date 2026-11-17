@@ -4,6 +4,7 @@ import type { CatalogProduct } from '@/data/types'
 export interface CartItem {
   productId: string
   productName: string
+  imageUrl?: string | null
   /** Quantity of the product's selling unit in one pack, with that unit. */
   packQty: number
   packUnit: string
@@ -54,6 +55,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         {
           productId: product.id,
           productName: product.name,
+          imageUrl: product.imageUrl,
           packQty,
           packUnit: product.salesUnit,
           price,
