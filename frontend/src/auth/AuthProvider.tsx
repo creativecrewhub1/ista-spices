@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import type { Session, User } from '@supabase/supabase-js'
 import { supabaseAuth } from '@/lib/supabaseAuthClient'
 import { api } from '@/lib/apiClient'
+import { useNavigate } from 'react-router-dom'
 
 export type UserRole = 'admin' | 'customer'
 
@@ -17,6 +18,7 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const navigate = useNavigate()
   const [session, setSession] = useState<Session | null>(null)
   const [role, setRole] = useState<UserRole | null>(null)
   const [loading, setLoading] = useState(true)
@@ -68,6 +70,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     signOut: async () => {
       await supabaseAuth.auth.signOut()
+      setSession(null)
+      setRole(null)
+      navigate('/login', { replace: true })
     },
     signInWithGoogle: async () => {
       // Always lands on the customer home page, regardless of where sign-in

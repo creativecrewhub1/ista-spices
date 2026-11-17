@@ -1,7 +1,62 @@
 @import url('https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700&family=Fira+Code:wght@500;600;700&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap');
 @import 'tailwindcss';
+@source './';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
+
+.featured-range {
+  background: #211711;
+  color: #fff;
+}
+
+.featured-range__items {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
+
+.featured-range__card {
+  position: relative;
+  isolation: isolate;
+  flex: none;
+  height: 5rem;
+  overflow: hidden;
+  border-radius: 1.75rem;
+  background: #f7f1e8;
+  color: #2b1b12;
+  transition: height .5s ease, flex .5s ease;
+}
+
+.featured-range__card[data-active='true'] { height: 25.625rem; }
+
+.featured-range__image {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  width: 100%;
+  object-fit: contain;
+  padding: .5rem;
+}
+
+.featured-range__card[data-active='true'] .featured-range__image { padding: 1.25rem 1.25rem 9rem; }
+
+.featured-range__shade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(to top, #1a120d 0%, rgb(26 18 13 / .84) 23%, transparent 72%);
+}
+
+@media (min-width: 1024px) {
+  .featured-range__items { height: 35rem; flex-direction: row; }
+  .featured-range__card { height: 100%; flex: 1 1 0; min-width: 0; }
+  .featured-range__card[data-active='true'] { height: 100%; flex: 4.5 1 0; }
+  .featured-range__card[data-active='true'] .featured-range__image { padding: 2rem 2rem 11rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .featured-range__card { transition: none; }
+}
 
 @custom-variant dark (&:is(.dark *));
 

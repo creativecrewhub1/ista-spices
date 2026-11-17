@@ -1,19 +1,27 @@
 import { useState, type FormEvent } from 'react'
-import { Navigate, Link } from 'react-router-dom'
+import { Navigate, useLocation, useSearchParams } from 'react-router-dom'
+import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { useAuth } from '@/auth/AuthProvider'
 import { supabaseAuth } from '@/lib/supabaseAuthClient'
+import { api } from '@/lib/apiClient'
+import { GoogleSignInButton } from '@/components/shop/GoogleSignInButton'
 
 export function CustomerLoginPage() {
   const { session, role, loading } = useAuth()
-  const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const location = useLocation()
+  const [params] = useSearchParams()
+  const [mode, setMode] = useState<'login' | 'signup'>(params.get('mode') === 'signup' ? 'signup' : 'login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [visible, setVisible] = useState(false)
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
 
-  if (!loading && session && role === 'customer') return <Navigate to="/shop" replace />
+  const from = (location.state as { from?: string } | null)?.from
+  if (!loading && session && role === 'customer') return <Navigate to={from?.startsWith('/shop/') ? from : '/shop'} replace />
+  if (!loading && session && role === 'admin') return <Navigate to={from && !from.startsWith('/shop') ? from : '/'} replace />
 
-  async function submit(event: FormEvent) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setMessage('')
     setBusy(true)
@@ -21,41 +29,67 @@ export function CustomerLoginPage() {
       if (mode === 'signup') {
         const { data, error } = await supabaseAuth.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}/shop` } })
         if (error) throw error
-        setMessage(data.session ? 'Account created. Opening the shop...' : 'Check your email to confirm your account, then log in.')
+        setMessage(data.session ? 'Welcome to ISTA. Opening the shop...' : 'Check your inbox to confirm your email, then log in.')
       } else {
-        const { data, error } = await supabaseAuth.auth.signInWithPassword({ email, password })
+        const { error } = await supabaseAuth.auth.signInWithPassword({ email, password })
         if (error) throw error
-        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/api/auth/whoami`, {
-          headers: { Authorization: `Bearer ${data.session.access_token}`, apikey: import.meta.env.VITE_SUPABASE_ANON_KEY },
-        })
-        const profile = response.ok ? await response.json() : null
-        if (profile?.role !== 'customer') {
+        const profile = await api.get<{ role: string }>('/auth/whoami')
+        if (profile.role !== 'customer' && profile.role !== 'admin') {
           await supabaseAuth.auth.signOut()
-          throw new Error('This page is for customer accounts only.')
+          throw new Error('This account does not have access. Please contact support.')
         }
       }
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Unable to continue. Try again.')
+      setMessage(error instanceof Error ? error.message : 'Unable to continue. Please try again.')
     } finally {
       setBusy(false)
     }
   }
 
+  const inputClass = 'h-12 w-full rounded-full border border-[#d8aa80] bg-[#fffaf5] px-5 text-sm text-[#2b1b12] outline-none transition-colors focus:border-[#d75a17] focus:ring-2 focus:ring-[#d75a17]/20'
+
   return (
-    <main className="flex min-h-svh items-center justify-center bg-stone-50 p-4 text-stone-900">
-      <section className="w-full max-w-sm rounded-3xl bg-white p-8 shadow-xl" aria-label="Customer account">
-        <Link to="/shop" className="text-sm text-stone-600">Back to shop</Link>
-        <h1 className="mt-6 text-3xl font-semibold">Customer account</h1>
-        <div className="mt-6 grid grid-cols-2 rounded-full bg-stone-100 p-1" aria-label="Account mode">
-          <button type="button" aria-pressed={mode === 'login'} onClick={() => setMode('login')} className={`rounded-full p-3 ${mode === 'login' ? 'bg-teal-600 text-white' : ''}`}>Log in</button>
-          <button type="button" aria-pressed={mode === 'signup'} onClick={() => setMode('signup')} className={`rounded-full p-3 ${mode === 'signup' ? 'bg-teal-600 text-white' : ''}`}>Sign up</button>
+    <main className="flex min-h-svh items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_15%_15%,#f5dfc6,transparent_35%),radial-gradient(circle_at_85%_90%,#f2d6bc,transparent_32%),#fff9f1] px-4 py-6 font-sans text-[#2b1b12] sm:px-8 sm:py-12">
+      <section className="grid w-full max-w-6xl overflow-hidden rounded-[30px] border border-[#eed9c6] bg-[#fbf0e4] shadow-[0_26px_70px_rgba(91,59,29,0.18)] lg:min-h-[700px] lg:grid-cols-[0.95fr_1.05fr]" aria-label="Sign in to ISTA">
+        <div className="relative min-h-[290px] overflow-hidden bg-[#171a18] sm:min-h-[380px] lg:min-h-full" aria-hidden="true">
+          <img src="/images/spicest/hero_desi_masale_bg.jpg" alt="" className="absolute inset-0 h-full w-full object-cover object-[62%_center] lg:object-[58%_center]" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#11110e]/80 via-[#17120d]/15 to-[#17120d]/35" />
+          <p className="absolute bottom-5 left-6 max-w-[60%] font-display text-xl leading-tight text-white drop-shadow-lg sm:text-2xl lg:bottom-9 lg:left-9 lg:text-3xl">A little spice changes everything.</p>
         </div>
-        <form onSubmit={submit} className="mt-6 grid gap-4">
-          <label className="grid gap-2 text-sm font-medium">Email<input type="email" required autoComplete="email" value={email} onChange={event => setEmail(event.target.value)} className="rounded-xl border border-stone-300 p-3" /></label>
-          <label className="grid gap-2 text-sm font-medium">Password<input type="password" required minLength={6} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} value={password} onChange={event => setPassword(event.target.value)} className="rounded-xl border border-stone-300 p-3" /></label>
-          <button disabled={busy} className="rounded-full bg-stone-900 p-3 text-white disabled:opacity-50">{busy ? 'Please wait...' : mode === 'login' ? 'Log in' : 'Create customer account'}</button>
-          {message && <p role="status" className="text-sm">{message}</p>}
+        <div className="flex flex-col px-6 pb-8 pt-6 sm:px-12 sm:pb-12 sm:pt-9 lg:px-14 xl:px-20">
+          <header className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2.5">
+              <img src="/images/spicest/logo.webp" alt="Ista logo" className="size-10 rounded-full object-cover shadow-sm ring-1 ring-[#d8aa80]/40" />
+              <span className="font-display text-3xl font-bold tracking-wide text-[#d85818]">ISTA</span>
+            </div>
+            <span className="text-xs font-medium text-[#886a58] sm:text-sm">A world of flavour awaits.</span>
+          </header>
+          <div className="mx-auto flex w-full max-w-[440px] flex-1 flex-col justify-center py-10 sm:py-14">
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.24em] text-[#b85a21]">Welcome to ISTA</p>
+            <h1 className="font-display text-4xl font-semibold leading-tight text-[#422719] sm:text-5xl">{mode === 'login' ? 'Craving something good?' : 'Come on in.'}</h1>
+            <p className="mb-7 mt-4 text-base text-[#806653]">{mode === 'login' ? 'Sign in for the flavours you love.' : 'Create an account and start exploring.'}</p>
+
+        <div className="mb-6 grid grid-cols-2 rounded-full bg-[#edddcc] p-1" aria-label="Account mode">
+          {(['login', 'signup'] as const).map(value => (
+            <button key={value} type="button" aria-pressed={mode === value} onClick={() => { setMode(value); setMessage('') }} className={`min-h-11 rounded-full text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d85818] ${mode === value ? 'bg-[#d85818] text-white shadow-sm' : 'text-[#715642] hover:text-[#2b1b12]'}`}>{value === 'login' ? 'Log in' : 'Sign up'}</button>
+          ))}
+        </div>
+
+        <form onSubmit={submit} className="grid gap-5">
+          <label className="grid gap-2 text-sm font-semibold">Email<input type="email" required autoComplete="email" value={email} onChange={event => setEmail(event.target.value)} className={inputClass} /></label>
+          <label className="grid gap-2 text-sm font-semibold">Password
+            <span className="relative block"><input type={visible ? 'text' : 'password'} required minLength={6} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} value={password} onChange={event => setPassword(event.target.value)} className={`${inputClass} pr-12`} /><button type="button" onClick={() => setVisible(!visible)} aria-label={visible ? 'Hide password' : 'Show password'} className="absolute inset-y-0 right-1 flex w-11 items-center justify-center text-[#6e5849] focus-visible:outline-2 focus-visible:outline-[#ef580c]">{visible ? <EyeOff size={19} /> : <Eye size={19} />}</button></span>
+          </label>
+          <button disabled={busy} className="flex h-12 items-center justify-center gap-2 rounded-full bg-[linear-gradient(100deg,#c94c0d,#ed802d)] font-semibold text-white shadow-[0_8px_18px_rgba(197,79,15,0.2)] transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d85818] disabled:opacity-60">{busy && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}{busy ? 'Please wait...' : mode === 'login' ? 'Sign in' : 'Create account'}</button>
+          {message && <p role="status" className="text-center text-sm text-[#a53e19]">{message}</p>}
         </form>
+
+            <div className="my-6 flex items-center gap-4 text-sm text-[#906e57] before:h-px before:flex-1 before:bg-[#d9b99d] after:h-px after:flex-1 after:bg-[#d9b99d]">or</div>
+            <GoogleSignInButton className="h-12 rounded-full border-[#d8aa80] bg-transparent font-semibold text-[#2b1b12] hover:bg-white/70" />
+            <p className="mt-5 text-center text-xs leading-5 text-[#906e57]">Your next favourite flavour is one sign in away.</p>
+          </div>
+          <p className="border-t border-[#e4cbb4] pt-4 text-center text-xs text-[#987965]">Made for good food and good company.</p>
+        </div>
       </section>
     </main>
   )

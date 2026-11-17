@@ -36,7 +36,12 @@ export function SpicestHeader() {
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         
         {/* Brand Logo */}
-        <Link to="/shop" className="flex items-center gap-2 group">
+        <Link to="/shop" className="flex items-center gap-2.5 group">
+          <img
+            src="/images/spicest/logo.webp"
+            alt="Ista logo"
+            className="size-10 sm:size-11 rounded-full object-cover shadow-md ring-1 ring-orange-200/60 transition-transform group-hover:scale-105"
+          />
           <span className="font-display text-2xl sm:text-3xl font-extrabold tracking-wider text-[#E85D19] group-hover:opacity-90 transition-opacity">
             ISTA
           </span>
@@ -77,9 +82,6 @@ export function SpicestHeader() {
 
           <a href="#about" className="hover:text-[#E85D19] transition-colors">
             About Us
-          </a>
-          <a href="#blog" className="hover:text-[#E85D19] transition-colors">
-            Blog
           </a>
           <a href="#footer" className="hover:text-[#E85D19] transition-colors">
             Contact Us
@@ -157,7 +159,7 @@ export function SpicestHeader() {
                   Login
                 </Button>
               </Link>
-              <Link to="/login">
+              <Link to="/login?mode=signup">
                 <Button
                   size="sm"
                   className="rounded-full bg-[#E85D19] hover:bg-[#d24e0f] text-white px-4 sm:px-5 py-1.5 text-xs sm:text-sm font-medium shadow-sm transition-all"
