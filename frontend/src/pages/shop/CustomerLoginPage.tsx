@@ -58,7 +58,10 @@ export function CustomerLoginPage() {
         </div>
         <div className="flex flex-col px-6 pb-8 pt-6 sm:px-12 sm:pb-12 sm:pt-9 lg:px-14 xl:px-20">
           <header className="flex items-center justify-between gap-4">
-            <span className="font-display text-3xl font-bold tracking-wide text-[#d85818]">ISTA</span>
+            <div className="flex items-center gap-2.5">
+              <img src="/images/spicest/logo.webp" alt="Ista logo" className="size-10 rounded-full object-cover shadow-sm ring-1 ring-[#d8aa80]/40" />
+              <span className="font-display text-3xl font-bold tracking-wide text-[#d85818]">ISTA</span>
+            </div>
             <span className="text-xs font-medium text-[#886a58] sm:text-sm">A world of flavour awaits.</span>
           </header>
           <div className="mx-auto flex w-full max-w-[440px] flex-1 flex-col justify-center py-10 sm:py-14">
