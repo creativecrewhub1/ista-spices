@@ -4,35 +4,56 @@ A mobile-first admin dashboard for a homemade spices & cooking oils business —
 
 ## Architecture
 
-The frontend never talks to the database directly. Every read and write goes through a single Supabase Edge Function (`supabase/functions/api`), which is the only thing holding the service-role key. Row Level Security denies `anon`/`authenticated` at the database level — the function's service-role client is the sole path to data.
+The frontend never talks to the database directly. Every read and write goes through a single Supabase Edge Function (`backend/supabase/functions/api`), which is the only thing holding the service-role key. Row Level Security denies `anon`/`authenticated` at the database level — the function's service-role client is the sole path to data.
 
 ```
 Browser (React) → fetch() → Edge Function (Hono, layered) → Postgres (RLS-locked)
                              routes → services → repositories
 ```
 
-- **Frontend** (`src/`) — React, TypeScript, Vite, Tailwind CSS v4, shadcn/ui, TanStack Query. `src/lib/apiClient.ts` is the only file that knows the API's base URL; `src/data/queries.ts` / `mutations.ts` are thin fetch wrappers with zero business logic.
-- **Backend** (`supabase/functions/api/`) — Deno Edge Function using Hono for routing.
+- **Frontend** (`frontend/src/`) — React, TypeScript, Vite, Tailwind CSS v4, shadcn/ui, TanStack Query. `frontend/src/lib/apiClient.ts` is the only file that knows the API's base URL; `frontend/src/data/queries.ts` / `mutations.ts` are thin fetch wrappers with zero business logic.
+- **Backend** (`backend/supabase/functions/api/`) — Deno Edge Function using Hono for routing.
   - `routes/` — HTTP handlers only (parse request, call a service, return JSON)
   - `services/` — all business logic: revenue math, date-range deltas, stock-level classification, "needs attention" rules, ID generation, the single-admin sign-up rule
   - `repositories/` — the only files that call Postgres or the Supabase Auth admin API
   - `middleware/requireAuth.ts` — verifies every request (except `/auth/*`) carries a real signed-in user's session, not just the public anon key
-  - `types/domain.ts` — response shapes, kept in lockstep with `src/data/types.ts`
+  - `types/domain.ts` — response shapes, kept in lockstep with `frontend/src/data/types.ts`
 
 ### Authentication
 
-Single-admin model via Supabase Auth. The login page (`src/pages/LoginPage.tsx`) shows a Sign up tab only until an admin exists (`GET /auth/status`); after that, sign-up disappears everywhere — enforced server-side in `services/auth.service.ts`, not just hidden in the UI. `src/lib/supabaseAuthClient.ts` is used *only* for auth (sign in/up/out, session refresh) — it never queries a data table; all business data still goes through `apiClient.ts` → the Edge Function, now carrying the real user's JWT instead of the anon key.
+Single-admin model via Supabase Auth. The login page (`frontend/src/pages/LoginPage.tsx`) shows a Sign up tab only until an admin exists (`GET /auth/status`); after that, sign-up disappears everywhere — enforced server-side in `services/auth.service.ts`, not just hidden in the UI. `frontend/src/lib/supabaseAuthClient.ts` is used *only* for auth (sign in/up/out, session refresh) — it never queries a data table; all business data still goes through `apiClient.ts` → the Edge Function, now carrying the real user's JWT instead of the anon key.
+
+## Repository layout
+
+```
+frontend/   the React app — everything Vite builds into frontend/dist
+  src/  public/  index.html  package.json  vite.config.ts  .env
+backend/    everything that runs on or changes Supabase
+  supabase/functions/api/   the Edge Function (Deno, Hono)
+  db/                       schema baseline and migrations — see backend/db/README.md
+  scripts/                  one-off admin scripts (service-role key, never shipped)
+package.json  forwards dev/build/lint/preview to frontend/
+```
+
+The two halves share nothing at build time. They meet only over HTTP: the frontend calls the Edge Function's URL, and the response shapes in `backend/supabase/functions/api/types/domain.ts` are mirrored by hand in `frontend/src/data/types.ts`.
+
+Supabase CLI commands (`supabase functions deploy`, `supabase db ...`) are run from `backend/`, where the `supabase/` folder and its local project link live.
 
 ## Getting started
 
 ```bash
+cd frontend
 npm install
 npm run dev
 ```
 
-Requires `.env` with `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (see `.env.example`) — the anon key is only used to authenticate the browser to the Edge Function gateway, not for direct database access.
+(`npm run dev` from the repo root does the same once `frontend/` has its dependencies.)
+
+Requires `frontend/.env` with `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (see `frontend/.env.example`) — the anon key is only used to authenticate the browser to the Edge Function gateway, not for direct database access.
 
 ## Scripts
+
+Run in `frontend/`, or from the repo root, which forwards them.
 
 - `npm run dev` — start the dev server
 - `npm run build` — type-check and build for production
@@ -50,9 +71,9 @@ Requires `.env` with `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (see `.env
 
 ## Authentication
 
-One login page (`/login`) for everyone. Password sign-in is the single-admin path (`role='admin'`, enforced server-side — see `services/auth.service.ts`); "Continue with Google" is the customer path and can never produce an admin (`role='customer'` is the DB trigger's default for every new auth user, see `db/migrations/*_add_profiles_role_table_and_customer_user_link.sql`). After sign-in, redirect target is decided by role, not by which form was used.
+One login page (`/login`) for everyone. Password sign-in is the single-admin path (`role='admin'`, enforced server-side — see `services/auth.service.ts`); "Continue with Google" is the customer path and can never produce an admin (`role='customer'` is the DB trigger's default for every new auth user, see `backend/db/migrations/*_add_profiles_role_table_and_customer_user_link.sql`). After sign-in, redirect target is decided by role, not by which form was used.
 
-A Google sign-up also gets a `customers` row immediately — not just at first checkout — prefilled from whatever Google provides (name, email, photo); `phone`/`address` stay null until the customer fills them in via Profile or checkout (see `db/migrations/*_customer_signup_and_profile.sql`). This is what makes a customer visible in the admin's Customers page as soon as they log in, not only after their first order. If a walk-in customer was already entered manually under that email, the signup links that existing row instead of creating a duplicate — see `db/migrations/*_link_existing_customer_on_google_signup.sql`.
+A Google sign-up also gets a `customers` row immediately — not just at first checkout — prefilled from whatever Google provides (name, email, photo); `phone`/`address` stay null until the customer fills them in via Profile or checkout (see `backend/db/migrations/*_customer_signup_and_profile.sql`). This is what makes a customer visible in the admin's Customers page as soon as they log in, not only after their first order. If a walk-in customer was already entered manually under that email, the signup links that existing row instead of creating a duplicate — see `backend/db/migrations/*_link_existing_customer_on_google_signup.sql`.
 
 The admin can reset a forgotten password from `/login` ("Forgot password?") via Supabase's email-based recovery flow (`/reset-password` completes it) — depends on Supabase's email sending actually being deliverable for this project; nothing else in the app touches this.
 
